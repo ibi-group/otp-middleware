@@ -88,7 +88,7 @@ public class TripAnalyzer implements Runnable {
                 try {
                     new CheckMonitoredTrip(trip).run();
                 } catch (Exception e) {
-                    LOG.error("Error encountered while checking monitored trip", e);
+                    LOG.error("Error encountered while checking monitored trip {}", tripId, e);
                     // FIXME bugsnag
                 }
                 LOG.info("Finished analyzing trip {}", tripId);

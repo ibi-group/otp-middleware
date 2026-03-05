@@ -7,13 +7,12 @@ import com.mongodb.client.FindIterable;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.auth.Permission;
 import org.opentripplanner.middleware.auth.RequestingUser;
-import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
+import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
-import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
@@ -177,9 +176,8 @@ public class MonitoredTrip extends Model {
     /**
      * Used only during testing
      */
-    public MonitoredTrip(OtpGraphQLVariables otp2QueryParams, OtpDispatcherResponse otpDispatcherResponse) throws JsonProcessingException {
-        TripPlan plan = otpDispatcherResponse.getResponse().plan;
-        itinerary = plan.itineraries.get(0);
+    public MonitoredTrip(OtpGraphQLVariables otp2QueryParams, Itinerary itinerary) {
+        this.itinerary = itinerary;
 
         // extract trip time from parsed params and itinerary
         initializeFromItineraryAndQueryParams(otp2QueryParams);
@@ -191,11 +189,18 @@ public class MonitoredTrip extends Model {
      */
     public boolean checkItineraryExistence(
         boolean replaceItinerary,
-        Function<OtpRequest, OtpResponse> otpResponseProvider
+        Function<OtpRequest, OtpResponse> otpResponseProvider,
+        Function<LocalDate, LegFinder> getLegFinder
     ) {
         // Get queries to execute by date.
         List<OtpRequest> queriesByDate = getItineraryExistenceQueries();
-        itineraryExistence = new ItineraryExistence(queriesByDate, itinerary, otp2QueryParams.arriveBy, otpResponseProvider);
+        itineraryExistence = new ItineraryExistence(
+            queriesByDate,
+            getLegFinder,
+            itinerary,
+            otp2QueryParams.arriveBy,
+            otpResponseProvider
+        );
         itineraryExistence.checkExistence(this);
         boolean itineraryExists = itineraryExistence.allMonitoredDaysAreValid(this);
         // If itinerary should be replaced, do so if all checked days are valid.
@@ -208,7 +213,11 @@ public class MonitoredTrip extends Model {
      * Shorthand for above method using the default otpResponseProvider.
      */
     public boolean checkItineraryExistence(boolean replaceItinerary) {
-        return checkItineraryExistence(replaceItinerary, null);
+        return checkItineraryExistence(
+            replaceItinerary,
+            null,
+            ignored -> new LegFinder()
+        );
     }
 
     /**
@@ -568,12 +577,16 @@ public class MonitoredTrip extends Model {
      * (Itinerary existence is not being checked, assuming that clients prevent monitoring days when a trip doesn't exist.)
      */
     public ZonedDateTime findEarliestTargetDate(ZonedDateTime fromDateTime) {
+        ZonedDateTime itineraryStartTimeToday = makeOtpZonedDateTime(
+            fromDateTime,
+            itinerary.startTime.toInstant()
+        );
         ZonedDateTime itineraryEndTimeToday = makeOtpZonedDateTime(
             fromDateTime,
             itinerary.endTime.toInstant()
         );
 
-        int daysToAdd = fromDateTime.toInstant().isAfter(itineraryEndTimeToday.toInstant()) ? 1 : 0;
+        int daysToAdd = fromDateTime.isAfter(itineraryStartTimeToday) && fromDateTime.isAfter(itineraryEndTimeToday) ? 1 : 0;
 
         ZonedDateTime nextStartDay = makeOtpZonedDateTime(
             fromDateTime.plusDays(daysToAdd),

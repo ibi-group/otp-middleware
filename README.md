@@ -210,11 +210,9 @@ Refer to your cloud service for whitelisting IP addresses.
 
 ### Connected Data Platform
 
-#### AWS S3 Policy configuration
-An IAM access management S3 policy is required in order for an IAM user to write/delete objects on the Connected Data 
-Platform S3 bucket. 
+#### AWS Permissions
 
-The following permissions are required:
+The following permissions are required on the S3 bucket used by Connected Data Platform:
 1) ListBucket
 2) GetObject
 3) DeleteObject
@@ -222,7 +220,7 @@ The following permissions are required:
 5) PutObjectAcl
 
 The following snippet is an example policy which can be used/modified to allow access to the CDP S3 bucket:
-```bash
+```json
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -245,6 +243,31 @@ The following snippet is an example policy which can be used/modified to allow a
 }
 ```
 
+The following permissions are required to manage API keys in ApiGateway:
+1) GET
+2) PUT
+3) POST
+4) DELETE
+
+The following snippet is an example policy which can be used/modified to allow API key management:
+```json
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "VisualEditor0",
+			"Effect": "Allow",
+			"Action": [
+				"apigateway:DELETE",
+				"apigateway:PUT",
+				"apigateway:POST",
+				"apigateway:GET"
+			],
+			"Resource": "*"
+		}
+	]
+}
+```
 
 ## Testing
 
@@ -271,13 +294,67 @@ The special E2E client settings should be defined in `env.yml`:
 
 **Note:** Just to reiterate, these are different from the server application settings and are only needed for E2E testing.
 
+#### AWS
+
+To run E2E tests, we allow GitHub to obtain AWS temporary tokens with the following permissions
+from the ibi-group/otp-middleware repo:
+
+- Permissions for ApiGateway: Same as [Connected Data Platform](#connected-data-platform)
+- Permissions for S3: Same as [Connected Data Platform](#connected-data-platform)
+- Permissions for ECR (Elastic Container Registry) and ECR Public:
+  * GetAuthorizationToken
+  * BatchCheckLayerAvailability
+  * CompleteLayerUpload
+  * InitiateLayerUpload
+  * PutImage
+  * UploadLayerPart
+- Permissions for STS:
+  * GetServiceBearerToken 
+
+Below is an example policy template for the docker container permissions:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "VisualEditor0",
+      "Effect": "Allow",
+      "Action": [
+        "ecr-public:BatchCheckLayerAvailability",
+        "ecr-public:CompleteLayerUpload",
+        "ecr-public:InitiateLayerUpload",
+        "ecr-public:PutImage",
+        "ecr-public:UploadLayerPart",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:CompleteLayerUpload",
+        "ecr:InitiateLayerUpload",
+        "ecr:PutImage",
+        "ecr:UploadLayerPart"
+      ],
+      "Resource": "your-ecr-repository-arn"
+    },
+    {
+      "Sid": "VisualEditor1",
+      "Effect": "Allow",
+      "Action": [
+        "ecr-public:GetAuthorizationToken",
+        "ecr:GetAuthorizationToken",
+        "sts:GetServiceBearerToken"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
 ### env.schema.json values
 | Key | Type | Required | Example | Description |
 | --- | --- | --- | --- | --- |
 | AUTH0_API_CLIENT | string | Required | test-auth0-client-id | API client id required to authenticate with Auth0. |
 | AUTH0_API_SECRET | string | Required | test-auth0-secret | API secret id required to authenticate with Auth0. |
 | AUTH0_DOMAIN | string | Required | test.auth0.com | Auth0 tenant URL. |
-| AWS_PROFILE | string | Optional | default | AWS profile for credentials |
+| AWS_PROFILE | string | Optional | default | Optional AWS profile for credentials. If AWS_PROFILE is defined, a credentials file must also be present in the ~/.aws folder of the user executing OTP-middleware. |
 | AWS_API_SERVER | string | Optional | aws-api-id.execute-api.us-east-1.amazonaws.com | For generating the swagger document at runtime. Can be null, however that will prevent tools such as swagger-UI from submitting test requests to the API server. |
 | AWS_API_STAGE | string | Optional | stage-name | For generating the swagger document at runtime. Can be null, however that will prevent tools such as swagger-UI from submitting test requests to the API server. |
 | BUGSNAG_API_KEY | string | Required | 123e4567e89b12d3a4564266 | A valid Bugsnag authorization token. |
@@ -313,6 +390,7 @@ The special E2E client settings should be defined in `env.yml`:
 | OTP_REQUESTS_THREADING_ENABLED | string | Optional | true | Use multi-threading to handle OTP requests and responses. |
 | OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS | integer | Optional | 30 | The maximum time for making requests to OTP. |
 | OTP_TIMEZONE | string | Required | America/Los_Angeles | The timezone identifier that OTP is using to parse dates and times. OTP will use the timezone identifier that it finds in the first available agency to parse dates and times. |
+| OTP_TRANSFER_SLACK_SECONDS | integer | Optional | 0 | Extra time added by OTP between two transit legs to ensure transfers can be made, accounting for small timing variations that happen in reality. |
 | OTP_UI_NAME | string | Optional | Trip Planner | Config setting for linking to the OTP UI (trip planner). |
 | OTP_UI_URL | string | Optional | https://plan.example.com | Config setting for linking to the OTP UI (trip planner). |
 | PLAN_QUERY_RESOURCE_URI | string | Optional | https://plan.resource.com | Resource location of bespoke plan query. |

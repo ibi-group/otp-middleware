@@ -3,47 +3,42 @@ package org.opentripplanner.middleware.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opentripplanner.middleware.OtpMiddlewareMain;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryCheckStatus;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryChecker;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryMatcher;
+import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
-import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.I18nUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
-import org.opentripplanner.middleware.itinerarymatching.ItineraryMatcher;
-import org.opentripplanner.middleware.utils.JsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opentripplanner.middleware.i18n.Message.ENUM_SEPARATOR;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_NOT_POSSIBLE_CHECK;
 import static org.opentripplanner.middleware.i18n.Message.TRIP_NOT_POSSIBLE_CHECK_ON_DAY;
-import static org.opentripplanner.middleware.otp.OtpDispatcher.OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS;
-import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN;
 
 /**
@@ -53,18 +48,25 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FO
  */
 public class ItineraryExistence extends Model {
     private static final Logger LOG = LoggerFactory.getLogger(ItineraryExistence.class);
-    private static final String OTP_REQUESTS_THREADING_ENABLED = getConfigPropertyAsText(
-        "OTP_REQUESTS_THREADING_ENABLED", "true"
-    );
+    private static final Logger ITINERARY_NOT_FOUND_LOGGER = LoggerFactory.getLogger("itinerary-not-found-logger");
 
     /**
      * Initial set of requests on which to base the itinerary existence checks. We do not want these persisted.
      */
     private transient List<OtpRequest> otpRequests;
+
     /**
      * The initial reference itinerary to compare against itinerary match candidates.
      */
+    @JsonIgnore
     private transient Itinerary referenceItinerary;
+
+    /**
+     * Whether the original trip request time is a departure or arrive by time.
+     */
+    @JsonIgnore
+    private transient boolean tripIsArriveBy;
+
     public ItineraryExistenceResult monday;
     public ItineraryExistenceResult tuesday;
     public ItineraryExistenceResult wednesday;
@@ -83,30 +85,34 @@ public class ItineraryExistence extends Model {
     public boolean error;
 
     /**
-     * Whether the original trip request time is a departure or arrive by time.
-     */
-    private transient boolean tripIsArriveBy;
-
-    /**
      * When the itinerary existence check was run/completed.
      * FIXME: If a monitored trip has not been fully enabled for monitoring, we may want to check the timestamp to
      *  verify that the existence check has not gone stale.
      */
     public Date timestamp = new Date();
 
+    private final transient Function<LocalDate, LegFinder> getLegFinder;
     private transient Function<OtpRequest, OtpResponse> otpResponseProvider = getOtpResponseProvider();
-
     public static Function<OtpRequest, OtpResponse> otpResponseProviderOverride = null;
 
-    // Required for persistence.
-    public ItineraryExistence() {}
+    public static LegFinder legFinderOverride = null;
+
+    public ItineraryExistence() {
+        this(ignored -> new LegFinder());
+    }
+
+    public ItineraryExistence(Function<LocalDate, LegFinder> getLegFinder) {
+        this.getLegFinder = getLegFinder;
+    }
 
     public ItineraryExistence(
         List<OtpRequest> otpRequests,
+        Function<LocalDate, LegFinder> getLegFinder,
         Itinerary referenceItinerary,
         boolean tripIsArriveBy,
         Function<OtpRequest, OtpResponse> otpResponseProvider
     ) {
+        this(getLegFinder);
         this.otpRequests = otpRequests;
         this.referenceItinerary = referenceItinerary;
         this.tripIsArriveBy = tripIsArriveBy;
@@ -212,21 +218,53 @@ public class ItineraryExistence extends Model {
     }
 
     /**
+     * Retrieve itinerary from leg query or OTP plan response.
+     */
+    private Itinerary getCandidateItinerary(Map<DayOfWeek, ItineraryCheckStatus> legResponses, OtpRequest otpRequest, MonitoredTrip trip) {
+        ItineraryCheckStatus itineraryCheckStatus = legResponses.get(otpRequest.dateTime.toLocalDate().getDayOfWeek());
+
+        if (!itineraryCheckStatus.isFailed()) {
+            return itineraryCheckStatus.rebuiltItinerary;
+        }
+
+        Itinerary candidateItinerary = checkOtpResponse(otpResponseProvider, otpRequest, trip.id, referenceItinerary, tripIsArriveBy);
+        logItineraryNotFound(trip.id, itineraryCheckStatus, candidateItinerary == null);
+        return candidateItinerary;
+    }
+
+    /**
+     * Log any failed attempts to obtain a matching itinerary from a leg query or OTP plan response.
+     */
+    public static void logItineraryNotFound(String tripId, ItineraryCheckStatus itineraryCheckStatus, boolean planQueryFailed) {
+        if (itineraryCheckStatus.isFailed()) {
+            ITINERARY_NOT_FOUND_LOGGER.warn(
+                "No comparison itinerary found for trip {} - {}",
+                tripId,
+                itineraryCheckStatus.getFailedReason()
+            );
+        }
+
+        if (planQueryFailed) {
+            ITINERARY_NOT_FOUND_LOGGER.warn(
+                "No comparison itinerary found for trip {} - OTP plan response did not contain a matching itinerary.",
+                tripId
+            );
+        }
+    }
+
+    /**
      * Checks whether the itinerary of a trip matches any of the OTP itineraries from the trip query params.
      */
     public void checkExistence(MonitoredTrip trip) {
-
         long startTime = System.currentTimeMillis();
+        boolean useThreading = ItineraryUtils.isOtpRequestThreadingEnabled();
 
-        Map<DayOfWeek, OtpResponse> otpResponses = isOtpRequestThreadingEnabled()
-            ? getOtpResponses(otpRequests)
-            : Collections.emptyMap();
+        Map<DayOfWeek, ItineraryCheckStatus> legResponses = useThreading
+            ? getItineraryStatusesThreaded(trip.itinerary, otpRequests)
+            : getItineraryStatusesNonThreaded(trip.itinerary, otpRequests);
 
-        // Check existence of itinerary in the response for each OTP request.
-        int index = 0;
+        // Check existence of itinerary in the response for each searched day.
         for (OtpRequest otpRequest : otpRequests) {
-            index++;
-            boolean hasMatchingItinerary = false;
             DayOfWeek dayOfWeek = otpRequest.dateTime.getDayOfWeek();
             // Get existing result for day of week if a date for that day of week has already been processed, or create
             // a new one.
@@ -236,40 +274,15 @@ public class ItineraryExistence extends Model {
                 setResultForDayOfWeek(result, dayOfWeek);
             }
 
-            OtpResponse response = isOtpRequestThreadingEnabled()
-                ? otpResponses.get(dayOfWeek)
-                : otpResponseProvider.apply(otpRequest);
-            if (response == null) {
-                LOG.warn("Itinerary existence check failed on {} for trip {} - OTP response was null.", dayOfWeek , trip.id);
+            Itinerary matchingItineraryForDay = getCandidateItinerary(legResponses, otpRequest, trip);
+            if (matchingItineraryForDay == null) {
+                // If no match was found for the date, mark day of week as non-existent for the itinerary.
+                result.handleInvalidDate(otpRequest.dateTime);
             } else {
-                TripPlan plan = response.plan;
-
-                // Handle response if valid itineraries exist.
-                if (plan != null && plan.itineraries != null) {
-                    for (Itinerary itineraryCandidate : plan.itineraries) {
-                        // If a matching itinerary on the same service day as the request date is found,
-                        // save the date with the matching itinerary.
-                        // (The matching itinerary will replace the original trip.itinerary.)
-                        ItineraryMatcher matcher = new ItineraryMatcher(referenceItinerary, itineraryCandidate);
-                        if (
-                            ItineraryUtils.occursOnSameServiceDay(itineraryCandidate, otpRequest.dateTime, tripIsArriveBy) &&
-                            matcher.match()
-                        ) {
-                            result.handleValidDate(otpRequest.dateTime, itineraryCandidate);
-                            hasMatchingItinerary = true;
-                        }
-                    }
-                }
-
-                if (!hasMatchingItinerary) {
-                    // If no match was found for the date, mark day of week as non-existent for the itinerary.
-                    result.handleInvalidDate(otpRequest.dateTime);
-
-                    // Log if the itinerary didn't exist "today".
-                    if (index == 1 && plan != null) {
-                        logItineraryNotFound("Itinerary existence check failed 'today'.", trip, plan, LOG);
-                    }
-                }
+                // If a matching itinerary on the same service day as the request date is found,
+                // save the date with the matching itinerary.
+                // (The matching itinerary will replace the original trip.itinerary.)
+                result.handleValidDate(otpRequest.dateTime, matchingItineraryForDay);
             }
         }
         if (!allMonitoredDaysAreValid(trip)) {
@@ -286,83 +299,107 @@ public class ItineraryExistence extends Model {
         LOG.info(
             "Time to complete itinerary existence checks: {} ms (Threaded: {})",
             timeToComplete,
-            isOtpRequestThreadingEnabled()
+            useThreading
         );
+    }
+
+    /**
+     * Checks whether there is a matching itinerary in the OTP response for the given request. This is used in cases
+     * where the leg check fails.
+     */
+    public static Itinerary checkOtpResponse(
+        Function<OtpRequest, OtpResponse> otpResponseProvider,
+        OtpRequest otpRequest,
+        String tripId,
+        Itinerary referenceItinerary,
+        boolean tripIsArriveBy
+    ) {
+        if (otpResponseProvider == null) {
+            LOG.warn("OTP response provider is null! Cannot check OTP response for itinerary existence for trip {}.", tripId);
+            return null;
+        }
+        OtpResponse response = otpResponseProvider.apply(otpRequest);
+        if (response == null || response.plan == null || response.plan.itineraries == null) {
+            LOG.warn("Itinerary existence check failed for trip {} - OTP response was null.", tripId);
+            return null;
+        }
+        return hasMatchingItinerary(
+            response,
+            referenceItinerary,
+            otpRequest != null ? otpRequest.dateTime : null,
+            tripIsArriveBy,
+            tripId
+        );
+    }
+
+    /**
+     * Checks the OTP response for a match against the reference itinerary.
+     */
+    private static Itinerary hasMatchingItinerary(
+        OtpResponse response,
+        Itinerary referenceItinerary,
+        ZonedDateTime dateTime,
+        boolean tripIsArriveBy,
+        String tripId
+    ) {
+        for (Itinerary candidateItinerary : response.plan.itineraries) {
+            if (
+                (dateTime == null || ItineraryUtils.occursOnSameServiceDay(candidateItinerary, dateTime, tripIsArriveBy))
+                && new ItineraryMatcher(referenceItinerary, candidateItinerary).match()
+            ) {
+                return candidateItinerary;
+            }
+        }
+        LOG.warn("Itinerary existence check failed for trip {} - No matching itinerary found.", tripId);
+        return null;
+    }
+
+    private Map<DayOfWeek, ItineraryCheckStatus> getItineraryStatusesNonThreaded(Itinerary itinerary, List<OtpRequest> otpRequestsToProcess) {
+        return otpRequestsToProcess
+            .stream()
+            .collect(Collectors.toMap(
+                otpRequest -> otpRequest.dateTime.getDayOfWeek(),
+                otpRequest -> getItineraryStatus(otpRequest, itinerary, getLegFinder)
+            ));
     }
 
     /**
      * Execute OTP requests and process the responses in a custom executor. Each response is assign to a day of the week.
      */
-    private Map<DayOfWeek, OtpResponse> getOtpResponses(List<OtpRequest> otpRequestsToProcess) {
+    private Map<DayOfWeek, ItineraryCheckStatus> getItineraryStatusesThreaded(Itinerary itinerary, List<OtpRequest> otpRequestsToProcess) {
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        ConcurrentMap<DayOfWeek, CompletableFuture<OtpResponse>> otpRequestTasks = assignOtpRequestToDayOfWeek(
-            otpRequestsToProcess,
-            executor
+        Map<DayOfWeek, ItineraryCheckStatus> itineraryCheckStatuses = ItineraryUtils.collectResponses(
+            otpRequestsToProcess
+                .stream()
+                .collect(Collectors.toConcurrentMap(
+                    otpRequest -> otpRequest.dateTime.getDayOfWeek(),
+                    otpRequest -> CompletableFuture.supplyAsync(
+                        () -> getItineraryStatus(otpRequest, itinerary, getLegFinder),
+                        executor
+                    )
+                )),
+            new EnumMap<>(DayOfWeek.class),
+            LOG,
+            "itinerary check status"
         );
-
-        Map<DayOfWeek, OtpResponse> otpRequestResponses = new EnumMap<>(DayOfWeek.class);
-
-        otpRequestTasks.forEach((dayOfWeek, future) -> {
-            OtpResponse response = null;
-            try {
-                // Wait for completion and assign response.
-                response = future.join();
-            } catch (CancellationException | CompletionException e) {
-                LOG.error("Failed to get OTP response for {}.", dayOfWeek, e);
-            }
-            LOG.debug("OTP response for {}: {}", dayOfWeek, response);
-            otpRequestResponses.put(dayOfWeek, response);
-        });
-
-        executor.shutdown();
-        try {
-            if (!executor.awaitTermination(OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS)) {
-                LOG.warn(
-                    "OTP requests terminated, time out reached ({} seconds). Shutting down executor.",
-                    OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS
-                );
-                executor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            LOG.warn("OTP requests were interrupted! Shutting down executor.", e);
-            executor.shutdownNow();
-        }
-        return otpRequestResponses;
+        OtpDispatcher.waitForTimeoutThenCancelPendingRequests(executor);
+        return itineraryCheckStatuses;
     }
 
-    /**
-     * Assign an OTP request to a day of the week and start each call async to the OTP server.
-     */
-    private ConcurrentMap<DayOfWeek, CompletableFuture<OtpResponse>> assignOtpRequestToDayOfWeek(
-        List<OtpRequest> otpRequests,
-        ExecutorService executor
-    ) {
-        return otpRequests
-            .stream()
-            .collect(Collectors.toConcurrentMap(
-                otpRequest -> otpRequest.dateTime.getDayOfWeek(),
-                otpRequest -> CompletableFuture.supplyAsync(() -> otpResponseProvider.apply(otpRequest), executor))
-            );
-    }
-
-    private static boolean isOtpRequestThreadingEnabled() {
-        return OTP_REQUESTS_THREADING_ENABLED.equalsIgnoreCase("true");
-    }
-
-    /** Log instances of itinerary not found. */
-    public static void logItineraryNotFound(String message, MonitoredTrip trip, TripPlan plan, Logger logger) {
-        logger.warn(
-            "{} - Trip {} - Params: {} - Saved itinerary: {} - OTP itineraries: {}",
-            message,
-            trip.id,
-            JsonUtils.toJson(trip.otp2QueryParams),
-            JsonUtils.toJson(trip.itinerary),
-            JsonUtils.toJson(plan.itineraries)
+    private static ItineraryCheckStatus getItineraryStatus(OtpRequest request, Itinerary itinerary, Function<LocalDate, LegFinder> getLegFinder) {
+        LocalDate requestDate = request.dateTime.toLocalDate();
+        ItineraryChecker checker = new ItineraryChecker(
+            itinerary,
+            OtpMiddlewareMain.inTestEnvironment && legFinderOverride != null
+                ? legFinderOverride
+                : getLegFinder.apply(requestDate),
+            requestDate
         );
+        return checker.checkLegs();
     }
 
     private static OtpResponse getOtpResponse(OtpRequest otpRequest) {
-        return OtpDispatcher.sendOtpRequestWithErrorHandling(otpRequest);
+        return OtpDispatcher.sendOtpRequestWithErrorHandling(otpRequest.requestParameters);
     }
 
     /**

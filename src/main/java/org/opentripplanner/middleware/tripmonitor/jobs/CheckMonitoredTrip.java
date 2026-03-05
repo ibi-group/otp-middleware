@@ -1,6 +1,8 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.opentripplanner.middleware.i18n.Message;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryCheckStatus;
+import org.opentripplanner.middleware.itinerarymatching.ItineraryChecker;
 import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.LegTransitionNotification;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -8,7 +10,9 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
+import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -21,7 +25,7 @@ import org.opentripplanner.middleware.triptracker.TripTrackingData;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.I18nUtils;
-import org.opentripplanner.middleware.itinerarymatching.ItineraryMatcher;
+import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +40,12 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import static org.opentripplanner.middleware.models.LegTransitionNotification.getLegTransitionNotifyUsers;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.DEFAULT_DATE_FORMATTER;
@@ -57,7 +60,6 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.makeOtpZonedDat
  */
 public class CheckMonitoredTrip implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTrip.class);
-    private static final Logger ITINERARY_NOT_FOUND_LOGGER = LoggerFactory.getLogger("itinerary-not-found-logger");
 
     public boolean IS_TEST = false;
 
@@ -119,7 +121,10 @@ public class CheckMonitoredTrip implements Runnable {
     TripMonitorNotification initialReminderNotification;
 
     /** The OTP Response provider */
-    private Supplier<OtpResponse> otpResponseProvider;
+    private Function<OtpRequest, OtpResponse> otpResponseProvider;
+
+    /** The helper object for making OTP Leg queries. */
+    private LegFinder legFinder;
 
     private final boolean hasTolerantItineraryCheck;
 
@@ -134,20 +139,22 @@ public class CheckMonitoredTrip implements Runnable {
         journeyState = previousJourneyState.clone();
         previousMatchingItinerary = trip.journeyState.matchingItinerary;
         otpResponseProvider = this::getOtpResponse;
+        legFinder = new LegFinder();
     }
 
-    public CheckMonitoredTrip(MonitoredTrip trip, Supplier<OtpResponse> otpResponseProvider) throws CloneNotSupportedException {
-        this(trip, false);
-        this.otpResponseProvider = otpResponseProvider;
+    public CheckMonitoredTrip(MonitoredTrip trip, Function<OtpRequest, OtpResponse> otpResponseProvider, LegFinder legFinder) throws CloneNotSupportedException {
+        this(trip, otpResponseProvider, legFinder, false);
     }
 
     public CheckMonitoredTrip(
         MonitoredTrip trip,
-        Supplier<OtpResponse> otpResponseProvider,
+        Function<OtpRequest, OtpResponse> otpResponseProvider,
+        LegFinder legFinder,
         boolean hasTolerantItineraryCheck
     ) throws CloneNotSupportedException {
         this(trip, hasTolerantItineraryCheck);
         this.otpResponseProvider = otpResponseProvider;
+        this.legFinder = legFinder;
     }
 
     @Override
@@ -299,142 +306,125 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
-     * Find and set the matching itinerary from the OTP response that matches the monitored trip's stored itinerary if a
-     * match exists.
-     * @return false to indicate that no further checks for delays/alerts/etc should occur, true otherwise.
-     *
-     * FIXME: the itinerary might actually still be possible, but for some reason the OTP plan didn't find the same
-     *          match. Some additional checks should be performed to make sure the itinerary really isn't possible by
-     *          verifying that the same transit schedule/routes exist and that the street network is the same
+     * Retrieve itinerary from leg query or OTP plan response.
+     */
+    private Itinerary getCandidateItinerary() {
+        ItineraryChecker checker = new ItineraryChecker(trip.itinerary, legFinder, targetZonedDateTime.toLocalDate());
+        ItineraryCheckStatus itineraryCheckStatus = checker.checkLegs();
+
+        if (!itineraryCheckStatus.isFailed()) {
+            return itineraryCheckStatus.rebuiltItinerary;
+        }
+        Itinerary candidateItinerary = ItineraryExistence.checkOtpResponse(otpResponseProvider, null, trip.id, trip.itinerary, false);
+        ItineraryExistence.logItineraryNotFound(trip.id, itineraryCheckStatus, candidateItinerary == null);
+        return candidateItinerary;
+    }
+
+    /**
+     * Find and set the matching itinerary from the OTP leg response
+     * by rebuilding the itinerary using the matched legs.
      */
     private boolean makeOTPRequestAndUpdateMatchingItineraryInternal() {
-        OtpResponse otpResponse = otpResponseProvider.get();
-        if (otpResponse == null) {
-            LOG.warn("No comparison itinerary found for trip {} - OTP response was null.", trip.id);
+        Itinerary candidateItinerary = getCandidateItinerary();
+        if (candidateItinerary != null) {
+            // Set the matching itinerary. Compute target date and set the baseline journey state.
+            matchingItinerary = candidateItinerary;
+            LOG.info("Found matching itinerary!");
+            trip.attemptsToGetMatchingItinerary = 0;
+            computeTargetZonedDateTime();
+            resetJourneyState();
+
+            // update the journey state with whether the matching itinerary has realtime data
+            journeyState.hasRealtimeData = matchingItinerary.legs.stream().anyMatch(leg -> Boolean.TRUE.equals(leg.realTime));
+
+            // set the status according to whether the current itinerary occurs in the past, present or future
+            updateTripStatus();
+
+            if (trip.itineraryExistence != null) {
+                // update the trip's itinerary existence data so that any invalid dates are cleared (thus resulting
+                // in that day of week saying that it is a valid day of the week).
+                ItineraryExistence.ItineraryExistenceResult itinExistenceTargetDay = trip
+                    .itineraryExistence
+                    .getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek());
+                if (itinExistenceTargetDay != null) {
+                    itinExistenceTargetDay.invalidDates = new ArrayList<>();
+                }
+            }
+
+            if (trip.isOneTime() &&
+                (journeyState.tripStatus == TripStatus.TRIP_UPCOMING || journeyState.tripStatus == TripStatus.TRIP_ACTIVE)
+            ) {
+                updateMonitoredTrip();
+                return true;
+            }
+
+            // If the updated trip status is upcoming and the end time of the current matching itinerary is in the
+            // past, this means the trip has completed and the next possible time the trip occurs should be
+            // calculated.
+            // If the matching itinerary is in the future, make sure that the target date reflects that.
+            if (journeyState.tripStatus == TripStatus.TRIP_UPCOMING && (!matchingItinerary.isActive())) {
+                updateMonitoredTrip();
+
+                if (matchingItinerary.hasEnded()) {
+                    // If today's itinerary has ended, return false to indicate that no further checks
+                    // for delays/alerts/etc should occur for today.
+                    return false;
+                }
+            }
+
+            LOG.info("Trip status set to {}", journeyState.tripStatus);
+            return updateMonitoredTrip();
+        } else {
+            boolean setNullItinerary = !shouldPersistMatchingItinerary();
+            if (hasReachedMaxItineraryChecks() || setNullItinerary) {
+                // Check whether this trip should no longer ever be checked due to not having matching itineraries on any
+                // monitored day of the week. For trips that are only monitored on one day of the week, they could have been not
+                // possible for just that day, but could again be possible the next week. Therefore, this checks if the trip
+                // was not possible on all monitored days of the previous week and if so, it updates the journeyState to say
+                // that the trip is no longer possible.
+                boolean noMatchingItineraryFoundOnPreviousChecks =
+                    !trip.itineraryExistence.isPossibleOnAtLeastOneMonitoredDayOfTheWeek(trip);
+
+                // Record a null matching itinerary if "today" is not the target trip date or the one-time trip date.
+                if (setNullItinerary) {
+                    matchingItinerary = null;
+                }
+
+                if (noMatchingItineraryFoundOnPreviousChecks) {
+                    journeyState.tripStatus = TripStatus.NO_LONGER_POSSIBLE;
+                    LOG.info("Trip checking has no more possible days to check, TRIP NO LONGER POSSIBLE!");
+
+                    // update trip itinerary existence to reflect that trip was not possible on this day of the week
+                    trip.itineraryExistence
+                        .getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek())
+                        .handleInvalidDate(targetZonedDateTime);
+
+                } else {
+                    journeyState.tripStatus = TripStatus.NEXT_TRIP_NOT_POSSIBLE;
+                    trip.snoozed = true;
+                    trip.attemptsToGetMatchingItinerary = 0;
+                    LOG.info("Trip for today was not found after the allowed attempts. Snoozing for today.");
+                    // Delete previous such notifications to ensure this one gets sent.
+                    previousJourneyState.lastNotifications.removeIf(n -> n.type == NotificationType.ITINERARY_NOT_FOUND);
+                }
+
+                updateMonitoredTrip();
+
+                // send an appropriate notification if the trip is still possible on another day of the week, or if it is now
+                // not possible on any day of the week that the trip should be monitored
+                enqueueNotification(
+                    TripMonitorNotification.createItineraryNotFoundNotification(
+                        !noMatchingItineraryFoundOnPreviousChecks,
+                        getOtpUserLocale()
+                    )
+                );
+            } else if (matchingItinerary != null) {
+                // Set/reset the trip status according to the existing matching itinerary while attempting to get a new one.
+                updateTripStatus();
+                updateMonitoredTrip();
+            }
             return false;
         }
-
-        List<String> mismatchReasons = new ArrayList<>();
-        List<Itinerary> itineraries = otpResponse.plan.itineraries;
-        for (int i = 0; i < itineraries.size(); i++) {
-            Itinerary candidateItinerary = itineraries.get(i);
-            ItineraryMatcher matcher = new ItineraryMatcher(trip.itinerary, candidateItinerary);
-            if (matcher.match()) {
-                // matching itinerary found!
-                LOG.info("Found matching itinerary!");
-                trip.attemptsToGetMatchingItinerary = 0;
-
-                // Set the matching itinerary. Compute target date and set the baseline journey state.
-                matchingItinerary = candidateItinerary;
-                computeTargetZonedDateTime();
-                resetJourneyState();
-
-                // update the journey state with whether the matching itinerary has realtime data
-                journeyState.hasRealtimeData = matchingItinerary.legs.stream().anyMatch(leg -> leg.realTime);
-
-                // set the status according to whether the current itinerary occurs in the past, present or future
-                updateTripStatus();
-
-                if (trip.itineraryExistence != null) {
-                    // update the trip's itinerary existence data so that any invalid dates are cleared (thus resulting
-                    // in that day of week saying that it is a valid day of the week).
-                    ItineraryExistence.ItineraryExistenceResult itinExistenceTargetDay = trip
-                        .itineraryExistence
-                        .getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek());
-                    if (itinExistenceTargetDay != null) {
-                        itinExistenceTargetDay.invalidDates = new ArrayList<>();
-                    }
-                }
-
-                if (trip.isOneTime() &&
-                    (journeyState.tripStatus == TripStatus.TRIP_UPCOMING || journeyState.tripStatus == TripStatus.TRIP_ACTIVE)
-                ) {
-                    updateMonitoredTrip();
-                    return true;
-                }
-
-                // If the updated trip status is upcoming and the end time of the current matching itinerary is in the
-                // past, this means the trip has completed and the next possible time the trip occurs should be
-                // calculated.
-                // If the matching itinerary is in the future, make sure that the target date reflects that.
-                if (journeyState.tripStatus == TripStatus.TRIP_UPCOMING && (!matchingItinerary.isActive())) {
-                    updateMonitoredTrip();
-
-                    if (matchingItinerary.hasEnded()) {
-                        // If today's itinerary has ended, return false to indicate that no further checks
-                        // for delays/alerts/etc should occur for today.
-                        return false;
-                    }
-                }
-
-                LOG.info("Trip status set to {}", journeyState.tripStatus);
-                return updateMonitoredTrip();
-            } else {
-                mismatchReasons.add(String.format("Itin %d: %s", i + 1, matcher.getFailingReason()));
-            }
-        }
-
-        if (itineraries.isEmpty()) {
-            mismatchReasons.add("OTP returned no itineraries");
-        }
-
-        // If this point is reached, a matching itinerary was not found.
-        ItineraryExistence.logItineraryNotFound(
-            String.format("No comparison itinerary found: %s", String.join("; ", mismatchReasons)),
-            trip,
-            otpResponse.plan,
-            ITINERARY_NOT_FOUND_LOGGER
-        );
-
-        boolean setNullItinerary = !shouldPersistMatchingItinerary();
-        if (hasReachedMaxItineraryChecks() || setNullItinerary) {
-            // Check whether this trip should no longer ever be checked due to not having matching itineraries on any
-            // monitored day of the week. For trips that are only monitored on one day of the week, they could have been not
-            // possible for just that day, but could again be possible the next week. Therefore, this checks if the trip
-            // was not possible on all monitored days of the previous week and if so, it updates the journeyState to say
-            // that the trip is no longer possible.
-            boolean noMatchingItineraryFoundOnPreviousChecks =
-                !trip.itineraryExistence.isPossibleOnAtLeastOneMonitoredDayOfTheWeek(trip);
-
-            // Record a null matching itinerary if "today" is not the target trip date or the one-time trip date.
-            if (setNullItinerary) {
-                matchingItinerary = null;
-            }
-
-            if (noMatchingItineraryFoundOnPreviousChecks) {
-                journeyState.tripStatus = TripStatus.NO_LONGER_POSSIBLE;
-                LOG.info("Trip checking has no more possible days to check, TRIP NO LONGER POSSIBLE!");
-
-                // update trip itinerary existence to reflect that trip was not possible on this day of the week
-                trip.itineraryExistence
-                    .getResultForDayOfWeek(targetZonedDateTime.getDayOfWeek())
-                    .handleInvalidDate(targetZonedDateTime);
-
-            } else {
-                journeyState.tripStatus = TripStatus.NEXT_TRIP_NOT_POSSIBLE;
-                trip.snoozed = true;
-                trip.attemptsToGetMatchingItinerary = 0;
-                LOG.info("Trip for today was not found after the allowed attempts. Snoozing for today.");
-                // Delete previous such notifications to ensure this one gets sent.
-                previousJourneyState.lastNotifications.removeIf(n -> n.type == NotificationType.ITINERARY_NOT_FOUND);
-            }
-
-            updateMonitoredTrip();
-
-            // send an appropriate notification if the trip is still possible on another day of the week, or if it is now
-            // not possible on any day of the week that the trip should be monitored
-            enqueueNotification(
-                TripMonitorNotification.createItineraryNotFoundNotification(
-                    !noMatchingItineraryFoundOnPreviousChecks,
-                    getOtpUserLocale()
-                )
-            );
-        } else if (matchingItinerary != null) {
-            // Set/reset the trip status according to the existing matching itinerary while attempting to get a new one.
-            updateTripStatus();
-            updateMonitoredTrip();
-        }
-        return false;
     }
 
     /**
@@ -456,7 +446,7 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /** Default implementation for OtpResponse provider that actually invokes the OTP server. */
-    private OtpResponse getOtpResponse() {
+    private OtpResponse getOtpResponse(OtpRequest ignored) {
         return OtpDispatcher.sendOtpRequestWithErrorHandling(getQueryParamsForTargetZonedDateTime());
     }
 
@@ -555,7 +545,8 @@ public class CheckMonitoredTrip implements Runnable {
             journeyState.baselineArrivalTimeEpochMillis = 0;
             journeyState.baselineDepartureTimeEpochMillis = 0;
 
-            return getMinutesUntilTrip() <= trip.leadTimeInMinutes
+            // Send notification within the lead time and if there is a transit leg that is not complete yet.
+            return getMinutesUntilTrip() <= trip.leadTimeInMinutes && ItineraryUtils.remainingTransitLegs(matchingItinerary)
                 ? TripMonitorNotification.updatesLostNotification(getOtpUserLocale())
                 : null;
         } else {
@@ -1076,4 +1067,12 @@ public class CheckMonitoredTrip implements Runnable {
         // Include equal or after midnight as true.
         return !now.isBefore(midnightAfterLastChecked);
     }
+
+    /**
+     * Used for tests to update the mock legs
+     */
+    public void updateLegFinderForTests(LegFinder legFinder) {
+        this.legFinder = legFinder;
+    }
+
 }
