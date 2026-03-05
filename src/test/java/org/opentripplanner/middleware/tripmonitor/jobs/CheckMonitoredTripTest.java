@@ -1356,7 +1356,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         check.previousJourneyState = journeyState;
         check.previousMatchingItinerary = monitoredTrip.itinerary;
 
-        assertEquals(shouldUnsnooze, check.shouldUnsnoozeTrip());
+        assertEquals(shouldUnsnooze, check.shouldUnsnoozeTrip(journeyState.lastCheckedEpochMillis));
         check.shouldSkipMonitoredTripCheck();
 
         MonitoredTrip modifiedTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);

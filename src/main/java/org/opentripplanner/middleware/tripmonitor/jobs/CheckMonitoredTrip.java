@@ -934,6 +934,8 @@ public class CheckMonitoredTrip implements Runnable {
         }
 
         return nextMonitoredDay;
+    }
+
 
     /**
      * Is a one-off trip which has already happened.
