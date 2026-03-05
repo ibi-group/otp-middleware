@@ -1425,7 +1425,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
             MonitoredTrip modifiedTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
             assertEquals(expectedStatus, modifiedTrip.journeyState.tripStatus, message);
-	}
+        }
     }
 
     private static Stream<Arguments> createUpdateTripWithStaleStateCases() {
