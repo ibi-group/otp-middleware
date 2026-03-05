@@ -695,6 +695,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         MonitoredTrip rerouteMonitoredTrip = monitoredTrip = createMonitoredTrip(walkToVoterRegCenterItinerary);
         rerouteMonitoredTrip.observers = soloOtpUser.relatedUsers;
+        rerouteMonitoredTrip.leadTimeInMinutes = 10;
         Persistence.monitoredTrips.replace(rerouteMonitoredTrip.id, rerouteMonitoredTrip);
 
         var startTrackingPayload = new StartTrackingPayload();
@@ -706,7 +707,12 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var expectedReroutedItinerary = getShortestDuration(mockOtpResponse.get().plan.itineraries);
 
         // Use current time relative to itinerary start (this will affect the computed target date after end tracking).
-        DateTimeUtils.useFixedClockAt(ZonedDateTime.ofInstant(expectedReroutedItinerary.startTime.toInstant().plusSeconds(offsetSeconds), DateTimeUtils.getOtpZoneId()));
+        DateTimeUtils.useFixedClockAt(
+            ZonedDateTime.ofInstant(
+                expectedReroutedItinerary.startTime.toInstant().plusSeconds(offsetSeconds),
+                DateTimeUtils.getOtpZoneId()
+            )
+        );
 
         ManageTripTracking.otpResponseProviderOverride = mockOtpResponse;
         var deviatedPosition = new TrackingLocation(Instant.now(), 33.94412, -83.98899);

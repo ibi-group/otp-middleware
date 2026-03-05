@@ -477,13 +477,11 @@ public class CheckMonitoredTrip implements Runnable {
      * attributed to the trip.
      */
     public void checkForRerouting(OtpGraphQLVariables params) {
-        if (trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE) {
-            TrackedJourney trackedJourney = TripTrackingData.getOngoingTrackedJourney(trip.id);
-            if (trackedJourney != null) {
-                String reroutingLocation = trackedJourney.getLastReroutingLocation();
-                if (reroutingLocation != null) {
-                    params.fromPlace = reroutingLocation;
-                }
+        TrackedJourney trackedJourney = TripTrackingData.getOngoingTrackedJourney(trip.id);
+        if (trackedJourney != null) {
+            String reroutingLocation = trackedJourney.getLastReroutingLocation();
+            if (reroutingLocation != null) {
+                params.fromPlace = reroutingLocation;
             }
         }
     }
