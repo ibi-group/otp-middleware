@@ -106,7 +106,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private MonitoredTrip monitoredTrip;
 
     @BeforeAll
-    public static void setUp() throws Exception {
+    static void setUp() throws Exception {
         assumeTrue(IS_END_TO_END);
         setAuthDisabled(false);
         OtpTestUtils.mockOtpServer();
@@ -172,7 +172,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     @AfterAll
-    public static void tearDown() throws Exception {
+    static void tearDown() throws Exception {
         assumeTrue(IS_END_TO_END);
         DateTimeUtils.useSystemDefaultClockAndTimezone();
         restoreDefaultAuthDisabled();
@@ -183,13 +183,13 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     @BeforeEach
-    public void beforeEachTest() {
+    void beforeEachTest() {
         assumeTrue(IS_END_TO_END);
         monitoredTrip = createMonitoredTrip(itinerary);
     }
 
     @AfterEach
-    public void tearDownAfterTest() {
+    void tearDownAfterTest() {
         assumeTrue(IS_END_TO_END);
         if (trackedJourney != null) {
             trackedJourney.delete();
