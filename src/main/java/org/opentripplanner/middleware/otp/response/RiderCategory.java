@@ -9,7 +9,7 @@ import org.bson.codecs.pojo.annotations.BsonIgnore;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RiderCategory {
 
-    public /*FeedScopedId*/ String id;
+    public String id;
     public String name;
     @JsonIgnore
     @BsonIgnore
