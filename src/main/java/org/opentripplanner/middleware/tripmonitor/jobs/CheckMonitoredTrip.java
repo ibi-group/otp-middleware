@@ -124,21 +124,13 @@ public class CheckMonitoredTrip implements Runnable {
     private final boolean hasTolerantItineraryCheck;
 
     public CheckMonitoredTrip(MonitoredTrip trip) throws CloneNotSupportedException {
-        this(trip, true);
-    }
-
-    private CheckMonitoredTrip(MonitoredTrip trip, boolean hasTolerantItineraryCheck) throws CloneNotSupportedException {
-        this.trip = trip;
-        this.hasTolerantItineraryCheck = hasTolerantItineraryCheck;
-        previousJourneyState = trip.journeyState;
-        journeyState = previousJourneyState.clone();
-        previousMatchingItinerary = trip.journeyState.matchingItinerary;
-        otpResponseProvider = this::getOtpResponse;
+        this(trip, null, true);
+        // this:: is available only after constructor call.
+        this.otpResponseProvider = this::getOtpResponse;
     }
 
     public CheckMonitoredTrip(MonitoredTrip trip, Supplier<OtpResponse> otpResponseProvider) throws CloneNotSupportedException {
-        this(trip, false);
-        this.otpResponseProvider = otpResponseProvider;
+        this(trip, otpResponseProvider, false);
     }
 
     public CheckMonitoredTrip(
@@ -146,7 +138,11 @@ public class CheckMonitoredTrip implements Runnable {
         Supplier<OtpResponse> otpResponseProvider,
         boolean hasTolerantItineraryCheck
     ) throws CloneNotSupportedException {
-        this(trip, hasTolerantItineraryCheck);
+        this.trip = trip;
+        this.hasTolerantItineraryCheck = hasTolerantItineraryCheck;
+        previousJourneyState = trip.journeyState;
+        journeyState = previousJourneyState.clone();
+        previousMatchingItinerary = trip.journeyState.matchingItinerary;
         this.otpResponseProvider = otpResponseProvider;
     }
 
