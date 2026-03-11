@@ -464,7 +464,7 @@ public class CheckMonitoredTrip implements Runnable {
      * Generate the appropriate OTP query params for the trip for the current check by replacing the date query
      * parameter with the appropriate date.
      */
-    private OtpGraphQLVariables getQueryParamsForTargetZonedDateTime() {
+    public OtpGraphQLVariables getQueryParamsForTargetZonedDateTime() {
         OtpGraphQLVariables params = trip.otp2QueryParams.clone();
         params.date = targetZonedDateTime.format(DEFAULT_DATE_FORMATTER);
         checkForRerouting(params);
@@ -477,13 +477,11 @@ public class CheckMonitoredTrip implements Runnable {
      * attributed to the trip.
      */
     public void checkForRerouting(OtpGraphQLVariables params) {
-        if (trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE) {
-            TrackedJourney trackedJourney = TripTrackingData.getOngoingTrackedJourney(trip.id);
-            if (trackedJourney != null) {
-                String reroutingLocation = trackedJourney.getLastReroutingLocation();
-                if (reroutingLocation != null) {
-                    params.fromPlace = reroutingLocation;
-                }
+        TrackedJourney trackedJourney = TripTrackingData.getOngoingTrackedJourney(trip.id);
+        if (trackedJourney != null) {
+            String reroutingLocation = trackedJourney.getLastReroutingLocation();
+            if (reroutingLocation != null) {
+                params.fromPlace = reroutingLocation;
             }
         }
     }
