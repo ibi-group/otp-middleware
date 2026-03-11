@@ -127,7 +127,7 @@ public class CheckMonitoredTrip implements Runnable {
         this(trip, true);
     }
 
-    public CheckMonitoredTrip(MonitoredTrip trip, boolean hasTolerantItineraryCheck) throws CloneNotSupportedException {
+    private CheckMonitoredTrip(MonitoredTrip trip, boolean hasTolerantItineraryCheck) throws CloneNotSupportedException {
         this.trip = trip;
         this.hasTolerantItineraryCheck = hasTolerantItineraryCheck;
         previousJourneyState = trip.journeyState;
