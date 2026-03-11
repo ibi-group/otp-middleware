@@ -75,18 +75,6 @@ public class OtpDispatcherResponse implements Serializable {
         }
     }
 
-    /**
-     * POJO version of response from an OTP2 server.
-     */
-    public OtpResponse getOtp2Response() throws JsonProcessingException {
-        try {
-            return JsonUtils.getPOJOFromJSON(responseBody, OtpResponseGraphQLWrapper.class).data;
-        } catch (JsonProcessingException e) {
-            BugsnagReporter.reportErrorToBugsnag("Failed to parse OTP2 response!", responseBody, e);
-            throw e;
-        }
-    }
-
     @Override
     public String toString() {
         return "OtpDispatcherResponse{" +

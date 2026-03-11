@@ -172,10 +172,9 @@ public class ApiTestUtils {
     public static HttpResponseValues mockAuthenticatedPlanPost(
         String path,
         OtpGraphQLVariables planVariables,
-        Map<String, String> headers,
-        AbstractUser requestingUser
-    ) throws Exception {
-        OtpGraphQLQuery query = new OtpGraphQLQuery();
+        Map<String, String> headers
+    ) {
+        OtpGraphQLQuery<OtpGraphQLVariables> query = new OtpGraphQLQuery<>();
         query.variables = planVariables;
         String dummyBody = JsonUtils.toJson(query);
         return makeRequest(path, dummyBody, headers, HttpMethod.POST);

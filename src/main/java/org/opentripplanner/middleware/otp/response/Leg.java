@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.otp.response;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.apache.logging.log4j.util.Strings;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
@@ -14,6 +15,16 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Leg implements Cloneable {
+
+    /**
+     * A unique OTP-generated id to identify a leg.
+     */
+    public String id;
+
+    /**
+     * The service date that this leg is tied to, in string form (YYYYMMDD).
+     */
+    public String serviceDate;
 
     // TODO: Deprecated and replaced with 'start.estimated.time', but this introduces significant changes.
     /**
@@ -134,6 +145,11 @@ public class Leg implements Cloneable {
     public Trip trip;
 
     /**
+     * Applicable fare products for this leg.
+     */
+    public List<FareProductUse> fareProducts = null;
+
+    /**
      * Gets the scheduled start time of this itinerary in the OTP timezone.
      */
     @JsonIgnore
@@ -158,15 +174,44 @@ public class Leg implements Cloneable {
     }
 
     /**
+     * Whether this leg is a transit leg with a non-null id.
+     */
+    public boolean transitLegWithId() {
+        return Boolean.TRUE.equals(transitLeg) && !Strings.isBlank(id);
+    }
+
+    /**
+     * Offset the start and end time by specified milliseconds.
+     */
+    public void offsetTimes(long offsetMillis) {
+        startTime = new Date(startTime.getTime() + offsetMillis);
+        endTime = new Date(endTime.getTime() + offsetMillis);
+    }
+
+    /**
+     * Shallow-copy over fields that remain the same between theoretical and updated legs.
+     */
+    public void shallowCopyFieldsForRebuiltItinerary(Leg newLeg) {
+        newLeg.from = from;
+        newLeg.to = to;
+        newLeg.agency = agency;
+        newLeg.route = route;
+        newLeg.interlineWithPreviousLeg = interlineWithPreviousLeg;
+        newLeg.mode = mode;
+        newLeg.legGeometry = legGeometry;
+        newLeg.fareProducts = fareProducts;
+    }
+
+    /**
      * Clone this object.
-     * NOTE: This is used primarily during testing and only clones certain needed items so not all entities are
+     * NOTE: This only clones certain needed items so not all entities are
      * deep-cloned. Implement this further if additional items should be deep-cloned.
      */
     @Override
     protected Leg clone() throws CloneNotSupportedException {
         Leg cloned = (Leg) super.clone();
-        cloned.from = from.clone();
-        cloned.to = to.clone();
+        if (from != null) cloned.from = from.clone();
+        if (to != null) cloned.to = to.clone();
         if (steps != null) {
             cloned.steps = new ArrayList<>();
             for (Step step : steps) {

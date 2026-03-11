@@ -18,7 +18,9 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
@@ -768,7 +770,8 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(
             tripAfterRerouting,
-            rerouteOtpResponseSupplier::getOtpResponse
+            rerouteOtpResponseSupplier::getOtpResponse,
+            new LegFinder()
         );
         rerouteOtpResponseSupplier.setVariableSupplier(checkMonitoredTrip::getQueryParamsForTargetZonedDateTime);
         checkMonitoredTrip.run();
@@ -997,7 +1000,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             this.variableSupplier = supplier;
         }
 
-        public OtpResponse getOtpResponse() {
+        public OtpResponse getOtpResponse(OtpRequest ignored) {
             if (variableSupplier.get().fromPlace.endsWith(new Coordinates(triggerLocation).getCoordinates())) {
                 return mockOtpReroutedPlanResponse().get();
             }
