@@ -129,17 +129,9 @@ public class CheckMonitoredTrip implements Runnable {
     private final boolean hasTolerantItineraryCheck;
 
     public CheckMonitoredTrip(MonitoredTrip trip) throws CloneNotSupportedException {
-        this(trip, true);
-    }
-
-    public CheckMonitoredTrip(MonitoredTrip trip, boolean hasTolerantItineraryCheck) throws CloneNotSupportedException {
-        this.trip = trip;
-        this.hasTolerantItineraryCheck = hasTolerantItineraryCheck;
-        previousJourneyState = trip.journeyState;
-        journeyState = previousJourneyState.clone();
-        previousMatchingItinerary = trip.journeyState.matchingItinerary;
-        otpResponseProvider = this::getOtpResponse;
-        legFinder = new LegFinder();
+        this(trip, null, new LegFinder(), true);
+        // this:: is available only after constructor call.
+        this.otpResponseProvider = this::getOtpResponse;
     }
 
     public CheckMonitoredTrip(MonitoredTrip trip, Function<OtpRequest, OtpResponse> otpResponseProvider, LegFinder legFinder) throws CloneNotSupportedException {
@@ -152,7 +144,11 @@ public class CheckMonitoredTrip implements Runnable {
         LegFinder legFinder,
         boolean hasTolerantItineraryCheck
     ) throws CloneNotSupportedException {
-        this(trip, hasTolerantItineraryCheck);
+        this.trip = trip;
+        this.hasTolerantItineraryCheck = hasTolerantItineraryCheck;
+        previousJourneyState = trip.journeyState;
+        journeyState = previousJourneyState.clone();
+        previousMatchingItinerary = trip.journeyState.matchingItinerary;
         this.otpResponseProvider = otpResponseProvider;
         this.legFinder = legFinder;
     }
@@ -454,7 +450,7 @@ public class CheckMonitoredTrip implements Runnable {
      * Generate the appropriate OTP query params for the trip for the current check by replacing the date query
      * parameter with the appropriate date.
      */
-    private OtpGraphQLVariables getQueryParamsForTargetZonedDateTime() {
+    public OtpGraphQLVariables getQueryParamsForTargetZonedDateTime() {
         OtpGraphQLVariables params = trip.otp2QueryParams.clone();
         params.date = targetZonedDateTime.format(DEFAULT_DATE_FORMATTER);
         checkForRerouting(params);
@@ -467,13 +463,11 @@ public class CheckMonitoredTrip implements Runnable {
      * attributed to the trip.
      */
     public void checkForRerouting(OtpGraphQLVariables params) {
-        if (trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE) {
-            TrackedJourney trackedJourney = TripTrackingData.getOngoingTrackedJourney(trip.id);
-            if (trackedJourney != null) {
-                String reroutingLocation = trackedJourney.getLastReroutingLocation();
-                if (reroutingLocation != null) {
-                    params.fromPlace = reroutingLocation;
-                }
+        TrackedJourney trackedJourney = TripTrackingData.getOngoingTrackedJourney(trip.id);
+        if (trackedJourney != null) {
+            String reroutingLocation = trackedJourney.getLastReroutingLocation();
+            if (reroutingLocation != null) {
+                params.fromPlace = reroutingLocation;
             }
         }
     }
