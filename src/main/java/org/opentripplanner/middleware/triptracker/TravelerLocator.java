@@ -162,7 +162,8 @@ public class TravelerLocator {
     ) {
         Locale locale = travelerPosition.locale;
 
-        if (isApproachingEndOfLeg(travelerPosition)) {
+        boolean approachingEndOfLeg = isApproachingEndOfLeg(travelerPosition);
+        if (approachingEndOfLeg) {
             Leg transitLeg = travelerPosition.getTransitLegWithClosestUpcomingOrigin();
             if (transitLeg != null) {
                 if (shouldSendBusNotification(transitLeg, travelerPosition.currentTime)) {
@@ -447,7 +448,7 @@ public class TravelerLocator {
     }
 
     /**
-     * Get the distance from the traveler's current position to the leg destination.
+     * Get the distance from the traveler's current position to the leg destination from given leg positions.
      */
     private static double getDistanceToEndOfLeg(TravelerPosition travelerPosition) {
         return getDistanceToEndOfLeg(travelerPosition, travelerPosition.getLegPositions());

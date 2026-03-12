@@ -3163,6 +3163,12 @@ definitions:
       timestamp:
         type: "string"
         format: "date"
+      device_id:
+        type: "string"
+      app_platform:
+        type: "string"
+      app_version:
+        type: "string"
       tripStatus:
         type: "string"
         enum:

@@ -2,6 +2,8 @@ package org.opentripplanner.middleware.triptracker.instruction;
 
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -15,6 +17,8 @@ import static org.opentripplanner.middleware.utils.ItineraryUtils.getRouteShortN
  * Instruction to wait for a transit vehicle, typically emitted when someone is arriving at a transit stop.
  */
 public class WaitForTransitInstruction extends TransitLegInstruction {
+    private static final Logger LOG = LoggerFactory.getLogger(WaitForTransitInstruction.class);
+
     public WaitForTransitInstruction(Leg transitLeg, Instant currentTime, Locale locale) {
         this.transitLeg = transitLeg;
         this.currentTime = currentTime;

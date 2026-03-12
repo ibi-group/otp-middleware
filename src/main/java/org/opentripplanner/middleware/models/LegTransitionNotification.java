@@ -114,6 +114,9 @@ public class LegTransitionNotification {
             hasRequiredTripStatus(tripStatus) &&
             (hasRequiredWalkLeg(travelerPosition) || hasRequiredTransitLeg(travelerPosition))
         ) {
+            if (travelerPosition.trackedJourney.trip == null) {
+                travelerPosition.trackedJourney.trip = trip;
+            }
             NotificationType notificationType = getLegTransitionNotificationType(travelerPosition);
             if (notificationType != null) {
                 try {
@@ -129,7 +132,7 @@ public class LegTransitionNotification {
      * Depending on the traveler's proximity to the start/end of a leg, return the appropriate notification type.
      */
     private static NotificationType getLegTransitionNotificationType(TravelerPosition travelerPosition) {
-        if (isAtStartOfLeg(travelerPosition)) {
+        if (isAtStartOfLeg(travelerPosition) && hasNoDepartedNotification(travelerPosition)) {
             return DEPARTED_NOTIFICATION;
         } else if (isApproachingEndOfLeg(travelerPosition)) {
             if (hasModeChanged(travelerPosition)) {
@@ -138,6 +141,15 @@ public class LegTransitionNotification {
             return ARRIVED_NOTIFICATION;
         }
         return null;
+    }
+
+    /**
+     * Determines whether no departed notification has already been sent for the given position/journey.
+     */
+    private static boolean hasNoDepartedNotification(TravelerPosition travelerPosition) {
+        return travelerPosition.trackedJourney.trip.journeyState.lastNotifications
+            .stream()
+            .noneMatch(n -> n.type == DEPARTED_NOTIFICATION);
     }
 
     /**

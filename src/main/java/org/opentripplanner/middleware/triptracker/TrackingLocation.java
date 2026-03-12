@@ -18,6 +18,15 @@ public class TrackingLocation {
 
     public Date timestamp;
 
+    /** ID of the device that reported the location - For troubleshooting only. */
+    public String device_id;
+
+    /** The OS of the device that reported the location - For troubleshooting only. */
+    public String app_platform;
+
+    /** App version of the device that reported the location - For troubleshooting only. */
+    public String app_version;
+
     /** Deviation or on-time status computed for this location. */
     public TripStatus tripStatus;
 
