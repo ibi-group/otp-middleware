@@ -23,7 +23,7 @@ A tracked journey's lifecycle is managed by calling the following endpoints, typ
 | `/forciblyendtracking` | Forcibly terminates tracking of a monitored trip by trip ID |
 | `/reroute` | Reroute from the traveler's current location to the original trip destination |
 
-## Traveler Status
+## Traveler Status and Instructions
 
 As the traveler's location is updated using the `/track` endpoint, one of the following status is calculated:
 
@@ -52,6 +52,46 @@ the more tolerant the "on-time" determination is.
 | Parameter | Default value | Description |
 | --- | --- | --- |
 | `TRIP_TRACKING_MINIMUM_SEGMENT_TIME` | 5 | The minimum segment size in seconds for interpolated points. |
+
+## Turn-by-Turn Directions
+
+The following turn-by-turn directions can be announced when someone's position on a walk/bicycle leg is updated:
+
+"Upcoming: Left on 10th Street", "Immediate: Right on 3rd Avenue"
+: Generated when a traveler approaches the next step in a leg. These steps are provided by OpenTripPlanner
+with each walk/bicycle leg in an itinerary. This instruction is also provided when someone approaches the destination.
+
+"Head to 10th Street"
+: If the traveler is deviated, they will be told to proceed to the street where they should be per the itinerary.
+
+"Your destination is in the vicinity."
+: Sometimes, there is no path in OpenStreetMap that leads to the exact destination of a leg or itinerary,
+and travelers will be advised that their destination is in the vicinity.
+
+How far in advance "upcoming" or "immediate" turn-by-turn instructions are generated is determined by the following
+optional configuration parameters in `env.yml`:
+
+| Parameter | Default value | Description |
+| --- | --- | --- |
+| TRIP_INSTRUCTION_IMMEDIATE_RADIUS | 2 | The radius in meters under which an immediate instruction is given. |
+| TRIP_INSTRUCTION_UPCOMING_RADIUS | 10 | The radius in meters under which an upcoming instruction is given. |
+
+## Transit Directions
+
+The following directions can be produced while using public transportation:
+
+"Wait 10 minutes for the bus..."
+: Confirms arrival at the correct transit stop and provides an estimated wait time using real-time updates provided by OpenTripPlanner.
+If it is past the departure time of the transit vehicle and no real-time updates are provided by OpenTripPlanner, "That time has passed" is also announced.
+
+"Ride 6 stops / 15 minutes"
+: When on board, and shortly after the transit vehicle departs, this instruction provides a summary of the trip on that vehicle.
+
+"Your stop is upcoming..."
+: This is an advance announcement (a few stops before the arrival stop) so that the traveler can prepare to leave the transit vehicle.
+
+"Get off here..."
+: Instructs the traveler to exit the transit vehicle at the current stop.
 
 ## Live Tracking Actions
 
