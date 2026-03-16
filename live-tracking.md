@@ -187,12 +187,12 @@ Turn-by-turn directions sequence of notifications is as follows:
 
 ```mermaid
 flowchart LR
-    deviated[Deviated<br/>fa:fa-comment Head to<br/>3rd Avenue]
-    walk[Walk<br/>fa:fa-comment Continue on<br/>3rd Avenue]
-    approachTurn[Approaching turn/step<br/>fa:fa-comment Upcoming: Left on<br/>10th Street]   
-    atTurn[At turn/step<br/>fa:fa-comment Immediate: Left on<br/>10th Street]
-    approachingDestination[Approaching destination<br/>fa:fa-comment Upcoming: Coffee shop]
-    atDestination[At destination<br/>fa:fa-comment Immediate: Coffee shop]
+    deviated[Deviated<br/>'Head to<br/>3rd Avenue']
+    walk[Walk<br/>'Continue on<br/>3rd Avenue']
+    approachTurn[Approaching turn/step<br/>'Upcoming: Left on<br/>10th Street']   
+    atTurn[At turn/step<br/>'Immediate: Left on<br/>10th Street']
+    approachingDestination[Approaching destination<br/>'Upcoming: Coffee shop']
+    atDestination[At destination<br/>'Immediate: Coffee shop']
     deviated -.-> walk --> approachTurn --> atTurn --> walk
     walk --> approachingDestination --> atDestination
 ```
