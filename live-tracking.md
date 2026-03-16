@@ -135,7 +135,6 @@ with one of the following values stored in Mongo and returned to the caller (see
     {
       "type": "Feature",
       "properties": {
-        "marker-color": "#ff0095",
         "text": "On-track"
       },
       "geometry": {
