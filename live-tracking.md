@@ -12,8 +12,24 @@ as the user follows the itinerary saved in a `MonitoredTrip`.
 A `TrackedJourney` contains tracking information from the moment the journey is initiated until it is terminated.
 While a `TrackedJourney` is active, successive locations of the person traveling are recorded.
 
-A tracked journey's lifecycle is managed by calling the following endpoints, typically from a mobile app:
+A tracked journey's lifecycle is depicted in the diagram below, with the corresponding endpoints that are typically
+called from a mobile app:
 
+```mermaid
+flowchart LR
+    startOrUpdate[Start or update
+    /track]
+    endTracking[End tracking
+    /endtracking
+    /forciblyendtracking]
+    deviated{User Deviated
+    + Reroute request?}
+    reroute["Reroute
+    /reroute"]
+startOrUpdate --> deviated--Yes--> reroute --> startOrUpdate
+startOrUpdate --> endTracking
+
+```
 | Endpoint from `/api/secure/monitoredtrip` | Description |
 | --- | --- |
 | ~~`/starttracking`~~ | (Deprecated) Initiates the tracking of a monitored trip |
