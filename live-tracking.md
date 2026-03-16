@@ -160,7 +160,8 @@ with one of the following values stored in Mongo and returned to the caller (see
       }
     }
   ]
-}```
+}
+```
 
 Whether someone is deviated or not is determined by the following optional configuration parameters in `env.yml`:
 
