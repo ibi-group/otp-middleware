@@ -43,7 +43,7 @@ startOrUpdate --> endTracking
 ## Traveler Status and Instructions
 
 As the traveler's location is updated using the `/track` endpoint, the traveler status is computed,
-with one of the following values stored in Mongo and returned to the caller (see diagram below):
+with one of the following values stored in Mongo and returned to the caller (zoom as needed in map below):
 
 | Status | Description |
 | --- | --- |
@@ -183,13 +183,25 @@ the more tolerant the "on-time" determination is.
 
 ## Turn-by-Turn Directions
 
-The following turn-by-turn directions can be announced when someone's position on a walk/bicycle leg is updated:
+Turn-by-turn directions sequence of notifications is as follows:
 
-"Upcoming: Left on 10th Street", "Immediate: Right on 3rd Avenue"
+```mermaid
+flowchart LR
+    deviated[Deviated<br/>fa:fa-comment Head to<br/>3rd Avenue]
+    walk[Walk<br/>fa:fa-comment Continue on<br/>3rd Avenue]
+    approachTurn[Approaching turn/step<br/>fa:fa-comment Upcoming: Left on<br/>10th Street]   
+    atTurn[At turn/step<br/>fa:fa-comment Immediate: Left on<br/>10th Street]
+    approachingDestination[Approaching destination<br/>fa:fa-comment Upcoming: Coffee shop]
+    atDestination[At destination<br/>fa:fa-comment Immediate: Coffee shop]
+    deviated -.-> walk --> approachTurn --> atTurn --> walk
+    walk --> approachingDestination --> atDestination
+```
+
+"Upcoming: Left/Immediate on 10th Street"
 : Generated when a traveler approaches the next step in a leg. These steps are provided by OpenTripPlanner
 with each walk/bicycle leg in an itinerary. This instruction is also provided when someone approaches the destination.
 
-"Head to 10th Street"
+"Head to 3rd Avenue"
 : If the traveler is deviated, they will be told to proceed to the street where they should be per the itinerary.
 
 "Your destination is in the vicinity."
@@ -266,6 +278,8 @@ either the `start` or `end` location.
 
 Bus notifier actions are defined in the optional file `bus-notifier-actions.yml` in the same configuration folder as `env.yml`.
 The file contains a list of actions defined by an agency ID and a fully-qualified trigger class:
+
+Bus notifications are currently sent when a traveler approaches a transit stop on a specific itinerary.
 
 ```yaml
 - agencyId: id1
