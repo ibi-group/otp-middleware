@@ -183,7 +183,7 @@ the more tolerant the "on-time" determination is.
 
 ## Turn-by-Turn Directions
 
-Turn-by-turn directions sequence of notifications is as follows:
+The turn-by-turn directions sequence of notifications is as follows:
 
 ```mermaid
 flowchart LR
@@ -193,7 +193,7 @@ flowchart LR
     atTurn[At turn/step<br/>'Immediate: Left on<br/>10th Street']
     approachingDestination[Approaching destination<br/>'Upcoming: Coffee shop']
     atDestination[At destination<br/>'Immediate: Coffee shop']
-    deviated -.-> walk --> approachTurn --> atTurn --> walk
+    deviated <-.-> walk --> approachTurn --> atTurn --> walk
     walk --> approachingDestination --> atDestination
 ```
 
@@ -218,17 +218,28 @@ optional configuration parameters in `env.yml`:
 
 ## Transit Directions
 
-The following directions can be produced while using public transportation:
+The sequence of directions while using the bus is as follows:
 
-"Wait 10 minutes for the bus..."
+```mermaid
+flowchart LR
+    arriveAtStop[Arrive at stop<br/>'Wait 10 minutes for your bus']
+    startRiding[Bus departs<br/>'Ride 6 stops / 15 minutes']
+    upcomingStop[Stop upcoming<br/>'Your stop is upcoming']   
+    oneStopBefore[One stop before<br/>'Get off at the next stop']
+    getOffHere[At finalpproaching destination<br/>'Get off here']
+    walk[Walk instruction<br/>'Head East...']
+    arriveAtStop -.-> startRiding --> upcomingStop --> oneStopBefore --> getOffHere --> walk
+```
+
+"Wait 10 minutes for your bus..."
 : Confirms arrival at the correct transit stop and provides an estimated wait time using real-time updates provided by OpenTripPlanner.
 If it is past the departure time of the transit vehicle and no real-time updates are provided by OpenTripPlanner, "That time has passed" is also announced.
 
 "Ride 6 stops / 15 minutes"
 : When on board, and shortly after the transit vehicle departs, this instruction provides a summary of the trip on that vehicle.
 
-"Your stop is upcoming..."
-: This is an advance announcement (a few stops before the arrival stop) so that the traveler can prepare to leave the transit vehicle.
+"Your stop is upcoming...", "Get off at next stop"
+: Advance announcement (a few stops and one stop before the arrival stop) so that the traveler can prepare to leave the transit vehicle.
 
 "Get off here..."
 : Instructs the traveler to exit the transit vehicle at the current stop.
