@@ -43,7 +43,7 @@ startOrUpdate --> endTracking
 ## Traveler Status and Instructions
 
 As the traveler's location is updated using the `/track` endpoint, the traveler status is computed,
-with one of the following values stored in Mongo and returned to the caller (zoom as needed in map below):
+with one of the following values stored in Mongo and returned to the caller:
 
 | Status | Description |
 | --- | --- |
@@ -52,115 +52,7 @@ with one of the following values stored in Mongo and returned to the caller (zoo
 | `BEHIND_SCHEDULE` | Traveler's position is within the expected position boundary but at a time later than the expected, interpolated time for that position |
 | `AHEAD_OF_SCHEDULE` | Traveler's position is within the expected position boundary but at a time before the expected, interpolated time for that position |
 
-```geojson
-{
-  "type": "FeatureCollection",
-  "features": [
-    {
-      "type": "Feature",
-      "properties": {
-        "text": "itinerary"
-      },
-      "geometry": {
-        "type": "LineString",
-        "coordinates": [
-          [
-            -83.992694,
-            33.955927
-          ],
-          [
-            -83.991702,
-            33.95602
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "text": "On-track boundary"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              -83.99271,
-              33.956024
-            ],
-            [
-              -83.992807,
-              33.955976
-            ],
-            [
-              -83.992796,
-              33.955904
-            ],
-            [
-              -83.992753,
-              33.955851
-            ],
-            [
-              -83.992662,
-              33.955846
-            ],
-            [
-              -83.991691,
-              33.95594
-            ],
-            [
-              -83.991616,
-              33.95602
-            ],
-            [
-              -83.991616,
-              33.956087
-            ],
-            [
-              -83.991707,
-              33.956118
-            ],
-            [
-              -83.991777,
-              33.956118
-            ],
-            [
-              -83.99271,
-              33.956024
-            ]
-          ]
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "text": "On-track"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -83.992222,
-          33.95602
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "properties": {
-        "text": "Deviated"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -83.992099,
-          33.9557
-        ]
-      }
-    }
-  ]
-}
-```
+![On-track vs. deviated positions](images/deviated.svg)
 
 Whether someone is deviated or not is determined by the following optional configuration parameters in `env.yml`:
 

@@ -96,7 +96,7 @@ The follow parameters are used to interact with an OTP server.
 
 ### Live Tracking Actions
 
-See [OTP-middleware Live Tracking](live-tracking.md) for configuration and more information about live tracking.
+See [OTP-middleware Live Tracking](docs/live-tracking.md) for configuration and more information about live tracking.
 
 ### Monitored Components
 
