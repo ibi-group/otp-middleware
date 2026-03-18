@@ -101,17 +101,31 @@ optional configuration parameters in `env.yml`:
 
 ## Transit Directions
 
-The sequence of directions while using the bus is as follows:
+The sequence of instructions while using the bus is as follows:
 
 ```mermaid
-flowchart TD
-    arriveAtStop[Arrive at stop<br/>'Wait 10 minutes for your bus']
-    startRiding[Bus departs<br/>'Ride 6 stops / 15 minutes']
-    upcomingStop[Stop upcoming<br/>'Your stop is upcoming']   
-    oneStopBefore[One stop before<br/>'Get off at the next stop']
-    getOffHere[Approaching destination<br/>'Get off here']
-    walk[Walk instruction<br/>'Head East...']
-    arriveAtStop --> startRiding ==> upcomingStop ==> oneStopBefore ==> getOffHere --> walk
+---
+config:
+  gitGraph:
+    showBranches: true
+    showCommitLabel: true
+    mainBranchName: 'Walk'
+---
+gitGraph
+    commit id:" "
+    commit id:"'Wait 10 minutes for your bus...'" type: HIGHLIGHT
+    branch Bus
+    commit id:"'Ride 15 min/6 stops'"
+    commit id:"  "
+    commit id:"   "
+    commit id:"'Your stop is upcoming'"
+    commit id:"    "
+    commit id:"'Get off at next stop'"
+    commit id:"'Get off here'"
+    branch Walk2
+    commit id:"'Head north...'"
+      
+    
 ```
 
 "Wait 10 minutes for your bus..."
