@@ -30,8 +30,13 @@ classDiagram
         Map~String, String~ busNotificationMessages
         Map<String, Date> reroutings
     }
+    class TrackedTripController {
+        /track
+        /endtracking or /forciblyendtracking
+    }
     TrackedJourney --> MonitoredTrip
     TrackingLocation --> TrackedJourney
+    TrackedTripController --> TrackedJourney
 
 ```
 
@@ -40,38 +45,35 @@ classDiagram
 A `TrackedJourney` contains tracking information from the moment the journey is initiated until it is terminated.
 While a `TrackedJourney` is active, successive locations of the person traveling are recorded.
 
-A tracked journey's lifecycle is depicted in the diagram below, with the corresponding endpoints that are typically
-called from a mobile app:
+A `TrackedJourney`'s lifecycle is depicted in the diagram below, with the corresponding endpoints typically invoked
+from a mobile app. Endpoints are from the `/api/secure/monitoredtrip` path and use the `POST` method.
 
 ```mermaid
-flowchart LR
-    startOrUpdate[Start or update
-    /track]
-    endTracking[End tracking
-    /endtracking
-    /forciblyendtracking]
-    deviated{User Deviated
-    + Reroute request?}
-    reroute["Reroute
-    /reroute"]
-startOrUpdate --> deviated--Yes--> reroute --> startOrUpdate
-deviated --No--> startOrUpdate
-startOrUpdate --> endTracking
-
+stateDiagram-v2
+    initial: Not created
+    initial --> Active: /track
+    Active --> Ended: /endtracking
+    Active --> Ended: /forciblyendtracking
+    note left of Active
+        /track and /reroute can be called
+        while a TrackedJourney is active.
+    end note
 ```
-| Endpoint from `/api/secure/monitoredtrip` | Description |
-| --- | --- |
-| ~~`/starttracking`~~ | (Deprecated) Initiates the tracking of a monitored trip |
-| ~~`/updatetracking`~~ | (Deprecated) Provides tracking updates on a monitored trip |
-| `/track` | Starts or updates tracking on a monitored trip with an array of locations with timestamp |
-| `/endtracking` | Terminates the tracking of a monitored trip by the user |
-| `/forciblyendtracking` | Forcibly terminates tracking of a monitored trip by trip ID |
-| `/reroute` | Reroute from the traveler's current location to the original trip destination |
 
-## Traveler Status and Instructions
+| Endpoint | JSON Payload | Description |
+| --- | --- | --- |
+| `/track` | `{ tripId, { lat, lon, timestamp, speed }[] }` | Starts or updates tracking on a monitored trip with an array of locations with timestamp<br>Supersedes both ~~`/starttracking`~~ and ~~`/updatetracking`~~ |
+| `/endtracking` | `{ journeyId }` | Terminates the tracking of a monitored trip by the user |
+| `/forciblyendtracking` | `{ tripId }` | Forcibly terminates tracking of a monitored trip by trip ID |
+| `/reroute` | `{ tripId, { lat, lon, timestamp, speed }[] }` | Reroute from the traveler's current location to the original trip destination |
 
-As the traveler's location is updated using the `/track` endpoint, the traveler status is computed,
-with one of the following values stored in Mongo and returned to the caller:
+### Traveler Status and Instructions
+
+As the traveler's location is updated using the `/track` or `/reroute` endpoint, the traveler status is computed as illustrated below:
+
+![On-track vs. deviated positions](images/deviated.svg)
+
+One of the following values stored in Mongo and returned to the caller:
 
 | Status | Description |
 | --- | --- |
@@ -80,9 +82,7 @@ with one of the following values stored in Mongo and returned to the caller:
 | `BEHIND_SCHEDULE` | Traveler's position is within the expected position boundary but at a time later than the expected, interpolated time for that position |
 | `AHEAD_OF_SCHEDULE` | Traveler's position is within the expected position boundary but at a time before the expected, interpolated time for that position |
 
-![On-track vs. deviated positions](images/deviated.svg)
-
-Whether someone is deviated or not is determined by the following optional configuration parameters in `env.yml`:
+Whether someone is deviated or not for each travel mode is determined by the following optional configuration parameters in `env.yml`:
 
 | Parameter | Default value | Description |
 | --- | --- | --- |
