@@ -1,11 +1,39 @@
 # OTP-middleware Live Tracking
 
-This file provides an overview of live tracking in OTP-middleware.
-
 ## Overview
 
 Live tracking keeps a record of a user's travel (or `TrackedJourney`) and provides location-based actions
-as the user follows the itinerary saved in a `MonitoredTrip`.
+as the user follows the itinerary saved in a `MonitoredTrip`. The classes are summarized in the diagram below.
+
+```mermaid
+---
+title: Live Tracking Classes and Relevant Fields/Methods
+---
+classDiagram
+    direction RL
+    class MonitoredTrip {
+        Itinerary itinerary
+        JourneyState journeyState
+    }
+    class TrackingLocation {
+        Date timestamp
+        Double lat
+        Double lon
+        int speed
+        TripStatus tripStatus
+    }
+    class TrackedJourney {
+        String endCondition
+        Date startTime
+        Date endTime
+        List~TrackingLocation~ locations
+        Map~String, String~ busNotificationMessages
+        Map<String, Date> reroutings
+    }
+    TrackedJourney --> MonitoredTrip
+    TrackingLocation --> TrackedJourney
+
+```
 
 ## Tracked Journey Lifecycle
 
@@ -190,6 +218,7 @@ Bus notifier actions are defined in the optional file `bus-notifier-actions.yml`
 The file contains a list of actions defined by an agency ID and a fully-qualified trigger class:
 
 Bus notifications are currently sent when a traveler approaches a transit stop on a specific itinerary.
+Bus notification messages are stored under the applicable `TrackedJourney`.
 
 ```yaml
 - agencyId: id1
