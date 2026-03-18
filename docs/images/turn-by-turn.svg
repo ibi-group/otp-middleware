@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="200mm"
+   height="140mm"
+   viewBox="0 0 200 140"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.3 (0d15f75, 2025-12-25)"
+   sodipodi:docname="turn-by-turn.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="0.48"
+     inkscape:cx="398.95833"
+     inkscape:cy="562.5"
+     inkscape:window-width="1229"
+     inkscape:window-height="799"
+     inkscape:window-x="0"
+     inkscape:window-y="33"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg1" />
+  <defs
+     id="defs1">
+    <marker
+       style="overflow:visible"
+       id="ConcaveTriangle"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Concave triangle arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.7)"
+         d="M -2,-4 9,0 -2,4 c 2,-2.33 2,-5.66 0,-8 z"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:none"
+         id="path7" />
+    </marker>
+  </defs>
+  <rect
+     style="fill:#ffffff;fill-opacity:1;stroke:#59a9df;stroke-width:0.499999;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+     id="rect4"
+     width="199.53993"
+     height="138.90625"
+     x="1.1024305"
+     y="0.55121523" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <ellipse
+       style="fill:#c8f4cb;fill-opacity:1;stroke:#59a9df;stroke-width:0.5;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="path3-7"
+       cx="106.08333"
+       cy="31.911777"
+       rx="29.914654"
+       ry="30.46587" />
+    <ellipse
+       style="fill:#c8e0f4;fill-opacity:1;stroke:#59a9df;stroke-width:0.5;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="path3"
+       cx="106.10894"
+       cy="31.253864"
+       rx="11.851129"
+       ry="11.299912" />
+    <ellipse
+       style="fill:#ff0c0c;fill-opacity:1;stroke:#59a9df;stroke-width:0.179493;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="path3-4"
+       cx="63.915363"
+       cy="92.567513"
+       rx="4.2943683"
+       ry="4.0187597" />
+    <ellipse
+       style="fill:#0033f0;fill-opacity:1;stroke:#59a9df;stroke-width:0.179493;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="path3-4-4"
+       cx="95.907906"
+       cy="78.963547"
+       rx="4.2943683"
+       ry="4.0187597" />
+    <circle
+       id="path1"
+       style="fill:#82b6e0;stroke:#000000;stroke-width:0.264583"
+       cx="58.428818"
+       cy="79.485229"
+       r="0.073536962" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:2.065;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#ConcaveTriangle)"
+       d="M 84.498369,119.91792 108.53276,31.153909 169.05417,28.146463"
+       id="path2" />
+    <text
+       xml:space="preserve"
+       style="font-size:5.64444px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';writing-mode:lr-tb;direction:ltr;fill:#c8e0f4;fill-opacity:1;stroke:#000000;stroke-width:0.499999;stroke-dasharray:none;stroke-dashoffset:0"
+       x="104.17969"
+       y="-1.5434068"
+       id="text3"><tspan
+         sodipodi:role="line"
+         id="tspan3"
+         style="stroke-width:0.5"
+         x="104.17969"
+         y="-1.5434068" /></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-dasharray:none;stroke-dashoffset:0"
+       x="19.292532"
+       y="30.427052"
+       id="text4"><tspan
+         sodipodi:role="line"
+         id="tspan4"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-dasharray:none"
+         x="19.292532"
+         y="30.427052">&quot;Immediate: Right on 10th Street&quot;</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-dasharray:none;stroke-dashoffset:0"
+       x="12.590094"
+       y="53.361748"
+       id="text4-5"><tspan
+         sodipodi:role="line"
+         id="tspan4-8"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-dasharray:none"
+         x="12.590094"
+         y="53.361748">&quot;Upcomihng: Right on 10th Street&quot;</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-dasharray:none;stroke-dashoffset:0"
+       x="4.8844557"
+       y="93.049263"
+       id="text4-5-4"><tspan
+         sodipodi:role="line"
+         id="tspan4-8-7"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-dasharray:none"
+         x="4.8844557"
+         y="93.049263">&quot;Head to 3rd Avenue&quot;</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-dasharray:none;stroke-dashoffset:0"
+       x="103.10206"
+       y="80.305161"
+       id="text4-5-4-0"><tspan
+         sodipodi:role="line"
+         id="tspan4-8-7-2"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-dasharray:none"
+         x="103.10206"
+         y="80.305161">&quot;Continue on 3rd Avenue&quot;</tspan></text>
+    <ellipse
+       style="fill:#0033f0;fill-opacity:1;stroke:#59a9df;stroke-width:0.179493;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       id="path3-4-4-5"
+       cx="83.340179"
+       cy="124.18559"
+       rx="4.2943683"
+       ry="4.0187597" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-dasharray:none;stroke-dashoffset:0"
+       x="91.592667"
+       y="125.52723"
+       id="text4-5-4-0-3"><tspan
+         sodipodi:role="line"
+         id="tspan4-8-7-2-3"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-dasharray:none"
+         x="91.592667"
+         y="125.52723">&quot;Head north on 3rd Avenue&quot;</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-dasharray:none;stroke-dashoffset:0"
+       x="132.60823"
+       y="44.317101"
+       id="text4-4"
+       transform="rotate(-3.5658764)"><tspan
+         sodipodi:role="line"
+         id="tspan4-0"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-dasharray:none"
+         x="132.60823"
+         y="44.317101">10th Street</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-dasharray:none;stroke-dashoffset:0"
+       x="-83.608223"
+       y="120.07219"
+       id="text4-4-7"
+       transform="rotate(-73.872779)"><tspan
+         id="tspan4-0-2"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.2;stroke-dasharray:none"
+         x="-83.608223"
+         y="120.07219"
+         sodipodi:role="line">3rd Avenue</tspan></text>
+  </g>
+</svg>

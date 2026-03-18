@@ -75,21 +75,12 @@ the more tolerant the "on-time" determination is.
 
 ## Turn-by-Turn Directions
 
-The turn-by-turn directions sequence of notifications is as follows:
+The turn-by-turn directions notifications are as follows:
 
-```mermaid
-flowchart LR
-    deviated[Deviated<br/>'Head to<br/>3rd Avenue']
-    walk[Walk<br/>'Continue on<br/>3rd Avenue']
-    approachTurn[Approaching turn/step<br/>'Upcoming: Left on<br/>10th Street']   
-    atTurn[At turn/step<br/>'Immediate: Left on<br/>10th Street']
-    approachingDestination[Approaching destination<br/>'Upcoming: Coffee shop']
-    atDestination[At destination<br/>'Immediate: Coffee shop']
-    deviated <-.-> walk --> approachTurn --> atTurn --> walk
-    walk --> approachingDestination --> atDestination
-```
+![Turn-by-turn directions illustration](images/turn-by-turn.svg)
 
-"Upcoming: Left/Immediate on 10th Street"
+
+"Upcoming/Immediate: Right on 10th Street"
 : Generated when a traveler approaches the next step in a leg. These steps are provided by OpenTripPlanner
 with each walk/bicycle leg in an itinerary. This instruction is also provided when someone approaches the destination.
 
@@ -113,14 +104,14 @@ optional configuration parameters in `env.yml`:
 The sequence of directions while using the bus is as follows:
 
 ```mermaid
-flowchart LR
+flowchart TD
     arriveAtStop[Arrive at stop<br/>'Wait 10 minutes for your bus']
     startRiding[Bus departs<br/>'Ride 6 stops / 15 minutes']
     upcomingStop[Stop upcoming<br/>'Your stop is upcoming']   
     oneStopBefore[One stop before<br/>'Get off at the next stop']
-    getOffHere[At finalpproaching destination<br/>'Get off here']
+    getOffHere[Approaching destination<br/>'Get off here']
     walk[Walk instruction<br/>'Head East...']
-    arriveAtStop -.-> startRiding --> upcomingStop --> oneStopBefore --> getOffHere --> walk
+    arriveAtStop --> startRiding ==> upcomingStop ==> oneStopBefore ==> getOffHere --> walk
 ```
 
 "Wait 10 minutes for your bus..."
@@ -129,6 +120,8 @@ If it is past the departure time of the transit vehicle and no real-time updates
 
 "Ride 6 stops / 15 minutes"
 : When on board, and shortly after the transit vehicle departs, this instruction provides a summary of the trip on that vehicle.
+Note that, given accuracy issues, it is not possible to determine whether someone boarded a transit vehicle based on position only,
+so this notification is sent after vehicle departure rather than upon boarding. 
 
 "Your stop is upcoming...", "Get off at next stop"
 : Advance announcement (a few stops and one stop before the arrival stop) so that the traveler can prepare to leave the transit vehicle.
