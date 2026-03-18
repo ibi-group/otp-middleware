@@ -113,7 +113,7 @@ config:
 ---
 gitGraph
     commit id:" "
-    commit id:"'Wait 10 minutes for your bus...'" type: HIGHLIGHT
+    commit id:"'Wait 10 minutes for your bus...'" type: HIGHLIGHT tag:"My bus stop"
     branch Bus
     commit id:"'Ride 15 min/6 stops'"
     commit id:"  "
@@ -121,7 +121,7 @@ gitGraph
     commit id:"'Your stop is upcoming'"
     commit id:"    "
     commit id:"'Get off at next stop'"
-    commit id:"'Get off here'"
+    commit id:"'Get off here'" tag:"Arrival stop"
     branch Walk2
     commit id:"'Head north...'"
       
