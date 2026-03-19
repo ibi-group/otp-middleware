@@ -65,15 +65,18 @@ stateDiagram-v2
 | `/track` | `{ tripId, { lat, lon, timestamp, speed }[] }` | Starts or updates tracking on a monitored trip with an array of locations with timestamp<br>Supersedes both ~~`/starttracking`~~ and ~~`/updatetracking`~~ |
 | `/endtracking` | `{ journeyId }` | Terminates the tracking of a monitored trip by the user |
 | `/forciblyendtracking` | `{ tripId }` | Forcibly terminates tracking of a monitored trip by trip ID |
-| `/reroute` | `{ tripId, { lat, lon, timestamp, speed }[] }` | Reroute from the traveler's current location to the original trip destination |
+| `/reroute` | `{ tripId, { lat, lon, timestamp, speed }[] }` | Reroute from the traveler's current location to the original trip destination. That action is recorded in `TrackedJourney`, and the `MonitoredTrip`'s `JourneyState` is updated with the new itinerary. |
 
-### Traveler Status and Instructions
+## Traveler On-Track/Deviated Status
 
 As the traveler's location is updated using the `/track` or `/reroute` endpoint, the traveler status is computed as illustrated below:
 
 ![On-track vs. deviated positions](images/deviated.svg)
 
-One of the following values stored in Mongo and returned to the caller:
+Class `ManageTripTracking` contains the logic that computes the traveler status, and class `TravelerLocator`
+handles the calculation of traveler instructions (turn-by-turn directions, directions for using transit) based on the traveler position.
+
+For traveler status, one of the following values stored in Mongo and returned to the caller:
 
 | Status | Description |
 | --- | --- |
@@ -152,8 +155,6 @@ gitGraph
     commit id:"'Get off here'" tag:"Arrival stop"
     branch Walk2
     commit id:"'Head north...'"
-      
-    
 ```
 
 "Wait 10 minutes for your bus..."
@@ -231,3 +232,10 @@ and implement its `BusOperatorInteraction` interface.
 | Class | Description |
 | --- | --- |
 | `UsRideGwinnettNotifyBusOperator` | Notifies a bus driver on a specific trip in the RideGwinnett (Gwinnett County, GA, USA) service area |
+
+## Post-Travel Surveys
+
+If a traveler is moving and stays deviated from the itinerary saved in a `MonitoredTrip` longer than a configured time,
+a push notification is sent with a link to a survey regarding the trip.
+
+The survey notification is currently throttled to once every seven days.
