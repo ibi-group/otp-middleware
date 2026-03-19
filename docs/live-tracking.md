@@ -28,10 +28,11 @@ classDiagram
         Date endTime
         List~TrackingLocation~ locations
         Map~String, String~ busNotificationMessages
-        Map<String, Date> reroutings
+        Map~String, Date~ reroutings
     }
     class TrackedTripController {
         /track
+        /reroute
         /endtracking or /forciblyendtracking
     }
     TrackedJourney --> MonitoredTrip
