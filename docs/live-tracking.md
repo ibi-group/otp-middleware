@@ -179,6 +179,20 @@ OTP-middleware supports triggering certain actions during live tracking when som
 Actions include location-sensitive API calls to notify various services.
 In the context of live trip tracking, actions may include notifying transit vehicle operators or triggering traffic signals.
 
+### Notifications to Companions/Observers
+
+Travelers can assign companions and/or observers to a trip.
+A companion travels with the traveler. An observer does not.
+
+When travelers assign companions and observers, recipients receive an email on that matter and must accept the request
+by clicking a link in the email. Once accepted, the status on the traveler account page will show as "Verified".
+
+Verified companions and Observers can receive the following notifications in addition to the usual trip monitoring notifications:
+- A traveler departs their origin location
+- A traveler approaches a transit stop
+- A traveler arrives at their destination
+- A traveler reroutes
+
 ### Location-Based Actions (`trip-actions.yml`)
 
 Location-based trip actions are defined in the optional file `trip-actions.yml` in the same configuration folder as `env.yml`.
