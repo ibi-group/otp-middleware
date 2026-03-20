@@ -75,7 +75,19 @@ Within 30 minutes the trip start time, checks are performed every minute.
 
 ## Notifications
 
-Trip notifications can be sent using the following channels:
-- Email, using Sparkpost
-- SMS, using Twilio
-- Push notifications mobile apps that subscribe to a specific AWS SNS service.
+Notifications are of the following types:
+- Advance trip reminder ("Reminder for My Trip at 8:30")
+- Trip alerts for any GTFS-realtime alerts attached to transit legs, or for previous alerts that are cleared.
+- Trip delay notifications ("Your trip is departing/arriving 5 minutes late")
+
+One or many notifications can be combined into one.
+
+Trip notifications can be sent using the following channels as selected by the user in their account settings:
+- Email to the account's email address, using Sparkpost
+- SMS to the number stored and verified in their account, using Twilio
+- Push notifications to mobile apps that subscribe to a specific AWS SNS service.
+
+A notification message template (.ftl file) is provided for each notification channel,
+so that notifications are formatted to fit the receiving device.
+The length of the content sent via SMS can impact the amount billed by the SMS service.
+Push notification content may be trimmed automatically to fit the message format of the mobile platform.
