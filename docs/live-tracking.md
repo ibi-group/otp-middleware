@@ -188,10 +188,12 @@ When travelers assign companions and observers, recipients receive an email on t
 by clicking a link in the email. Once accepted, the status on the traveler account page will show as "Verified".
 
 Verified companions and Observers can receive the following notifications in addition to the usual trip monitoring notifications:
-- A traveler departs their origin location
-- A traveler approaches a transit stop
-- A traveler arrives at their destination
-- A traveler reroutes
+- A traveler departs their origin location,
+- A traveler approaches a transit stop,
+- A traveler arrives at their destination.
+
+These messages are managed by the `LegTansitionNotification` class.
+No notification is sent when a user reroutes from a deviated position.
 
 ### Location-Based Actions (`trip-actions.yml`)
 
