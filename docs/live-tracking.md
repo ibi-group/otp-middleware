@@ -112,6 +112,7 @@ below, respectively:
 | --- | --- |
 | `DEVIATED` | Traveler is deviated, i.e. outside of the on-track boundary for the applicable mode on the path indicated by the `MonitoredTrip`'s itinerary. If the traveler is deviated, this is returned regardless of whether the traveler is ahead or behind schedule. |
 | `ON_SCHEDULE` | Traveler is within the expected position boundary at the interpolated time for that position |
+| `BEHIND_SCHEDULE` | Traveler's position is within the expected position boundary but at a time later than the expected, interpolated time for that position |
 | `AHEAD_OF_SCHEDULE` | Traveler's position is within the expected position boundary but at a time before the expected, interpolated time for that position |
 
 Whether someone is deviated or not for each travel mode is determined by the following optional configuration parameters in `env.yml`:
