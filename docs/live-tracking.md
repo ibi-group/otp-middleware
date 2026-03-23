@@ -44,46 +44,74 @@ classDiagram
 ## Tracked Journey Lifecycle
 
 A `TrackedJourney` contains tracking information from the moment the journey is initiated until it is terminated.
-While a `TrackedJourney` is active, successive locations of the person traveling are recorded.
+While a `TrackedJourney` is active, the location and notification activity of the person traveling are recorded.
 
 A `TrackedJourney`'s lifecycle is depicted in the diagram below, with the corresponding endpoints typically invoked
 from a mobile app. Endpoints are from the `/api/secure/monitoredtrip` path and use the `POST` method.
 
 ```mermaid
 stateDiagram-v2
+    direction LR
+    active: Active<br>/track and /reroute
     initial: Not created
-    initial --> Active: /track
-    Active --> Ended: /endtracking
-    Active --> Ended: /forciblyendtracking
-    note left of Active
-        /track and /reroute can be called
-        while a TrackedJourney is active.
-    end note
+    initial --> active: /track
+    active --> Ended: /endtracking
+    active --> Ended: /forciblyendtracking
 ```
 
 | Endpoint | JSON Payload | Description |
 | --- | --- | --- |
-| `/track` | `{ tripId, { lat, lon, timestamp, speed }[] }` | Starts or updates tracking on a monitored trip with an array of locations with timestamp<br>Supersedes both ~~`/starttracking`~~ and ~~`/updatetracking`~~ |
+| `/track` | `{ tripId, { lat, lon, timestamp, speed }[] }` | Starts or updates tracking on a monitored trip with an array of locations with timestamp.<br>Supersedes both ~~`/starttracking`~~ and ~~`/updatetracking`~~ |
 | `/endtracking` | `{ journeyId }` | Terminates the tracking of a monitored trip by the user |
 | `/forciblyendtracking` | `{ tripId }` | Forcibly terminates tracking of a monitored trip by trip ID |
 | `/reroute` | `{ tripId, { lat, lon, timestamp, speed }[] }` | Reroute from the traveler's current location to the original trip destination. That action is recorded in `TrackedJourney`, and the `MonitoredTrip`'s `JourneyState` is updated with the new itinerary. |
 
-## Traveler On-Track/Deviated Status
+## Tracked Journey Logical Flow
 
-As the traveler's location is updated using the `/track` or `/reroute` endpoint, the traveler status is computed as illustrated below:
+For active tracked journeys, calling the `/track` or `/reroute` endpoints triggers the following logic in the `ManageTripTracking` class:
+- The locations are saved in Mongo.
+- An on-track/deviated status is computed and saved in Mongo.
+- Location-based actions are triggered, including notifications to observers.
+- An instruction is returned to the traveler.
+
+```mermaid
+---
+title: Tracked Journey Logical Flow
+---
+flowchart LR
+    endpoint["/track<br>/reroute"]
+    mongo[(Mongo)]
+    externalSystems["External Systems"]
+    subgraph ManageTripTracking
+        TravelerLocator
+        actions["Trigger Actions"]
+    end
+    subgraph TravelerLocator
+        computeStatus["Update Locations<br>Compute Trip Status"]
+        computeInstruction["Compute Instruction"]
+    end
+    return["Return Intruction"]
+    endpoint --> computeStatus --> computeInstruction --> return
+    computeStatus --> actions --> externalSystems
+    ManageTripTracking --- mongo
+```
+
+## On-Track/Deviated Status
+
+The `TravelerLocator` class contains logic to compute `TrackedJourney.tripStatus` using the last location
+in the `/track` and `/reroute` payload.
+Other locations, if provided, are recorded to accommodate interruptions in network connectivity resulting
+in delays sending data.
+
+The different traveler states are illustrated and described in the diagram and table
+below, respectively:
 
 ![On-track vs. deviated positions](images/deviated.svg)
 
-Class `ManageTripTracking` contains the logic that computes the traveler status, and class `TravelerLocator`
-handles the calculation of traveler instructions (turn-by-turn directions, directions for using transit) based on the traveler position.
-
-For traveler status, one of the following values stored in Mongo and returned to the caller:
-
 | Status | Description |
 | --- | --- |
-| `DEVIATED` | Traveler is deviated, i.e. outside of the on-track boundary for the applicable mode on the path indicated by the `MonitoredTrip`'s itinerary. This is returned regardless of whether the traveler is ahead or behind schedule. |
+| `DEVIATED` | Traveler is deviated, i.e. outside of the on-track boundary for the applicable mode on the path indicated by the `MonitoredTrip`'s itinerary. If the traveler is deviated, this is returned regardless of whether the traveler is ahead or behind schedule. |
 | `ON_SCHEDULE` | Traveler is within the expected position boundary at the interpolated time for that position |
-| `BEHIND_SCHEDULE` | Traveler's position is within the expected position boundary but at a time later than the expected, interpolated time for that position |
 | `AHEAD_OF_SCHEDULE` | Traveler's position is within the expected position boundary but at a time before the expected, interpolated time for that position |
 
 Whether someone is deviated or not for each travel mode is determined by the following optional configuration parameters in `env.yml`:
