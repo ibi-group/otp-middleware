@@ -1,5 +1,13 @@
 # OTP-middleware Live Tracking
 
+## Shortcuts to Configuration Items
+
+- [On-Track Radius Configuration By Mode](#on-track-radius-configuration-by-mode)
+- [Leg Segment Duration](#leg-segment-duration)
+- [Radius for Immediate and Upcoming Trip Instructions](#radius-for-immediate-and-upcoming-trip-instructions)
+- [Location-Based Actions](#location-based-actions-trip-actionsyml)
+- [Bus Notifier Actions](#bus-notifier-actions-bus-notifier-actionsyml)
+
 ## Overview
 
 Live tracking keeps a record of a user's travel (or `TrackedJourney`) and provides location-based actions
@@ -115,6 +123,8 @@ below, respectively:
 | `BEHIND_SCHEDULE` | Traveler's position is within the expected position boundary but at a time later than the expected, interpolated time for that position |
 | `AHEAD_OF_SCHEDULE` | Traveler's position is within the expected position boundary but at a time before the expected, interpolated time for that position |
 
+#### On-Track Radius Configuration By Mode
+
 Whether someone is deviated or not for each travel mode is determined by the following optional configuration parameters in `env.yml`:
 
 | Parameter | Default value | Description |
@@ -126,8 +136,10 @@ Whether someone is deviated or not for each travel mode is determined by the fol
 | `TRIP_TRACKING_RAIL_ON_TRACK_RADIUS` | 200 | The threshold in meters below which travelling by rail is considered on track. |
 | `TRIP_TRACKING_TRAM_ON_TRACK_RADIUS` | 100 | The threshold in meters below which travelling by tram is considered on track. |
 
+#### Leg Segment Duration
+
 Whether someone is on-time or not is determined by the timestamp of the last location in the `/track` payload
-and by the following optional configuration parameters in `env.yml`. The longer the segment time,
+and by the optional leg segment duration/time configuration parameter in `env.yml`. The longer the segment time,
 the more tolerant the "on-time" determination is.
 
 | Parameter | Default value | Description |
@@ -217,6 +229,8 @@ and travelers will be advised that their destination is in the vicinity.
 
 How far in advance "upcoming" or "immediate" turn-by-turn instructions are generated is determined by the following
 optional configuration parameters in `env.yml`:
+
+#### Radius for Immediate and Upcoming Trip Instructions
 
 | Parameter | Default value | Description |
 | --- | --- | --- |
