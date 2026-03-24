@@ -81,16 +81,16 @@ title: Tracked Journey Logical Flow
 flowchart LR
     endpoint["/track<br>/reroute"]
     mongo[(Mongo)]
-    externalSystems["External Systems"]
+    externalSystems[External Systems]
     subgraph ManageTripTracking
         TravelerLocator
-        actions["Trigger Actions"]
+        actions[Trigger Actions]
     end
     subgraph TravelerLocator
-        computeStatus["Update Locations<br>Compute Trip Status"]
-        computeInstruction["Compute Instruction"]
+        computeStatus[Update Locations<br>Compute Trip Status]
+        computeInstruction[Compute Instruction]
     end
-    return["Return Intruction"]
+    return[Return Instruction]
     endpoint --> computeStatus --> computeInstruction --> return
     computeStatus --> actions --> externalSystems
     ManageTripTracking --- mongo
@@ -134,16 +134,79 @@ the more tolerant the "on-time" determination is.
 | --- | --- | --- |
 | `TRIP_TRACKING_MINIMUM_SEGMENT_TIME` | 5 | The minimum segment size in seconds for interpolated points. |
 
-## Turn-by-Turn Directions
+## Traveler Navigation
+
+The `TravelerLocator` class contains the logic that manages navigation, including finding the current leg and mode,
+and determining transit and turn-by-turn instructions. The flow is illustrated in the diagram below:
+
+```mermaid
+---
+title: TravelerLocator Logical Flow
+---
+flowchart LR
+    update["/track<br>/reroute<br><br>Update<br>Locations"]
+    computeLeg{Compute Leg<br>& Deviation}
+    walkPosition{Position<br>in Walk Leg}
+    deviatedWalk['Head to 3rd Avenue']
+    continueWalk['Continue on 3rd Avenue']
+    upcomingStep['Upcoming/Immediate:<br>Right on 10th Street']
+    transitPosition{Position<br>in Transit Leg}
+    waitTransit['Wait 10 minutes for your bus']
+    startedTransit['Ride 6 stops/15 mins']
+    upcomingStop['Your stop is upcoming'/<br>'Get off at next stop']
+    getOff['Get off here']
+    return[Return<br>Instruction]
+    subgraph ComputeInstruction[Compute Instruction]
+        WalkInstructions
+        TransitInstructions
+    end
+    subgraph WalkInstructions[Turn-by-turn Directions]
+        walkPosition --deviated--> deviatedWalk
+        walkPosition --along step-->continueWalk
+        walkPosition --near next step-->upcomingStep
+    end
+    subgraph TransitInstructions[Transit Directions]
+        transitPosition --at departure stop-->waitTransit
+        transitPosition --just boarded-->startedTransit
+        transitPosition --upcoming stop-->upcomingStop
+        transitPosition --at arrival stop-->getOff
+    end
+    subgraph ComputeStatus:[Compute Trip Status]
+        computeLeg
+    end
+    computeLeg --walk--> walkPosition
+    computeLeg --transit--> transitPosition
+
+    update --> computeLeg
+    ComputeInstruction --> return
+```
+
+Compute Leg
+: First, the expected leg is computed by snapping the position to the nearest leg.
+If the expected leg was found, the leg is divided into segments of same travel duration (e.g. 5 seconds).
+
+Compute Deviation and Timing
+: The distance to the itinerary's path is computed and compared to the on-track radius to determine whether the traveler
+is deviated. If the traveler is not deviated, we match the traveler's progress to one of the segments for that leg to
+determine whether they are on-time/on-track, ahead of schedule, or behind schedule.
+
+Once the expected leg, deviation, and timing are computed, the instruction to the traveler is determined for the type of leg
+and their progress along the leg. For walk (or bike) legs, turn-by-turn directions are provided.
+For transit legs, instructions on when to exit the transit vehicle are provided.
+
+### Turn-by-Turn Directions
 
 The turn-by-turn directions notifications are as follows:
 
 ![Turn-by-turn directions illustration](images/turn-by-turn.svg)
 
-
 "Upcoming/Immediate: Right on 10th Street"
 : Generated when a traveler approaches the next step in a leg. These steps are provided by OpenTripPlanner
-with each walk/bicycle leg in an itinerary. This instruction is also provided when someone approaches the destination.
+with each walk/bicycle leg in an itinerary. "Upcoming" or "immediate" instructions are is also provided when someone
+is at the beginning of a leg or approaches their destination.
+
+"Continue on 3rd Avenue"
+: If the traveler is following the path and is not near a turn or destination, a "continue" instruction is returned.
 
 "Head to 3rd Avenue"
 : If the traveler is deviated, they will be told to proceed to the street where they should be per the itinerary.
@@ -160,7 +223,7 @@ optional configuration parameters in `env.yml`:
 | TRIP_INSTRUCTION_IMMEDIATE_RADIUS | 2 | The radius in meters under which an immediate instruction is given. |
 | TRIP_INSTRUCTION_UPCOMING_RADIUS | 10 | The radius in meters under which an upcoming instruction is given. |
 
-## Transit Directions
+### Transit Directions
 
 The sequence of instructions while using the bus is as follows:
 
@@ -201,6 +264,10 @@ so this notification is sent after vehicle departure rather than upon boarding.
 
 "Get off here..."
 : Instructs the traveler to exit the transit vehicle at the current stop.
+
+If the transit vehicle deviates from its expected route (e.g. a detour is in place), the traveler's status is marked as
+deviated. "No instruction" is returned as instruction, however, because the traveler has no control of the transit
+vehicle's movement.
 
 ## Live Tracking Actions
 
