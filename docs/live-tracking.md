@@ -337,8 +337,9 @@ and implement its `Interaction` interface.
 | --- | --- |
 | `UsGdotGwinnettTrafficSignalNotifier` | Remotely activates select pedestrian signals in Gwinnett County, GA, USA |
 
-Location-based trip actions are triggered when someone is in the `TRIP_INSTRUCTION_IMMEDIATE_RADIUS` of
-either the `start` or `end` location.
+Location-based trip actions are triggered when the received coordinates of a traveler are in the `TRIP_INSTRUCTION_IMMEDIATE_RADIUS` of
+either the `start` or `end` location. If the traveler location is not received, or if live tracking is ended using
+`/endtracking` or `/forciblyendtracking`, location-based actions are not triggered.
 
 ### Bus Notifier Actions (`bus-notifier-actions.yml`)
 
@@ -346,6 +347,9 @@ Bus notifier actions are defined in the optional file `bus-notifier-actions.yml`
 The file contains a list of actions defined by an agency ID and a fully-qualified trigger class:
 
 Bus notifications are currently sent when a traveler approaches a transit stop on a specific itinerary.
+If the traveler stops live tracking using `/endtracking` or `/forciblyendtracking`, a request to cancel previous
+bus notifications in that tracked journey is sent.
+
 Bus notification messages are stored under the applicable `TrackedJourney`.
 
 ```yaml
