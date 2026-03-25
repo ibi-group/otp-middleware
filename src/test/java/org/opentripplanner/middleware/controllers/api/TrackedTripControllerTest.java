@@ -16,7 +16,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
-import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -76,7 +75,6 @@ import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     private static OtpUser soloOtpUser;
-    private static OtpUser observerUser;
     private static TrackedJourney trackedJourney;
     private static Itinerary itinerary;
     private static Itinerary multiLegItinerary;
@@ -127,8 +125,6 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
 
         soloOtpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-solootpuser"));
-        observerUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-observer-user"));
-        soloOtpUser.relatedUsers = List.of(new RelatedUser(observerUser.email, RelatedUser.RelatedUserStatus.CONFIRMED));
         try {
             // Should use Auth0User.createNewAuth0User but this generates a random password preventing the mock headers
             // from being able to use TEMP_AUTH0_USER_PASSWORD.
@@ -159,14 +155,12 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     @AfterAll
-    static void tearDown() throws Exception {
+    static void tearDown() {
         assumeTrue(IS_END_TO_END);
         DateTimeUtils.useSystemDefaultClockAndTimezone();
         restoreDefaultAuthDisabled();
         soloOtpUser = Persistence.otpUsers.getById(soloOtpUser.id);
         if (soloOtpUser != null) soloOtpUser.delete(true);
-        observerUser = Persistence.otpUsers.getById(observerUser.id);
-        if (observerUser != null) observerUser.delete(true);
     }
 
     @BeforeEach
@@ -324,7 +318,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(trackedJourney.id, trackResponse.journeyId);
     }
 
-    private static WaitForTransitInstruction waitForBusIsntruction(int waitMinutes) {
+    private static WaitForTransitInstruction waitForBusInstruction(int waitMinutes) {
         Leg multiItinBusLeg = multiLegItinerary.legs.get(multiLegItinerary.legs.size() - 2);
         return new WaitForTransitInstruction(
             multiItinBusLeg,
@@ -357,7 +351,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         Coordinates pointNearEndOfSidewalk = new Coordinates(33.958954, -84.006451);
         Coordinates pointPastEndOfSidewalk = new Coordinates(33.958917, -84.006521);
 
-        WaitForTransitInstruction multiItinWaitForTransitInstruction = waitForBusIsntruction(6);
+        WaitForTransitInstruction multiItinWaitForTransitInstruction = waitForBusInstruction(6);
         return Stream.of(
             Arguments.of(
                 "Coords near first step should produce relevant instruction",
@@ -480,7 +474,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                     .withPosition(createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING))
                     .withInstant(multiItinBusLeg.startTime.toInstant().minus(2, ChronoUnit.MINUTES))
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
-                    .withExpectedInstruction(waitForBusIsntruction(2))
+                    .withExpectedInstruction(waitForBusInstruction(2))
             ),
             Arguments.of(
                 "Arriving ahead of schedule near a bus stop (in 'upcoming' range) at the end of first leg.",
