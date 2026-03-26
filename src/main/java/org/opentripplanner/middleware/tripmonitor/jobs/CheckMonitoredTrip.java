@@ -257,7 +257,7 @@ public class CheckMonitoredTrip implements Runnable {
     public boolean checkOtpAndUpdateTripStatus() {
         // If matching itinerary has concluded, and live tracking is ongoing or the trip is one-time, don't check OTP.
         boolean oneTime = trip.isOneTime();
-        boolean trackingOngoing = isTrackingOngoing();
+        boolean trackingOngoing = trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE && getOngoingTrackedJourney() != null;
         Itinerary matchingItin = trip.journeyState.matchingItinerary;
         if ((oneTime || trackingOngoing) && (matchingItin == null || matchingItin.hasEnded())) {
             if (oneTime && !trackingOngoing) {
@@ -269,8 +269,11 @@ public class CheckMonitoredTrip implements Runnable {
         return makeOTPRequestAndUpdateMatchingItineraryInternal();
     }
 
-    private boolean isTrackingOngoing() {
-        return trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE && TripTrackingData.getOngoingTrackedJourney(trip.id) != null;
+    /**
+     * @return The most recent active {@link TrackedJourney} for the monitored trip, or null if there are no active journeys.
+     */
+    private TrackedJourney getOngoingTrackedJourney() {
+        return TripTrackingData.getOngoingTrackedJourney(trip.id);
     }
 
     /**
@@ -463,7 +466,7 @@ public class CheckMonitoredTrip implements Runnable {
      * attributed to the trip.
      */
     public void checkForRerouting(OtpGraphQLVariables params) {
-        TrackedJourney trackedJourney = TripTrackingData.getOngoingTrackedJourney(trip.id);
+        TrackedJourney trackedJourney = getOngoingTrackedJourney();
         if (trackedJourney != null) {
             String reroutingLocation = trackedJourney.getLastReroutingLocation();
             if (reroutingLocation != null) {
