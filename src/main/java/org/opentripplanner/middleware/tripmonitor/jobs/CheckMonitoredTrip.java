@@ -318,13 +318,16 @@ public class CheckMonitoredTrip implements Runnable {
      * Retrieve itinerary from leg query or OTP plan response.
      */
     private Itinerary getCandidateItinerary() {
-        ItineraryChecker checker = new ItineraryChecker(trip.itinerary, legFinder, targetZonedDateTime.toLocalDate());
+        Itinerary referenceItinerary = ongoingJourneyReroutingLocation() != null
+            ? trip.journeyState.matchingItinerary
+            : trip.itinerary;
+        ItineraryChecker checker = new ItineraryChecker(referenceItinerary, legFinder, targetZonedDateTime.toLocalDate());
         ItineraryCheckStatus itineraryCheckStatus = checker.checkLegs();
 
         if (!itineraryCheckStatus.isFailed()) {
             return itineraryCheckStatus.rebuiltItinerary;
         }
-        Itinerary candidateItinerary = ItineraryExistence.checkOtpResponse(otpResponseProvider, null, trip.id, trip.itinerary, false);
+        Itinerary candidateItinerary = ItineraryExistence.checkOtpResponse(otpResponseProvider, null, trip.id, referenceItinerary, false);
         ItineraryExistence.logItineraryNotFound(trip.id, itineraryCheckStatus, candidateItinerary == null);
         return candidateItinerary;
     }

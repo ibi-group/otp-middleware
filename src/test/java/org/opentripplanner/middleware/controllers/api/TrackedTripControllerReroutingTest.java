@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.auth.Auth0Users;
+import org.opentripplanner.middleware.models.ItineraryExistence;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
@@ -58,7 +59,6 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
@@ -76,10 +76,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser observerUser;
     private static TrackedJourney trackedJourney;
     private static Itinerary itinerary;
-    private static Itinerary multiLegItinerary;
     private static Itinerary walkToVoterRegCenterItinerary;
-    private static Itinerary walkToBus20;
-    private static Itinerary walkToBus12;
     private static Itinerary arrivingOnBus40;
     private static Itinerary walkFromBus40;
 
@@ -101,20 +98,8 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
             CommonTestUtils.getTestResourceAsString("controllers/api/adair-avenue-to-monroe-drive.json"),
             Itinerary.class
         );
-        multiLegItinerary = JsonUtils.getPOJOFromJSON(
-            CommonTestUtils.getTestResourceAsString("controllers/api/27nb-midtown-to-ansley.json"),
-            Itinerary.class
-        );
         walkToVoterRegCenterItinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-voter-reg-center.json"),
-            Itinerary.class
-        );
-        walkToBus20 = JsonUtils.getPOJOFromJSON(
-            CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-20.json"),
-            Itinerary.class
-        );
-        walkToBus12 = JsonUtils.getPOJOFromJSON(
-            CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-bus-12.json"),
             Itinerary.class
         );
         arrivingOnBus40 = JsonUtils.getPOJOFromJSON(
@@ -192,18 +177,25 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
     void canRerouteTrip(RerouteCase testData) throws Exception {
         assumeTrue(IS_END_TO_END);
 
+        var mockOtpResponse = mockOtpReroutedPlanResponse(testData.reroutedResponse);
+        var expectedReroutedItinerary = getShortestDuration(mockOtpResponse.get().plan.itineraries);
+        ZonedDateTime reroutedStartTime = DateTimeUtils.makeOtpZonedDateTime(expectedReroutedItinerary.startTime);
+
         MonitoredTrip rerouteMonitoredTrip = monitoredTrip = createMonitoredTrip(testData.originalItinerary);
         rerouteMonitoredTrip.observers = soloOtpUser.relatedUsers;
         rerouteMonitoredTrip.leadTimeInMinutes = 10;
+        rerouteMonitoredTrip.itineraryExistence = new ItineraryExistence();
+        rerouteMonitoredTrip.itineraryExistence.setResultForDayOfWeek(
+            new ItineraryExistence.ItineraryExistenceResult(),// Set the itinerary existence to the same day as the rerouted itinerary
+            reroutedStartTime.getDayOfWeek()
+        );
+        rerouteMonitoredTrip.updateAllDaysOfWeek(true);
         Persistence.monitoredTrips.replace(rerouteMonitoredTrip.id, rerouteMonitoredTrip);
 
         var startTrackingPayload = new StartTrackingPayload();
         startTrackingPayload.tripId = rerouteMonitoredTrip.id;
         Step firstStep = testData.originalItinerary.legs.get(0).steps.get(0);
         startTrackingPayload.location = new TrackingLocation(Instant.now(), firstStep.lat, firstStep.lon);
-
-        var mockOtpResponse = mockOtpReroutedPlanResponse(testData.reroutedResponse);
-        var expectedReroutedItinerary = getShortestDuration(mockOtpResponse.get().plan.itineraries);
 
         // Use current time relative to itinerary start (this will affect the computed target date after end tracking).
         DateTimeUtils.useFixedClockAt(
@@ -224,7 +216,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         // Update tracking from a 'deviated' position.
         UpdatedTrackingPayload deviatedPositionPayload = createUpdateTrackingPayload(trackedJourney.id, List.of(testData.triggerLocation));
         var updateTrackingResponse = updateTracking(deviatedPositionPayload, HttpStatus.OK_200);
-        // Confirm traveler is classed as 'deviated'.
+        // Confirm traveler is deemed 'deviated'.
         assertEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
 
         // Record the number of departed notifications
@@ -276,7 +268,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         trackedJourney.locations.clear();
         trackedJourney.locations.add(reroutingPointPosition);
         reroutedItinerary = ManageTripTracking.rerouteTrip(
-            new TripTrackingData(tripAfterRerouting, trackedJourney, trackedJourney.locations)
+            new TripTrackingData(tripAfterRerouting, trackedJourney, List.of())
         );
         assertEquals(expectedReroutedItinerary.duration, reroutedItinerary.duration);
         updated = Persistence.trackedJourneys.getById(trackedJourney.id);
@@ -305,8 +297,8 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         // Check that matching itinerary time corresponds to "today" if current time is before trip end,
         // or "tomorrow" if trip has ended (assuming a recurring trip).
         assertEquals(
-            DateTimeUtils.nowAsZonedDateTime().plusDays(expectedReroutedItinerary.hasEnded() ? 1 : 0).toLocalDate(),
-            ZonedDateTime.ofInstant(resetTrip.journeyState.matchingItinerary.startTime.toInstant(), DateTimeUtils.getOtpZoneId()).toLocalDate()
+            DateTimeUtils.nowAsZonedDateTime().plusDays(expectedReroutedItinerary.hasEnded() ? 1 : 0).toLocalDate().toString(),
+            resetTrip.journeyState.targetDate
         );
 
         // Start tracking again from a random position. Traveler should be deviated.
@@ -328,7 +320,8 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         return Stream.of(
             new RerouteCase(-300, deviatedPosition, walkToVoterRegCenterItinerary, OtpTestUtils.REROUTE_PLAN_RESPONSE),
             new RerouteCase(30, deviatedPosition, walkToVoterRegCenterItinerary, OtpTestUtils.REROUTE_PLAN_RESPONSE),
-            new RerouteCase(3000, deviatedPosition, walkToVoterRegCenterItinerary, OtpTestUtils.REROUTE_PLAN_RESPONSE)
+            new RerouteCase(3000, deviatedPosition, walkToVoterRegCenterItinerary, OtpTestUtils.REROUTE_PLAN_RESPONSE),
+            new RerouteCase(30, deviatedPosition, walkFromBus40, OtpTestUtils.REROUTE_PLAN_RESPONSE)
         );
     }
 
