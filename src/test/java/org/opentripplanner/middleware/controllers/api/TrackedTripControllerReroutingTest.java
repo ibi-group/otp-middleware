@@ -40,7 +40,6 @@ import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.triptracker.TripTrackingData;
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
-import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -83,7 +82,6 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
     private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
     private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
     private static final String UPDATE_TRACKING_TRIP_PATH = ROUTE_PATH + "updatetracking";
-    private static final String END_TRACKING_TRIP_PATH = ROUTE_PATH + "endtracking";
     private static HashMap<String, String> headers;
 
     private MonitoredTrip monitoredTrip;
@@ -179,8 +177,9 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         rerouteMonitoredTrip.observers = soloOtpUser.relatedUsers;
         rerouteMonitoredTrip.leadTimeInMinutes = 10;
         rerouteMonitoredTrip.itineraryExistence = new ItineraryExistence();
+        // Set the itinerary existence to the same day as the rerouted itinerary
         rerouteMonitoredTrip.itineraryExistence.setResultForDayOfWeek(
-            new ItineraryExistence.ItineraryExistenceResult(),// Set the itinerary existence to the same day as the rerouted itinerary
+            new ItineraryExistence.ItineraryExistenceResult(),
             reroutedStartTime.getDayOfWeek()
         );
         rerouteMonitoredTrip.updateAllDaysOfWeek(true);
@@ -387,18 +386,11 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         return journey;
     }
 
-    private void endTracking(String journeyId) throws JsonProcessingException {
-        endTracking(END_TRACKING_TRIP_PATH, JsonUtils.toJson(TrackedTripUtils.createEndTrackingPayload(journeyId)));
+    private static void endTracking(String journeyId) throws JsonProcessingException {
+        TrackedTripUtils.endTracking(journeyId, headers);
     }
 
-    private static void endTracking(String path, String payload) throws JsonProcessingException {
-        var response = makeRequest(path, payload, headers, HttpMethod.POST);
-        var endTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, EndTrackingResponse.class);
-        assertEquals(TripStatus.ENDED.name(), endTrackingResponse.tripStatus);
-        assertEquals(HttpStatus.OK_200, response.status);
-    }
-
-    private TrackingResponse updateTracking(UpdatedTrackingPayload payload, int expectedStatus) throws JsonProcessingException {
+    private static TrackingResponse updateTracking(UpdatedTrackingPayload payload, int expectedStatus) throws JsonProcessingException {
         var response = makeRequest(UPDATE_TRACKING_TRIP_PATH, JsonUtils.toJson(payload), headers, HttpMethod.POST);
         assertEquals(expectedStatus, response.status);
         return JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);

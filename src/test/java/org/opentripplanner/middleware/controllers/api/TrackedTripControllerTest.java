@@ -40,7 +40,6 @@ import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayloa
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.TrackPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
-import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -70,7 +69,6 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeade
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversalTest.WALK_AND_TRANSIT_LEG_OVERLAP_POINT;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
-import static org.opentripplanner.middleware.utils.TrackedTripUtils.createEndTrackingPayload;
 import static org.opentripplanner.middleware.utils.TrackedTripUtils.getDateAndConvertToSeconds;
 
 class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
@@ -88,7 +86,6 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
     private static final String UPDATE_TRACKING_TRIP_PATH = ROUTE_PATH + "updatetracking";
     private static final String TRACK_TRIP_PATH = ROUTE_PATH + "track";
-    private static final String END_TRACKING_TRIP_PATH = ROUTE_PATH + "endtracking";
     private static final String FORCIBLY_END_TRACKING_TRIP_PATH = ROUTE_PATH + "forciblyendtracking";
     private static HashMap<String, String> headers;
 
@@ -619,9 +616,10 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         var startTrackingResponse = startTracking(createStartTrackingPayload(), HttpStatus.OK_200);
         trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
 
-        endTracking(
+        TrackedTripUtils.endTracking(
             FORCIBLY_END_TRACKING_TRIP_PATH,
-            JsonUtils.toJson(createForceEndTrackingPayload(monitoredTrip.id))
+            JsonUtils.toJson(createForceEndTrackingPayload(monitoredTrip.id)),
+            headers
         );
 
         // Check that the TrackedJourney Mongo record has been updated.
@@ -692,15 +690,10 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     private TrackPayload createTrackPayload(Coordinates coords) {
-        return createTrackPayload(monitoredTrip, coords);
-    }
-
-    private TrackPayload createTrackPayload(MonitoredTrip trip, Coordinates coords) {
-        return createTrackPayload(trip, coords, getDateAndConvertToSeconds());
-    }
-
-    private TrackPayload createTrackPayload(MonitoredTrip trip, Coordinates coords, Date date) {
-        return createTrackPayload(trip, List.of(new TrackingLocation(date, coords.lat, coords.lon)));
+        return createTrackPayload(
+            monitoredTrip,
+            List.of(new TrackingLocation(getDateAndConvertToSeconds(), coords.lat, coords.lon))
+        );
     }
 
     private TrackPayload createTrackPayload(MonitoredTrip trip, Coordinates coords, int speed, Date date) {
@@ -720,14 +713,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     private void endTracking(String journeyId) throws JsonProcessingException {
-        endTracking(END_TRACKING_TRIP_PATH, JsonUtils.toJson(createEndTrackingPayload(journeyId)));
-    }
-
-    private static void endTracking(String path, String payload) throws JsonProcessingException {
-        var response = makeRequest(path, payload, headers, HttpMethod.POST);
-        var endTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, EndTrackingResponse.class);
-        assertEquals(TripStatus.ENDED.name(), endTrackingResponse.tripStatus);
-        assertEquals(HttpStatus.OK_200, response.status);
+        TrackedTripUtils.endTracking(journeyId, headers);
     }
 
     private TrackingResponse updateTracking(UpdatedTrackingPayload payload, int expectedStatus) throws JsonProcessingException {
