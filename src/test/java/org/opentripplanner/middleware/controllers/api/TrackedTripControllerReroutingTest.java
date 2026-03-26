@@ -38,7 +38,6 @@ import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.triptracker.TripTrackingData;
-import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
@@ -46,13 +45,13 @@ import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.TrackedTripUtils;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Supplier;
@@ -208,7 +207,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         TrackedJourney journey1 = startTracking(startTrackingPayload);
 
         // Update tracking from a 'deviated' position.
-        UpdatedTrackingPayload deviatedPositionPayload = createUpdateTrackingPayload(journey1.id, List.of(testData.triggerLocation));
+        UpdatedTrackingPayload deviatedPositionPayload = TrackedTripUtils.createUpdateTrackingPayload(journey1.id, List.of(testData.triggerLocation));
         var updateTrackingResponse = updateTracking(deviatedPositionPayload, HttpStatus.OK_200);
         // Confirm traveler is deemed 'deviated'.
         assertEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
@@ -273,7 +272,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
 
         // Update tracking from start of the new rerouted position.
         updateTrackingResponse = updateTracking(
-            createUpdateTrackingPayload(journey1.id, List.of(reroutingPointPosition)),
+            TrackedTripUtils.createUpdateTrackingPayload(journey1.id, List.of(reroutingPointPosition)),
             HttpStatus.OK_200
         );
         // Confirm traveler is still not 'deviated'.
@@ -298,13 +297,13 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         );
 
         // Start tracking again from a random position. Traveler should be deviated.
-        TrackedJourney journey2 = startTracking(createStartTrackingPayload(monitoredTrip.id));
+        TrackedJourney journey2 = startTracking(TrackedTripUtils.createStartTrackingPayload(monitoredTrip.id));
 
         // Note: Departed (and other notifications) are not being cleared when restarting live tracking.
         assertEquals(1, pollDepartedNotificationCount(rerouteMonitoredTrip));
 
         updateTrackingResponse = updateTracking(
-            createUpdateTrackingPayload(journey2.id, List.of(reroutingPointPosition)),
+            TrackedTripUtils.createUpdateTrackingPayload(journey2.id, List.of(reroutingPointPosition)),
             HttpStatus.OK_200
         );
         assertEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
@@ -378,34 +377,6 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         assertEquals(fromCoords.getCoordinates(), params.fromPlace);
     }
 
-    private StartTrackingPayload createStartTrackingPayload(String monitorTripId) {
-        var payload = new StartTrackingPayload();
-        payload.tripId = monitorTripId;
-        payload.location = new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, getDateAndConvertToSeconds());
-        return payload;
-    }
-
-    private UpdatedTrackingPayload createUpdateTrackingPayload(String journeyId, List<TrackingLocation> locations) {
-        var payload = new UpdatedTrackingPayload();
-        payload.journeyId = journeyId;
-        payload.locations = locations;
-        return payload;
-    }
-
-    private EndTrackingPayload createEndTrackingPayload(String journeyId) {
-        var payload = new EndTrackingPayload();
-        payload.journeyId = journeyId;
-        return payload;
-    }
-
-    /**
-     * The mobile app sends timestamps in seconds which is then converted into milliseconds in {@link TripTrackingData}.
-     * To represent this in testing, provide the time in seconds from epoch.
-     */
-    private static Date getDateAndConvertToSeconds() {
-        return new Date(new Date().getTime() / 1000);
-    }
-
     private TrackedJourney startTracking(StartTrackingPayload payload) throws JsonProcessingException {
         var response = makeRequest(START_TRACKING_TRIP_PATH, JsonUtils.toJson(payload), headers, HttpMethod.POST);
         assertEquals(HttpStatus.OK_200, response.status);
@@ -417,7 +388,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
     }
 
     private void endTracking(String journeyId) throws JsonProcessingException {
-        endTracking(END_TRACKING_TRIP_PATH, JsonUtils.toJson(createEndTrackingPayload(journeyId)));
+        endTracking(END_TRACKING_TRIP_PATH, JsonUtils.toJson(TrackedTripUtils.createEndTrackingPayload(journeyId)));
     }
 
     private static void endTracking(String path, String payload) throws JsonProcessingException {

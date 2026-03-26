@@ -32,12 +32,10 @@ import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.triptracker.TraceData;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TripStatus;
-import org.opentripplanner.middleware.triptracker.TripTrackingData;
 import org.opentripplanner.middleware.triptracker.instruction.ContinueInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction;
-import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.TrackPayload;
@@ -47,6 +45,7 @@ import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.TrackedTripUtils;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -71,6 +70,8 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeade
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversalTest.WALK_AND_TRANSIT_LEG_OVERLAP_POINT;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
+import static org.opentripplanner.middleware.utils.TrackedTripUtils.createEndTrackingPayload;
+import static org.opentripplanner.middleware.utils.TrackedTripUtils.getDateAndConvertToSeconds;
 
 class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
@@ -633,7 +634,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     void canNotUseUnassociatedTrip() throws Exception {
         assumeTrue(IS_END_TO_END);
         var response = startTracking(
-            createStartTrackingPayload("unassociated-trip-id"),
+            TrackedTripUtils.createStartTrackingPayload("unassociated-trip-id"),
             HttpStatus.FORBIDDEN_403
         );
         assertEquals("Monitored trip is not associated with this user!", response.message);
@@ -668,14 +669,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     private StartTrackingPayload createStartTrackingPayload() {
-        return createStartTrackingPayload(monitoredTrip.id);
-    }
-
-    private StartTrackingPayload createStartTrackingPayload(String monitorTripId) {
-        var payload = new StartTrackingPayload();
-        payload.tripId = monitorTripId;
-        payload.location = new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, getDateAndConvertToSeconds());
-        return payload;
+        return TrackedTripUtils.createStartTrackingPayload(monitoredTrip.id);
     }
 
     private static List<TrackingLocation> createTrackingLocations() {
@@ -687,14 +681,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     private UpdatedTrackingPayload createUpdateTrackingPayload(String journeyId) {
-        return createUpdateTrackingPayload(journeyId, createTrackingLocations());
-    }
-
-    private UpdatedTrackingPayload createUpdateTrackingPayload(String journeyId, List<TrackingLocation> locations) {
-        var payload = new UpdatedTrackingPayload();
-        payload.journeyId = journeyId;
-        payload.locations = locations;
-        return payload;
+        return TrackedTripUtils.createUpdateTrackingPayload(journeyId, createTrackingLocations());
     }
 
     private TrackPayload createTrackPayload(MonitoredTrip trip, List<TrackingLocation> locations) {
@@ -720,24 +707,10 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         return createTrackPayload(trip, List.of(new TrackingLocation(0, coords.lat, coords.lon, speed, date)));
     }
 
-    private EndTrackingPayload createEndTrackingPayload(String journeyId) {
-        var payload = new EndTrackingPayload();
-        payload.journeyId = journeyId;
-        return payload;
-    }
-
     private ForceEndTrackingPayload createForceEndTrackingPayload(String monitorTripId) {
         var payload = new ForceEndTrackingPayload();
         payload.tripId = monitorTripId;
         return payload;
-    }
-
-    /**
-     * The mobile app sends timestamps in seconds which is then converted into milliseconds in {@link TripTrackingData}.
-     * To represent this in testing, provide the time in seconds from epoch.
-     */
-    private static Date getDateAndConvertToSeconds() {
-        return new Date(new Date().getTime() / 1000);
     }
 
     private TrackingResponse startTracking(StartTrackingPayload payload, int expectedStatus) throws JsonProcessingException {
