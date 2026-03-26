@@ -277,6 +277,16 @@ public class CheckMonitoredTrip implements Runnable {
     }
 
     /**
+     * @return The last rerouting location, if any, of the most recent journey for this trip, if any, or null.
+     */
+    private String ongoingJourneyReroutingLocation() {
+        TrackedJourney trackedJourney = getOngoingTrackedJourney();
+        return trackedJourney != null
+            ? trackedJourney.getLastReroutingLocation()
+            : null;
+    }
+
+    /**
      * Process leg transition notifications by getting all qualifying users and enqueuing relevant notifications. The
      * matching itinerary is required when updating the monitored trip. There is no requirement to match the itinerary
      * to that returned from OTP, so the existing trip itinerary is used and therefore preserved.
@@ -466,12 +476,9 @@ public class CheckMonitoredTrip implements Runnable {
      * attributed to the trip.
      */
     public void checkForRerouting(OtpGraphQLVariables params) {
-        TrackedJourney trackedJourney = getOngoingTrackedJourney();
-        if (trackedJourney != null) {
-            String reroutingLocation = trackedJourney.getLastReroutingLocation();
-            if (reroutingLocation != null) {
-                params.fromPlace = reroutingLocation;
-            }
+        String reroutingLocation = ongoingJourneyReroutingLocation();
+        if (reroutingLocation != null) {
+            params.fromPlace = reroutingLocation;
         }
     }
 
