@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.auth0.exception.Auth0Exception;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -13,20 +12,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.MonitoredTrip;
-import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.persistence.Persistence;
-import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
-import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.triptracker.TraceData;
@@ -44,6 +39,7 @@ import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
+import org.opentripplanner.middleware.utils.TrackedTripTestContext;
 import org.opentripplanner.middleware.utils.TrackedTripUtils;
 
 import java.time.Duration;
@@ -51,7 +47,6 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
@@ -64,8 +59,6 @@ import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefault
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.models.TrackedJourney.FORCIBLY_TERMINATED;
 import static org.opentripplanner.middleware.models.TrackedJourney.TERMINATED_BY_USER;
-import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
-import static org.opentripplanner.middleware.testutils.ApiTestUtils.getMockHeaders;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversalTest.WALK_AND_TRANSIT_LEG_OVERLAP_POINT;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
@@ -73,7 +66,7 @@ import static org.opentripplanner.middleware.utils.TrackedTripUtils.getDateAndCo
 
 class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
-    private static OtpUser soloOtpUser;
+    private static TrackedTripTestContext context;
     private static TrackedJourney trackedJourney;
     private static Itinerary itinerary;
     private static Itinerary multiLegItinerary;
@@ -87,7 +80,6 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String UPDATE_TRACKING_TRIP_PATH = ROUTE_PATH + "updatetracking";
     private static final String TRACK_TRIP_PATH = ROUTE_PATH + "track";
     private static final String FORCIBLY_END_TRACKING_TRIP_PATH = ROUTE_PATH + "forciblyendtracking";
-    private static HashMap<String, String> headers;
 
     private MonitoredTrip monitoredTrip;
 
@@ -122,22 +114,12 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             Itinerary.class
         );
 
-        soloOtpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-solootpuser"));
-        try {
-            // Should use Auth0User.createNewAuth0User but this generates a random password preventing the mock headers
-            // from being able to use TEMP_AUTH0_USER_PASSWORD.
-            var auth0User = Auth0Users.createAuth0UserForEmail(soloOtpUser.email, TEMP_AUTH0_USER_PASSWORD);
-            soloOtpUser.auth0UserId = auth0User.getId();
-            Persistence.otpUsers.replace(soloOtpUser.id, soloOtpUser);
-            headers = getMockHeaders(soloOtpUser);
-        } catch (Auth0Exception e) {
-            throw new RuntimeException(e);
-        }
+        context = new TrackedTripTestContext();
     }
 
     private static MonitoredTrip createMonitoredTrip(Itinerary itin) {
         MonitoredTrip trip = new MonitoredTrip();
-        trip.userId = soloOtpUser.id;
+        trip.userId = context.otpUser.id;
         trip.itinerary = itin;
         // Original itinerary time should be populated.
         OtpGraphQLVariables params = new OtpGraphQLVariables();
@@ -157,8 +139,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assumeTrue(IS_END_TO_END);
         DateTimeUtils.useSystemDefaultClockAndTimezone();
         restoreDefaultAuthDisabled();
-        soloOtpUser = Persistence.otpUsers.getById(soloOtpUser.id);
-        if (soloOtpUser != null) soloOtpUser.delete(true);
+        context.tearDown();
     }
 
     @BeforeEach
@@ -245,7 +226,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         // Make two identical requests to start and update a journey. Record outcomes to see if they are same.
         TrackingResponse[] trackResponses = new TrackingResponse[2];
         for (int i = 0; i < 2; i++) {
-            var response = makeRequest(TRACK_TRIP_PATH, jsonPayload, headers, HttpMethod.POST);
+            var response = makeRequest(TRACK_TRIP_PATH, jsonPayload, context.headers, HttpMethod.POST);
             assertEquals(HttpStatus.OK_200, response.status);
 
             var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
@@ -291,7 +272,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
 
         // Make a request to start a journey.
-        var response = makeRequest(TRACK_TRIP_PATH, jsonPayload, headers, HttpMethod.POST);
+        var response = makeRequest(TRACK_TRIP_PATH, jsonPayload, context.headers, HttpMethod.POST);
 
         assertEquals(HttpStatus.OK_200, response.status);
         var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
@@ -306,7 +287,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertNotEquals(0, deviationMeters);
 
         // Second request to update a journey
-        response = makeRequest(TRACK_TRIP_PATH, jsonPayload, headers, HttpMethod.POST);
+        response = makeRequest(TRACK_TRIP_PATH, jsonPayload, context.headers, HttpMethod.POST);
 
         assertEquals(HttpStatus.OK_200, response.status);
         trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
@@ -599,7 +580,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
 
         // Make a request to start a journey.
-        var response = makeRequest(TRACK_TRIP_PATH, jsonPayload, headers, HttpMethod.POST);
+        var response = makeRequest(TRACK_TRIP_PATH, jsonPayload, context.headers, HttpMethod.POST);
 
         assertEquals(HttpStatus.OK_200, response.status);
         var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
@@ -619,7 +600,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         TrackedTripUtils.endTracking(
             FORCIBLY_END_TRACKING_TRIP_PATH,
             JsonUtils.toJson(createForceEndTrackingPayload(monitoredTrip.id)),
-            headers
+            context.headers
         );
 
         // Check that the TrackedJourney Mongo record has been updated.
@@ -707,17 +688,17 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     private TrackingResponse startTracking(StartTrackingPayload payload, int expectedStatus) throws JsonProcessingException {
-        var response = makeRequest(START_TRACKING_TRIP_PATH, JsonUtils.toJson(payload), headers, HttpMethod.POST);
+        var response = makeRequest(START_TRACKING_TRIP_PATH, JsonUtils.toJson(payload), context.headers, HttpMethod.POST);
         assertEquals(expectedStatus, response.status);
         return JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
     }
 
     private void endTracking(String journeyId) throws JsonProcessingException {
-        TrackedTripUtils.endTracking(journeyId, headers);
+        TrackedTripUtils.endTracking(journeyId, context.headers);
     }
 
     private TrackingResponse updateTracking(UpdatedTrackingPayload payload, int expectedStatus) throws JsonProcessingException {
-        var response = makeRequest(UPDATE_TRACKING_TRIP_PATH, JsonUtils.toJson(payload), headers, HttpMethod.POST);
+        var response = makeRequest(UPDATE_TRACKING_TRIP_PATH, JsonUtils.toJson(payload), context.headers, HttpMethod.POST);
         assertEquals(expectedStatus, response.status);
         return JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
     }
