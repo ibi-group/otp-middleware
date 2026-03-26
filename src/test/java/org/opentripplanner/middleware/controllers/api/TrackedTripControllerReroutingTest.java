@@ -59,6 +59,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
@@ -77,7 +78,6 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
     private static TrackedJourney trackedJourney;
     private static Itinerary itinerary;
     private static Itinerary walkToVoterRegCenterItinerary;
-    private static Itinerary arrivingOnBus40;
     private static Itinerary walkFromBus40;
 
     private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
@@ -100,10 +100,6 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         );
         walkToVoterRegCenterItinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/walk-to-voter-reg-center.json"),
-            Itinerary.class
-        );
-        arrivingOnBus40 = JsonUtils.getPOJOFromJSON(
-            CommonTestUtils.getTestResourceAsString("controllers/api/bus-40-to-dest-away-from-sidewalk.json"),
             Itinerary.class
         );
         walkFromBus40 = JsonUtils.getPOJOFromJSON(
@@ -235,6 +231,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         assertEquals(trackedJourney.longestConsecutiveDeviatedPoints, updated.longestConsecutiveDeviatedPoints);
 
         MonitoredTrip trip = Persistence.monitoredTrips.getById(rerouteMonitoredTrip.id);
+        assertEquals(expectedReroutedItinerary.duration, trip.reroutedItinerary.duration);
         assertEquals(expectedReroutedItinerary.duration, trip.journeyState.matchingItinerary.duration);
         assertEquals(expectedReroutedItinerary.legs.size(), trip.journeyState.matchingItinerary.legs.size());
 
@@ -293,6 +290,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
             rerouteMonitoredTrip.itinerary.legs.get(0).from.toCoordinates(),
             resetTrip.journeyState.matchingItinerary.legs.get(0).from.toCoordinates()
         );
+        assertNull(resetTrip.reroutedItinerary);
 
         // Check that matching itinerary time corresponds to "today" if current time is before trip end,
         // or "tomorrow" if trip has ended (assuming a recurring trip).

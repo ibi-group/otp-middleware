@@ -319,7 +319,7 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private Itinerary getCandidateItinerary() {
         Itinerary referenceItinerary = ongoingJourneyReroutingLocation() != null
-            ? trip.journeyState.matchingItinerary
+            ? trip.reroutedItinerary
             : trip.itinerary;
         ItineraryChecker checker = new ItineraryChecker(referenceItinerary, legFinder, targetZonedDateTime.toLocalDate());
         ItineraryCheckStatus itineraryCheckStatus = checker.checkLegs();

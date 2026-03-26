@@ -368,6 +368,7 @@ public class ManageTripTracking {
     private static Itinerary updateTripWithNewItinerary(TrackedJourney trackedJourney) {
         Itinerary itinerary = getItineraryFromOtpResponse(trackedJourney);
         if (itinerary != null) {
+            trackedJourney.trip.reroutedItinerary = itinerary;
             trackedJourney.trip.journeyState.matchingItinerary = itinerary;
             Persistence.monitoredTrips.replace(trackedJourney.trip.id, trackedJourney.trip);
             registerRerouting(trackedJourney);
@@ -449,7 +450,8 @@ public class ManageTripTracking {
     /**
      * If rerouting occurred, then the matching itinerary changed with a starting point different from the
      * starting location in the original itinerary.
-     * In that case, reset the matching itinerary, so that trip monitoring/live tracking uses the original routing.
+     * In that case, reset the matching itinerary, so that trip monitoring/live tracking uses the original routing,
+     * and set the reroutedItinerary to null.
      */
     private static void resetMatchingItineraryIfNeeded(TrackedJourney trackedJourney) {
         if (trackedJourney.getLastReroutingLocation() != null) {
@@ -457,6 +459,7 @@ public class ManageTripTracking {
                 MonitoredTrip trip = trackedJourney.trip;
 
                 trip.journeyState.matchingItinerary = trip.itinerary.clone();
+                trip.reroutedItinerary = null;
 
                 ZonedDateTime targetZonedDateTime = trip.computeTargetZonedDateTime(trip.journeyState.matchingItinerary);
                 trip.journeyState.matchingItinerary.offsetTimes(targetZonedDateTime);

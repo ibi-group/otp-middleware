@@ -170,6 +170,9 @@ public class MonitoredTrip extends Model {
      */
     public int attemptsToGetMatchingItinerary;
 
+    /** Serves as a temporary reference for itinerary matching during rerouting, null otherwise. */
+    public Itinerary reroutedItinerary;
+
     public MonitoredTrip() {
     }
 
