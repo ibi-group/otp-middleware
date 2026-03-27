@@ -20,9 +20,10 @@ import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
@@ -41,7 +42,7 @@ public class TrackedTripTestContext {
 
     public final OtpUser otpUser;
     public final Map<String, String> headers;
-    private final List<TrackedJourney> createdJourneys = new ArrayList<>();
+    private final Set<TrackedJourney> createdJourneys = new HashSet<>();
 
     public TrackedTripTestContext() throws Exception {
         otpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-solootpuser"));
@@ -86,7 +87,11 @@ public class TrackedTripTestContext {
     public TrackingResponse track(TrackPayload payload, int expectedStatus) throws JsonProcessingException {
         var response = makeRequest(TRACK_TRIP_PATH, JsonUtils.toJson(payload), headers, HttpMethod.POST);
         assertEquals(expectedStatus, response.status);
-        return JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+
+        var trackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        TrackedJourney journey = Persistence.trackedJourneys.getById(trackingResponse.journeyId);
+        if (journey != null) createdJourneys.add(journey);
+        return trackingResponse;
     }
 
     public TrackingResponse updateTracking(String journeyId, List<TrackingLocation> locations, int expectedStatus) throws JsonProcessingException {
