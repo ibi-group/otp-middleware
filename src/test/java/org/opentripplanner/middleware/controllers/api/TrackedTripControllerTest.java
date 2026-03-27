@@ -57,7 +57,6 @@ import static org.opentripplanner.middleware.models.TrackedJourney.TERMINATED_BY
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversalTest.WALK_AND_TRANSIT_LEG_OVERLAP_POINT;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
-import static org.opentripplanner.middleware.utils.TrackedTripUtils.getDateAndConvertToSeconds;
 
 class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
@@ -202,7 +201,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         Leg firstLeg = itinerary.legs.get(0);
         Coordinates coords = new Coordinates(firstLeg.steps.get(0));
-        String jsonPayload = JsonUtils.toJson(createTrackPayload(coords));
+        String jsonPayload = JsonUtils.toJson(createTrackPayload(monitoredTrip, coords, 0, Instant.now()));
 
         // Make two identical requests to start and update a journey. Record outcomes to see if they are same.
         TrackingResponse[] trackResponses = new TrackingResponse[2];
@@ -243,8 +242,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 monitoredTrip,
                 traceData.position,
                 traceData.speed,
-                // The timestamp has to be in seconds, hence the division by 1000.
-                Date.from(Instant.ofEpochMilli(instant.toEpochMilli() / 1000))
+                instant
             )
         );
 
@@ -551,8 +549,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
                 monitoredTrip,
                 createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING),
                 0,
-                // The timestamp has to be in seconds, hence the division by 1000.
-                Date.from(Instant.ofEpochMilli(instant.toEpochMilli() / 1000))
+                instant
             )
         );
 
@@ -610,28 +607,21 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     private static List<TrackingLocation> createTrackingLocations() {
+        // The date stored in tracking location has to be from a timestamp expressed in seconds.
+        Date dateAsSeconds = DateTimeUtils.dateAsSeconds();
         return List.of(
-            new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, getDateAndConvertToSeconds()),
-            new TrackingLocation(90, 28.5398938204469, -81.3772773742676, 30, getDateAndConvertToSeconds()),
-            new TrackingLocation(90, 29.5398938204469, -80.3772773742676, 31, getDateAndConvertToSeconds())
+            new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, dateAsSeconds),
+            new TrackingLocation(90, 28.5398938204469, -81.3772773742676, 30, dateAsSeconds),
+            new TrackingLocation(90, 29.5398938204469, -80.3772773742676, 31, dateAsSeconds)
         );
     }
 
-    private TrackPayload createTrackPayload(MonitoredTrip trip, List<TrackingLocation> locations) {
+    private TrackPayload createTrackPayload(MonitoredTrip trip, Coordinates coords, int speed, Instant instant) {
+        // The date stored in tracking location has to be from a timestamp expressed in seconds.
+        Date dateAsSeconds = new Date(instant.getEpochSecond());
         var payload = new TrackPayload();
         payload.tripId = trip.id;
-        payload.locations = locations;
+        payload.locations = List.of(new TrackingLocation(0, coords.lat, coords.lon, speed, dateAsSeconds));
         return payload;
-    }
-
-    private TrackPayload createTrackPayload(Coordinates coords) {
-        return createTrackPayload(
-            monitoredTrip,
-            List.of(new TrackingLocation(getDateAndConvertToSeconds(), coords.lat, coords.lon))
-        );
-    }
-
-    private TrackPayload createTrackPayload(MonitoredTrip trip, Coordinates coords, int speed, Date date) {
-        return createTrackPayload(trip, List.of(new TrackingLocation(0, coords.lat, coords.lon, speed, date)));
     }
 }

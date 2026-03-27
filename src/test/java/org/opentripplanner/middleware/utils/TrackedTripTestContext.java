@@ -63,7 +63,7 @@ public class TrackedTripTestContext {
     public TrackingResponse startTracking(String tripId, int expectedStatus) throws JsonProcessingException {
         return startTracking(
             tripId,
-            new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, TrackedTripUtils.getDateAndConvertToSeconds()),
+            new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, DateTimeUtils.dateAsSeconds()),
             expectedStatus
         );
     }
