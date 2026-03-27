@@ -62,7 +62,6 @@ import static org.opentripplanner.middleware.utils.TrackedTripUtils.getDateAndCo
 class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     private static TrackedTripTestContext context;
-    private static TrackedJourney trackedJourney;
     private static Itinerary itinerary;
     private static Itinerary multiLegItinerary;
     private static Itinerary walkToBus20;
@@ -143,11 +142,6 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     @AfterEach
     void tearDownAfterTest() {
         assumeTrue(IS_END_TO_END);
-        if (trackedJourney != null) {
-            trackedJourney.delete();
-            trackedJourney = null;
-        }
-
         monitoredTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
         if (monitoredTrip != null) monitoredTrip.delete();
     }
@@ -161,7 +155,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(TripStatus.DEVIATED.name(), startTrackingResponse.tripStatus);
 
         String journeyId = startTrackingResponse.journeyId;
-        trackedJourney = Persistence.trackedJourneys.getById(journeyId);
+        TrackedJourney trackedJourney = Persistence.trackedJourneys.getById(journeyId);
         // A single location is submitted when starting tracking.
         assertEquals(1, trackedJourney.locations.size());
         assertEquals(TripStatus.DEVIATED, trackedJourney.lastLocation().tripStatus);
@@ -193,9 +187,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         // Make two identical requests to start and update a journey. The second one should fail.
         for (int i = 0; i < 2; i++) {
             var response = context.startTracking(monitoredTrip.id, i == 0 ? HttpStatus.OK_200 : HttpStatus.FORBIDDEN_403);
-            if (i == 0) {
-                trackedJourney = Persistence.trackedJourneys.getById(response.journeyId);
-            } else {
+            if (i != 0) {
                 assertEquals(
                     "A journey of this trip has already been started. End the current journey before starting another.",
                     response.message
@@ -222,10 +214,6 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             trackResponses[i] = trackResponse;
             assertNotEquals(0, trackResponse.frequencySeconds);
             assertNotNull(trackResponse.journeyId);
-
-            if (trackedJourney == null) {
-                trackedJourney = Persistence.trackedJourneys.getById(trackResponse.journeyId);
-            }
         }
 
         assertEquals(trackResponses[0].instruction, trackResponses[1].instruction);
@@ -268,9 +256,9 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(traceData.expectedInstruction, trackResponse.instruction, message);
         assertEquals(traceData.tripStatus.name(), trackResponse.tripStatus);
         assertNotNull(trackResponse.journeyId);
-        trackedJourney = Persistence.trackedJourneys.getById(trackResponse.journeyId);
 
         // Check that deviation fields get computed and recorded.
+        TrackedJourney trackedJourney = Persistence.trackedJourneys.getById(trackResponse.journeyId);
         Double deviationMeters = trackedJourney.lastLocation().deviationMeters;
         assertNotNull(deviationMeters);
         assertNotEquals(0, deviationMeters);
@@ -584,9 +572,8 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip = createMonitoredTrip(itinerary);
 
         var startTrackingResponse = context.startTracking(monitoredTrip.id, HttpStatus.OK_200);
-        trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
 
-       context.endTracking(monitoredTrip);
+        context.endTracking(monitoredTrip);
 
         // Check that the TrackedJourney Mongo record has been updated.
         TrackedJourney mongoTrackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
@@ -613,7 +600,6 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assumeTrue(IS_END_TO_END);
 
         var startTrackingResponse = context.startTracking(monitoredTrip.id, HttpStatus.OK_200);
-        trackedJourney = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         assertEquals(ManageTripTracking.TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS, startTrackingResponse.frequencySeconds);
         assertEquals(TripStatus.DEVIATED.name(), startTrackingResponse.tripStatus);
 

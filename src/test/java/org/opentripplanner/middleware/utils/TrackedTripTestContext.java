@@ -6,6 +6,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
+import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
@@ -13,27 +14,32 @@ import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
+import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
-import static org.opentripplanner.middleware.utils.TrackedTripUtils.END_TRACKING_TRIP_PATH;
-import static org.opentripplanner.middleware.utils.TrackedTripUtils.FORCIBLY_END_TRACKING_TRIP_PATH;
-import static org.opentripplanner.middleware.utils.TrackedTripUtils.START_TRACKING_TRIP_PATH;
-import static org.opentripplanner.middleware.utils.TrackedTripUtils.UPDATE_TRACKING_TRIP_PATH;
 
 /**
  * Holds ambient test data such as OTP users and related data.
  */
 public class TrackedTripTestContext {
+    public static final String ROUTE_PATH = "api/secure/monitoredtrip/";
+    public static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
+    public static final String UPDATE_TRACKING_TRIP_PATH = ROUTE_PATH + "updatetracking";
+    public static final String END_TRACKING_TRIP_PATH = ROUTE_PATH + "endtracking";
+    public static final String FORCIBLY_END_TRACKING_TRIP_PATH = ROUTE_PATH + "forciblyendtracking";
+
     public final OtpUser otpUser;
     public final Map<String, String> headers;
+    private final List<TrackedJourney> createdJourneys = new ArrayList<>();
 
     public TrackedTripTestContext() throws Exception {
         otpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-solootpuser"));
@@ -47,15 +53,26 @@ public class TrackedTripTestContext {
     }
 
     public void tearDown() {
+        createdJourneys.forEach(TrackedJourney::delete);
+        createdJourneys.clear();
+
         OtpUser fetchedUser = Persistence.otpUsers.getById(otpUser.id);
         if (fetchedUser != null) fetchedUser.delete(true);
     }
 
     public TrackingResponse startTracking(String tripId, int expectedStatus) throws JsonProcessingException {
         var payload = TrackedTripUtils.createStartTrackingPayload(tripId);
+        return startTracking(payload, expectedStatus);
+    }
+
+    public TrackingResponse startTracking(StartTrackingPayload payload, int expectedStatus) throws JsonProcessingException {
         var response = makeRequest(START_TRACKING_TRIP_PATH, JsonUtils.toJson(payload), headers, HttpMethod.POST);
         assertEquals(expectedStatus, response.status);
-        return JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+
+        var startTrackingResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        TrackedJourney journey = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
+        if (journey != null) createdJourneys.add(journey);
+        return startTrackingResponse;
     }
 
     public TrackingResponse updateTracking(String journeyId, List<TrackingLocation> locations, int expectedStatus) throws JsonProcessingException {
