@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -54,7 +53,6 @@ import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefault
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
 import static org.opentripplanner.middleware.models.TrackedJourney.FORCIBLY_TERMINATED;
 import static org.opentripplanner.middleware.models.TrackedJourney.TERMINATED_BY_USER;
-import static org.opentripplanner.middleware.testutils.ApiTestUtils.makeRequest;
 import static org.opentripplanner.middleware.triptracker.ManageLegTraversalTest.WALK_AND_TRANSIT_LEG_OVERLAP_POINT;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
@@ -67,9 +65,6 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static Itinerary walkToBus12;
     private static Itinerary arrivingOnBus40;
     private static Itinerary walkFromBus40;
-
-    private static final String ROUTE_PATH = "api/secure/monitoredtrip/";
-    private static final String TRACK_TRIP_PATH = ROUTE_PATH + "track";
 
     private MonitoredTrip monitoredTrip;
 
@@ -201,15 +196,12 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         Leg firstLeg = itinerary.legs.get(0);
         Coordinates coords = new Coordinates(firstLeg.steps.get(0));
-        String jsonPayload = JsonUtils.toJson(createTrackPayload(monitoredTrip, coords, 0, Instant.now()));
+        TrackPayload trackPayload = createTrackPayload(monitoredTrip, coords, 0, Instant.now());
 
         // Make two identical requests to start and update a journey. Record outcomes to see if they are same.
         TrackingResponse[] trackResponses = new TrackingResponse[2];
         for (int i = 0; i < 2; i++) {
-            var response = makeRequest(TRACK_TRIP_PATH, jsonPayload, context.headers, HttpMethod.POST);
-            assertEquals(HttpStatus.OK_200, response.status);
-
-            var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+            var trackResponse = context.track(trackPayload, HttpStatus.OK_200);
             trackResponses[i] = trackResponse;
             assertNotEquals(0, trackResponse.frequencySeconds);
             assertNotNull(trackResponse.journeyId);
@@ -237,39 +229,25 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             instant = traceData.instant;
         }
 
-        String jsonPayload = JsonUtils.toJson(
-            createTrackPayload(
-                monitoredTrip,
-                traceData.position,
-                traceData.speed,
-                instant
-            )
-        );
-
-        // Make a request to start a journey.
-        var response = makeRequest(TRACK_TRIP_PATH, jsonPayload, context.headers, HttpMethod.POST);
-
-        assertEquals(HttpStatus.OK_200, response.status);
-        var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
-        assertEquals(traceData.expectedInstruction, trackResponse.instruction, message);
-        assertEquals(traceData.tripStatus.name(), trackResponse.tripStatus);
-        assertNotNull(trackResponse.journeyId);
+        // First request to update a journey
+        TrackPayload trackPayload = createTrackPayload(monitoredTrip, traceData.position, traceData.speed, instant);
+        var trackResponse1 = context.track(trackPayload, HttpStatus.OK_200);
+        assertEquals(traceData.expectedInstruction, trackResponse1.instruction, message);
+        assertEquals(traceData.tripStatus.name(), trackResponse1.tripStatus);
+        assertNotNull(trackResponse1.journeyId);
 
         // Check that deviation fields get computed and recorded.
-        TrackedJourney trackedJourney = Persistence.trackedJourneys.getById(trackResponse.journeyId);
+        TrackedJourney trackedJourney = Persistence.trackedJourneys.getById(trackResponse1.journeyId);
         Double deviationMeters = trackedJourney.lastLocation().deviationMeters;
         assertNotNull(deviationMeters);
         assertNotEquals(0, deviationMeters);
 
         // Second request to update a journey
-        response = makeRequest(TRACK_TRIP_PATH, jsonPayload, context.headers, HttpMethod.POST);
-
-        assertEquals(HttpStatus.OK_200, response.status);
-        trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
-        assertNotEquals(0, trackResponse.frequencySeconds);
-        assertEquals(traceData.expectedInstruction, trackResponse.instruction, message);
-        assertNotNull(trackResponse.journeyId);
-        assertEquals(trackedJourney.id, trackResponse.journeyId);
+        var trackResponse2 = context.track(trackPayload, HttpStatus.OK_200);
+        assertNotEquals(0, trackResponse2.frequencySeconds);
+        assertEquals(traceData.expectedInstruction, trackResponse2.instruction, message);
+        assertNotNull(trackResponse2.journeyId);
+        assertEquals(trackedJourney.id, trackResponse2.journeyId);
     }
 
     private static WaitForTransitInstruction waitForBusInstruction(int waitMinutes) {
@@ -544,20 +522,13 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         Leg multiItinFirstLeg = multiLegItinerary.legs.get(0);
         Coordinates multiItinFirstLegDestCoords = new Coordinates(multiItinFirstLeg.to);
         Instant instant = monitoredTrip.itinerary.startTime.toInstant();
-        String jsonPayload = JsonUtils.toJson(
-            createTrackPayload(
-                monitoredTrip,
-                createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING),
-                0,
-                instant
-            )
+        TrackPayload trackPayload = createTrackPayload(
+            monitoredTrip,
+            createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING),
+            0,
+            instant
         );
-
-        // Make a request to start a journey.
-        var response = makeRequest(TRACK_TRIP_PATH, jsonPayload, context.headers, HttpMethod.POST);
-
-        assertEquals(HttpStatus.OK_200, response.status);
-        var trackResponse = JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
+        var trackResponse = context.track(trackPayload, HttpStatus.OK_200);
         assertEquals("Unable to monitor trip.", trackResponse.instruction, "Live tracking is not possible if no matching itinerary.");
         assertEquals(TripStatus.NO_ITINERARY.name(), trackResponse.tripStatus);
     }

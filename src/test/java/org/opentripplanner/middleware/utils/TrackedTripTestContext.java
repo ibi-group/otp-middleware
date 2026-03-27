@@ -15,6 +15,7 @@ import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.ForceEndTrackingPayload;
 import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
+import org.opentripplanner.middleware.triptracker.payload.TrackPayload;
 import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload;
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
@@ -34,6 +35,7 @@ public class TrackedTripTestContext {
     public static final String ROUTE_PATH = "api/secure/monitoredtrip/";
     public static final String START_TRACKING_TRIP_PATH = ROUTE_PATH + "starttracking";
     public static final String UPDATE_TRACKING_TRIP_PATH = ROUTE_PATH + "updatetracking";
+    public static final String TRACK_TRIP_PATH = ROUTE_PATH + "track";
     public static final String END_TRACKING_TRIP_PATH = ROUTE_PATH + "endtracking";
     public static final String FORCIBLY_END_TRACKING_TRIP_PATH = ROUTE_PATH + "forciblyendtracking";
 
@@ -79,6 +81,12 @@ public class TrackedTripTestContext {
         TrackedJourney journey = Persistence.trackedJourneys.getById(startTrackingResponse.journeyId);
         if (journey != null) createdJourneys.add(journey);
         return startTrackingResponse;
+    }
+
+    public TrackingResponse track(TrackPayload payload, int expectedStatus) throws JsonProcessingException {
+        var response = makeRequest(TRACK_TRIP_PATH, JsonUtils.toJson(payload), headers, HttpMethod.POST);
+        assertEquals(expectedStatus, response.status);
+        return JsonUtils.getPOJOFromJSON(response.responseBody, TrackingResponse.class);
     }
 
     public TrackingResponse updateTracking(String journeyId, List<TrackingLocation> locations, int expectedStatus) throws JsonProcessingException {
