@@ -20,6 +20,8 @@ import org.opentripplanner.middleware.triptracker.payload.UpdatedTrackingPayload
 import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -64,11 +66,11 @@ public class TrackedTripTestContext {
     }
 
     public TrackingResponse startTracking(String tripId, int expectedStatus) throws JsonProcessingException {
-        return startTracking(
-            tripId,
-            new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, DateTimeUtils.dateAsSeconds()),
-            expectedStatus
-        );
+        return startTracking(tripId, makeDefaultLocation(), expectedStatus);
+    }
+
+    public static TrackingLocation makeDefaultLocation() {
+        return new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, DateTimeUtils.dateAsSeconds());
     }
 
     public TrackingResponse startTracking(String tripId, TrackingLocation location, int expectedStatus) throws JsonProcessingException {
@@ -84,7 +86,17 @@ public class TrackedTripTestContext {
         return startTrackingResponse;
     }
 
-    public TrackingResponse track(TrackPayload payload, int expectedStatus) throws JsonProcessingException {
+    public TrackingResponse track(String tripId, Coordinates coords, int expectedStatus) throws JsonProcessingException {
+        return track(tripId, coords, 0, Instant.now(), expectedStatus);
+    }
+
+    public TrackingResponse track(String tripId, Coordinates coords, int speed, Instant instant, int expectedStatus) throws JsonProcessingException {
+        // The date stored in tracking location has to be from a timestamp expressed in seconds.
+        Date dateAsSeconds = new Date(instant.getEpochSecond());
+        var payload = new TrackPayload();
+        payload.tripId = tripId;
+        payload.locations = List.of(new TrackingLocation(0, coords.lat, coords.lon, speed, dateAsSeconds));
+
         var response = makeRequest(TRACK_TRIP_PATH, JsonUtils.toJson(payload), headers, HttpMethod.POST);
         assertEquals(expectedStatus, response.status);
 

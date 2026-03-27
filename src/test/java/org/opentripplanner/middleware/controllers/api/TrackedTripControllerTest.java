@@ -29,7 +29,6 @@ import org.opentripplanner.middleware.triptracker.instruction.ContinueInstructio
 import org.opentripplanner.middleware.triptracker.instruction.DeviatedInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.OnTrackInstruction;
 import org.opentripplanner.middleware.triptracker.instruction.WaitForTransitInstruction;
-import org.opentripplanner.middleware.triptracker.payload.TrackPayload;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -196,12 +195,11 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         Leg firstLeg = itinerary.legs.get(0);
         Coordinates coords = new Coordinates(firstLeg.steps.get(0));
-        TrackPayload trackPayload = createTrackPayload(monitoredTrip, coords, 0, Instant.now());
 
         // Make two identical requests to start and update a journey. Record outcomes to see if they are same.
         TrackingResponse[] trackResponses = new TrackingResponse[2];
         for (int i = 0; i < 2; i++) {
-            var trackResponse = context.track(trackPayload, HttpStatus.OK_200);
+            var trackResponse = context.track(monitoredTrip.id, coords, HttpStatus.OK_200);
             trackResponses[i] = trackResponse;
             assertNotEquals(0, trackResponse.frequencySeconds);
             assertNotNull(trackResponse.journeyId);
@@ -230,8 +228,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         }
 
         // First request to update a journey
-        TrackPayload trackPayload = createTrackPayload(monitoredTrip, traceData.position, traceData.speed, instant);
-        var trackResponse1 = context.track(trackPayload, HttpStatus.OK_200);
+        var trackResponse1 = context.track(monitoredTrip.id, traceData.position, traceData.speed, instant, HttpStatus.OK_200);
         assertEquals(traceData.expectedInstruction, trackResponse1.instruction, message);
         assertEquals(traceData.tripStatus.name(), trackResponse1.tripStatus);
         assertNotNull(trackResponse1.journeyId);
@@ -243,7 +240,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertNotEquals(0, deviationMeters);
 
         // Second request to update a journey
-        var trackResponse2 = context.track(trackPayload, HttpStatus.OK_200);
+        var trackResponse2 = context.track(monitoredTrip.id, traceData.position, traceData.speed, instant, HttpStatus.OK_200);
         assertNotEquals(0, trackResponse2.frequencySeconds);
         assertEquals(traceData.expectedInstruction, trackResponse2.instruction, message);
         assertNotNull(trackResponse2.journeyId);
@@ -522,13 +519,13 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         Leg multiItinFirstLeg = multiLegItinerary.legs.get(0);
         Coordinates multiItinFirstLegDestCoords = new Coordinates(multiItinFirstLeg.to);
         Instant instant = monitoredTrip.itinerary.startTime.toInstant();
-        TrackPayload trackPayload = createTrackPayload(
-            monitoredTrip,
+        var trackResponse = context.track(
+            monitoredTrip.id,
             createPoint(multiItinFirstLegDestCoords, 7, WEST_BEARING),
             0,
-            instant
+            instant,
+            HttpStatus.OK_200
         );
-        var trackResponse = context.track(trackPayload, HttpStatus.OK_200);
         assertEquals("Unable to monitor trip.", trackResponse.instruction, "Live tracking is not possible if no matching itinerary.");
         assertEquals(TripStatus.NO_ITINERARY.name(), trackResponse.tripStatus);
     }
@@ -585,14 +582,5 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
             new TrackingLocation(90, 28.5398938204469, -81.3772773742676, 30, dateAsSeconds),
             new TrackingLocation(90, 29.5398938204469, -80.3772773742676, 31, dateAsSeconds)
         );
-    }
-
-    private TrackPayload createTrackPayload(MonitoredTrip trip, Coordinates coords, int speed, Instant instant) {
-        // The date stored in tracking location has to be from a timestamp expressed in seconds.
-        Date dateAsSeconds = new Date(instant.getEpochSecond());
-        var payload = new TrackPayload();
-        payload.tripId = trip.id;
-        payload.locations = List.of(new TrackingLocation(0, coords.lat, coords.lon, speed, dateAsSeconds));
-        return payload;
     }
 }

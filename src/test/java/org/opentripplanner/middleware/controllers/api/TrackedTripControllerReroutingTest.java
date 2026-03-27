@@ -169,15 +169,11 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
 
         // Start tracking.
         Step firstStep = testData.originalItinerary.legs.get(0).steps.get(0);
-        TrackingResponse journey1response = context.startTracking(
-            rerouteMonitoredTrip.id,
-            new TrackingLocation(Instant.now(), firstStep.lat, firstStep.lon),
-            HttpStatus.OK_200
-        );
+        TrackingResponse journey1response = context.track(rerouteMonitoredTrip.id, firstStep.toCoordinates(), HttpStatus.OK_200);
         String journey1Id = journey1response.journeyId;
 
         // Update tracking from a 'deviated' position.
-        var updateTrackingResponse = context.updateTracking(journey1Id, List.of(testData.triggerLocation), HttpStatus.OK_200);
+        var updateTrackingResponse = context.track(rerouteMonitoredTrip.id, testData.triggerLocation, HttpStatus.OK_200);
         // Confirm traveler is deemed 'deviated'.
         assertEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
 
@@ -202,7 +198,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         assertEquals(expectedReroutedItinerary.legs.size(), trip.journeyState.matchingItinerary.legs.size());
 
         // Update tracking from start of rerouted position.
-        updateTrackingResponse = context.updateTracking(journey1Id, List.of(testData.triggerLocation), HttpStatus.OK_200);
+        updateTrackingResponse = context.track(rerouteMonitoredTrip.id, testData.triggerLocation, HttpStatus.OK_200);
 
         // Confirm traveler is no longer 'deviated'.
         assertNotEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
@@ -240,7 +236,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         assertEquals(new Coordinates(journey1updated.lastLocation()), reroutingPoint);
 
         // Update tracking from start of the new rerouted position.
-        updateTrackingResponse = context.updateTracking(journey1Id, List.of(reroutingPointPosition), HttpStatus.OK_200);
+        updateTrackingResponse = context.track(rerouteMonitoredTrip.id, reroutingPoint, HttpStatus.OK_200);
         // Confirm traveler is still not 'deviated'.
         assertNotEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
 
@@ -263,17 +259,17 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         );
 
         // Start tracking again from a random position. Traveler should be deviated.
-        TrackingResponse journey2response = context.startTracking(monitoredTrip.id, HttpStatus.OK_200);
+        context.startTracking(monitoredTrip.id, HttpStatus.OK_200);
 
         // Note: Departed (and other notifications) are not being cleared when restarting live tracking.
         assertEquals(1, pollDepartedNotificationCount(rerouteMonitoredTrip));
 
-        updateTrackingResponse = context.updateTracking(journey2response.journeyId, List.of(reroutingPointPosition), HttpStatus.OK_200);
+        updateTrackingResponse = context.track(monitoredTrip.id, reroutingPoint, HttpStatus.OK_200);
         assertEquals(TripStatus.DEVIATED.name(), updateTrackingResponse.tripStatus);
     }
 
     private static Stream<RerouteCase> rerouteTripTestCases() {
-        var deviatedPosition = new TrackingLocation(Instant.now(), 33.94412, -83.98899);
+        Coordinates deviatedPosition = new Coordinates(33.94412, -83.98899);
         return Stream.of(
             new RerouteCase(-300, deviatedPosition, walkToVoterRegCenterItinerary, OtpTestUtils.REROUTE_PLAN_RESPONSE),
             new RerouteCase(30, deviatedPosition, walkToVoterRegCenterItinerary, OtpTestUtils.REROUTE_PLAN_RESPONSE),
@@ -345,14 +341,14 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
      */
     private static class RerouteCase {
         public final int offsetSeconds;
-        public final TrackingLocation triggerLocation;
+        public final Coordinates triggerLocation;
         public final Itinerary originalItinerary;
         public final OtpDispatcherResponse reroutedResponse;
         private Supplier<OtpGraphQLVariables> variableSupplier;
 
         public RerouteCase(
             int offsetSeconds,
-            TrackingLocation triggerLocation,
+            Coordinates triggerLocation,
             Itinerary originalItinerary,
             OtpDispatcherResponse reroutedResponse
         ) {
@@ -367,7 +363,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         }
 
         public OtpResponse getOtpResponse(OtpRequest ignored) {
-            if (variableSupplier.get().fromPlace.endsWith(new Coordinates(triggerLocation).getCoordinates())) {
+            if (variableSupplier.get().fromPlace.endsWith(triggerLocation.getCoordinates())) {
                 return mockOtpReroutedPlanResponse(reroutedResponse).get();
             }
             OtpResponse response = new OtpResponse();
