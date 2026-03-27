@@ -35,7 +35,6 @@ import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.triptracker.TripTrackingData;
-import org.opentripplanner.middleware.triptracker.payload.StartTrackingPayload;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 import org.opentripplanner.middleware.utils.Coordinates;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -156,11 +155,6 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         rerouteMonitoredTrip.updateAllDaysOfWeek(true);
         Persistence.monitoredTrips.replace(rerouteMonitoredTrip.id, rerouteMonitoredTrip);
 
-        var startTrackingPayload = new StartTrackingPayload();
-        startTrackingPayload.tripId = rerouteMonitoredTrip.id;
-        Step firstStep = testData.originalItinerary.legs.get(0).steps.get(0);
-        startTrackingPayload.location = new TrackingLocation(Instant.now(), firstStep.lat, firstStep.lon);
-
         // Use current time relative to itinerary start (this will affect the computed target date after end tracking).
         DateTimeUtils.useFixedClockAt(
             ZonedDateTime.ofInstant(
@@ -174,7 +168,12 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         var reroutingPointPosition = new TrackingLocation(Instant.now(), reroutingPoint.lat, reroutingPoint.lon);
 
         // Start tracking.
-        TrackingResponse journey1response = context.startTracking(startTrackingPayload, HttpStatus.OK_200);
+        Step firstStep = testData.originalItinerary.legs.get(0).steps.get(0);
+        TrackingResponse journey1response = context.startTracking(
+            rerouteMonitoredTrip.id,
+            new TrackingLocation(Instant.now(), firstStep.lat, firstStep.lon),
+            HttpStatus.OK_200
+        );
         String journey1Id = journey1response.journeyId;
 
         // Update tracking from a 'deviated' position.

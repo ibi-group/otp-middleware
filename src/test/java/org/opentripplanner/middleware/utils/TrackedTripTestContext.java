@@ -61,11 +61,17 @@ public class TrackedTripTestContext {
     }
 
     public TrackingResponse startTracking(String tripId, int expectedStatus) throws JsonProcessingException {
-        var payload = TrackedTripUtils.createStartTrackingPayload(tripId);
-        return startTracking(payload, expectedStatus);
+        return startTracking(
+            tripId,
+            new TrackingLocation(90, 24.1111111111111, -79.2222222222222, 29, TrackedTripUtils.getDateAndConvertToSeconds()),
+            expectedStatus
+        );
     }
 
-    public TrackingResponse startTracking(StartTrackingPayload payload, int expectedStatus) throws JsonProcessingException {
+    public TrackingResponse startTracking(String tripId, TrackingLocation location, int expectedStatus) throws JsonProcessingException {
+        var payload = new StartTrackingPayload();
+        payload.tripId = tripId;
+        payload.location = location;
         var response = makeRequest(START_TRACKING_TRIP_PATH, JsonUtils.toJson(payload), headers, HttpMethod.POST);
         assertEquals(expectedStatus, response.status);
 
