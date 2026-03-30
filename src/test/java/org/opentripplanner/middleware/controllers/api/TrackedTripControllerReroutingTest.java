@@ -43,6 +43,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -188,7 +189,11 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         testData.setVariableSupplier(checkMonitoredTrip::getQueryParamsForTargetZonedDateTime);
         checkMonitoredTrip.run();
 
+        // Rerouted itinerary is deemed existing, and departure/arrival delays with respect to the original itinerary
+        // should be ignored because the rerouted itinerary is the new reference.
         assertNotEquals(NEXT_TRIP_NOT_POSSIBLE, checkMonitoredTrip.journeyState.tripStatus);
+        long delayNotificationCount = pollDelayNotificationCount(rerouteMonitoredTrip);
+        assertEquals(0, delayNotificationCount);
 
         Itinerary afterCheck = Persistence.monitoredTrips.getById(tripAfterRerouting.id).journeyState.matchingItinerary;
         assertEquals(beforeCheck.duration, afterCheck.duration);
@@ -248,10 +253,22 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         );
     }
 
-    private static long pollDepartedNotificationCount(MonitoredTrip rerouteMonitoredTrip) {
-        return Persistence.monitoredTrips.getById(rerouteMonitoredTrip.id).journeyState.lastNotifications
+    private static long pollDepartedNotificationCount(MonitoredTrip trip) {
+        return Persistence.monitoredTrips.getById(trip.id).journeyState.lastNotifications
             .stream()
             .filter(n -> n.type == NotificationType.DEPARTED_NOTIFICATION)
+            .count();
+    }
+
+    private static long pollDelayNotificationCount(MonitoredTrip trip) {
+        Set<NotificationType> notificationTypes = Set.of(
+            NotificationType.ARRIVAL_DELAY,
+            NotificationType.DEPARTURE_DELAY,
+            NotificationType.DEPARTURE_AND_ARRIVAL_DELAY
+        );
+        return Persistence.monitoredTrips.getById(trip.id).journeyState.lastNotifications
+            .stream()
+            .filter(n -> notificationTypes.contains(n.type))
             .count();
     }
 

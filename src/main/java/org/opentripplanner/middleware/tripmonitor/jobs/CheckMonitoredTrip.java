@@ -934,9 +934,15 @@ public class CheckMonitoredTrip implements Runnable {
      * and applying offsets corresponding to the number of days between "now" and the target date.
      */
     private void resetJourneyState() {
-        long millis = trip.itinerary.startTime.toInstant().until(targetZonedDateTime, ChronoUnit.MILLIS);
-        journeyState.scheduledDepartureTimeEpochMillis = trip.itinerary.getScheduledStartTimeEpochMillis() + millis;
-        journeyState.scheduledArrivalTimeEpochMillis = trip.itinerary.getScheduledEndTimeEpochMillis() + millis;
+        boolean isOngoingRerouting = ongoingJourneyReroutingLocation() != null;
+        if (isOngoingRerouting) {
+            journeyState.scheduledDepartureTimeEpochMillis = trip.reroutedItinerary.getScheduledStartTimeEpochMillis();
+            journeyState.scheduledArrivalTimeEpochMillis = trip.reroutedItinerary.getScheduledEndTimeEpochMillis();
+        } else {
+            long millis = trip.itinerary.startTime.toInstant().until(targetZonedDateTime, ChronoUnit.MILLIS);
+            journeyState.scheduledDepartureTimeEpochMillis = trip.itinerary.getScheduledStartTimeEpochMillis() + millis;
+            journeyState.scheduledArrivalTimeEpochMillis = trip.itinerary.getScheduledEndTimeEpochMillis() + millis;
+        }
         journeyState.hasRealtimeData = false;
     }
 
