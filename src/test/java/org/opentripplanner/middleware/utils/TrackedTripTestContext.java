@@ -7,9 +7,12 @@ import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
+import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
+import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
 import org.opentripplanner.middleware.triptracker.TripStatus;
 import org.opentripplanner.middleware.triptracker.payload.EndTrackingPayload;
@@ -21,6 +24,8 @@ import org.opentripplanner.middleware.triptracker.response.EndTrackingResponse;
 import org.opentripplanner.middleware.triptracker.response.TrackingResponse;
 
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -45,6 +50,7 @@ public class TrackedTripTestContext {
     public final OtpUser otpUser;
     public final Map<String, String> headers;
     private final Set<TrackedJourney> createdJourneys = new HashSet<>();
+    private final List<MonitoredTrip> createdTrips = new ArrayList<>();
 
     public TrackedTripTestContext() throws Exception {
         otpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-solootpuser"));
@@ -58,11 +64,22 @@ public class TrackedTripTestContext {
     }
 
     public void tearDown() {
-        createdJourneys.forEach(TrackedJourney::delete);
-        createdJourneys.clear();
-
         OtpUser fetchedUser = Persistence.otpUsers.getById(otpUser.id);
         if (fetchedUser != null) fetchedUser.delete(true);
+    }
+
+    public void cleanUpAfterTest() {
+        createdJourneys.forEach(j -> {
+            j = Persistence.trackedJourneys.getById(j.id);
+            if (j != null) j.delete();
+        });
+        createdJourneys.clear();
+
+        createdTrips.forEach(t -> {
+            t = Persistence.monitoredTrips.getById(t.id);
+            if (t != null) t.delete();
+        });
+        createdTrips.clear();
     }
 
     public TrackingResponse startTracking(String tripId, int expectedStatus) throws JsonProcessingException {
@@ -132,5 +149,23 @@ public class TrackedTripTestContext {
         var payload = new ForceEndTrackingPayload();
         payload.tripId = trip.id;
         endTracking(FORCIBLY_END_TRACKING_TRIP_PATH, JsonUtils.toJson(payload));
+    }
+
+    public MonitoredTrip createMonitoredTrip(Itinerary itin) {
+        MonitoredTrip trip = new MonitoredTrip();
+        trip.userId = otpUser.id;
+        trip.itinerary = itin;
+        // Original itinerary time should be populated.
+        OtpGraphQLVariables params = new OtpGraphQLVariables();
+        params.fromPlace = itin.legs.get(0).from.toCoordinates().getCoordinates();
+        params.time = DateTimeUtils.convertToLocalDateTime(itin.startTime).toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"));
+        trip.otp2QueryParams = params;
+        trip.journeyState = new JourneyState();
+        trip.journeyState.matchingItinerary = itin;
+        // Original target date should be populated but does not really matter.
+        trip.journeyState.targetDate = "2024-01-26";
+        Persistence.monitoredTrips.create(trip);
+        createdTrips.add(trip);
+        return trip;
     }
 }

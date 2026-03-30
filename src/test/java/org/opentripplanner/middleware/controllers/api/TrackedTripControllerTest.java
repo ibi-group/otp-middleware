@@ -12,14 +12,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.TrackedJourney;
-import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Step;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.CommonTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
-import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.triptracker.ManageTripTracking;
 import org.opentripplanner.middleware.triptracker.TraceData;
 import org.opentripplanner.middleware.triptracker.TrackingLocation;
@@ -36,7 +34,6 @@ import org.opentripplanner.middleware.utils.TrackedTripTestContext;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
@@ -99,23 +96,6 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         context = new TrackedTripTestContext();
     }
 
-    private static MonitoredTrip createMonitoredTrip(Itinerary itin) {
-        MonitoredTrip trip = new MonitoredTrip();
-        trip.userId = context.otpUser.id;
-        trip.itinerary = itin;
-        // Original itinerary time should be populated.
-        OtpGraphQLVariables params = new OtpGraphQLVariables();
-        params.fromPlace = itin.legs.get(0).from.toCoordinates().getCoordinates();
-        params.time = DateTimeUtils.convertToLocalDateTime(itin.startTime).toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"));
-        trip.otp2QueryParams = params;
-        trip.journeyState = new JourneyState();
-        trip.journeyState.matchingItinerary = itin;
-        // Original target date should be populated but does not really matter.
-        trip.journeyState.targetDate = "2024-01-26";
-        Persistence.monitoredTrips.create(trip);
-        return trip;
-    }
-
     @AfterAll
     static void tearDown() {
         assumeTrue(IS_END_TO_END);
@@ -127,14 +107,13 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     @BeforeEach
     void beforeEachTest() {
         assumeTrue(IS_END_TO_END);
-        monitoredTrip = createMonitoredTrip(itinerary);
+        monitoredTrip = context.createMonitoredTrip(itinerary);
     }
 
     @AfterEach
     void tearDownAfterTest() {
         assumeTrue(IS_END_TO_END);
-        monitoredTrip = Persistence.monitoredTrips.getById(monitoredTrip.id);
-        if (monitoredTrip != null) monitoredTrip.delete();
+        context.cleanUpAfterTest();
     }
 
     @Test
@@ -174,7 +153,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canNotRestartAnOngoingJourney() throws Exception {
         assumeTrue(IS_END_TO_END);
-        
+
         // Make two identical requests to start and update a journey. The second one should fail.
         for (int i = 0; i < 2; i++) {
             var response = context.startTracking(monitoredTrip.id, i == 0 ? HttpStatus.OK_200 : HttpStatus.FORBIDDEN_403);
@@ -217,7 +196,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     ) throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        monitoredTrip = createMonitoredTrip(itinerary);
+        monitoredTrip = context.createMonitoredTrip(itinerary);
 
         // Defaults to itinerary start time, unless specified otherwise.
         Instant instant = monitoredTrip.itinerary.startTime.toInstant();
@@ -508,7 +487,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assumeTrue(IS_END_TO_END);
         final int WEST_BEARING = 270;
 
-        monitoredTrip = createMonitoredTrip(multiLegItinerary);
+        monitoredTrip = context.createMonitoredTrip(multiLegItinerary);
         monitoredTrip.journeyState.matchingItinerary = nullMatchingItinerary ? null : multiLegItinerary;
         monitoredTrip.journeyState.tripStatus = org.opentripplanner.middleware.tripmonitor.TripStatus.NEXT_TRIP_NOT_POSSIBLE;
         Persistence.monitoredTrips.replace(monitoredTrip.id, monitoredTrip);
@@ -532,7 +511,7 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
     void canForciblyEndJourney() throws Exception {
         assumeTrue(IS_END_TO_END);
 
-        monitoredTrip = createMonitoredTrip(itinerary);
+        monitoredTrip = context.createMonitoredTrip(itinerary);
 
         var startTrackingResponse = context.startTracking(monitoredTrip.id, HttpStatus.OK_200);
 
