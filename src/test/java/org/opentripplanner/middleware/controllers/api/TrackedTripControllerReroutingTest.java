@@ -74,7 +74,6 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
     static void setUp() throws Exception {
         assumeTrue(IS_END_TO_END);
         setAuthDisabled(false);
-        OtpTestUtils.mockOtpServer();
 
         itinerary = JsonUtils.getPOJOFromJSON(
             CommonTestUtils.getTestResourceAsString("controllers/api/adair-avenue-to-monroe-drive.json"),
