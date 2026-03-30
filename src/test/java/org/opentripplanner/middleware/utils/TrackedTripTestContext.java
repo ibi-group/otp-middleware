@@ -168,4 +168,9 @@ public class TrackedTripTestContext {
         createdTrips.add(trip);
         return trip;
     }
+
+    public void registerJourney(TrackedJourney journey) {
+        Persistence.trackedJourneys.create(journey);
+        createdJourneys.add(journey);
+    }
 }

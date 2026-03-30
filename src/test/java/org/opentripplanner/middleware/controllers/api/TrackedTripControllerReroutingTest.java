@@ -299,7 +299,8 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         TrackedJourney reroutedTrackedJourney = new TrackedJourney();
         reroutedTrackedJourney.reroutings.put(fromCoords.getCoordinates(), DateTimeUtils.convertToDate(LocalDateTime.now()));
         reroutedTrackedJourney.tripId = monitoredTrip.id;
-        Persistence.trackedJourneys.create(reroutedTrackedJourney);
+        context.registerJourney(reroutedTrackedJourney);
+
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip);
         OtpGraphQLVariables params = new OtpGraphQLVariables();
         params.fromPlace = "from-place";
