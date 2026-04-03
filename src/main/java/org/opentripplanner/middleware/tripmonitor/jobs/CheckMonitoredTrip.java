@@ -322,7 +322,7 @@ public class CheckMonitoredTrip implements Runnable {
      * Retrieve itinerary from leg query or OTP plan response.
      */
     private Itinerary getCandidateItinerary() {
-        Itinerary referenceItinerary = ongoingJourneyReroutingLocation() != null
+        Itinerary referenceItinerary = ongoingJourneyReroutingLocation() != null && trip.reroutedItinerary != null
             ? trip.reroutedItinerary
             : trip.itinerary;
         ItineraryChecker checker = new ItineraryChecker(referenceItinerary, legFinder, targetZonedDateTime.toLocalDate());
