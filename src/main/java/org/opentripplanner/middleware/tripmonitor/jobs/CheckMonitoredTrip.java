@@ -257,7 +257,7 @@ public class CheckMonitoredTrip implements Runnable {
     public boolean checkOtpAndUpdateTripStatus() {
         // If matching itinerary has concluded, and live tracking is ongoing or the trip is one-time, don't check OTP.
         boolean oneTime = trip.isOneTime();
-        boolean trackingOngoing = trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE && getOngoingTrackedJourney() != null;
+        boolean trackingOngoing = isTripActiveAndTrackingOngoing();
         Itinerary matchingItin = trip.journeyState.matchingItinerary;
         if ((oneTime || trackingOngoing) && (matchingItin == null || matchingItin.hasEnded())) {
             if (oneTime && !trackingOngoing) {
@@ -267,6 +267,10 @@ public class CheckMonitoredTrip implements Runnable {
         }
         // Perform normal OTP checks otherwise.
         return makeOTPRequestAndUpdateMatchingItineraryInternal();
+    }
+
+    private boolean isTripActiveAndTrackingOngoing() {
+        return trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE && getOngoingTrackedJourney() != null;
     }
 
     /**
