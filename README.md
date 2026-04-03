@@ -78,57 +78,9 @@ The follow parameters are used to interact with an OTP server.
 | --- | --- | --- |
 | OTP_API_ROOT | This is the address of the OTP server, including the root path to the OTP API, to which all OTP related requests will be sent to. | http://otp-server.example.com/otp | 
 
-### Trip Actions
+### Live Tracking Actions
 
-OTP-middleware supports triggering certain actions when someone activates live tracking of a monitored trip
-and reaches a location or is about to enter a path. Actions include location-sensitive API calls to notify various services.
-In the context of live trip tracking, actions may include notifying transit vehicle operators or triggering traffic signals.
-
-Trip actions are defined in the optional file `trip-actions.yml` in the same configuration folder as `env.yml`.
-The file contains a list of actions defined by an ID, start and end coordinates, and a fully-qualified trigger class:
-
-```yaml
-- id: id1
-  start:
-    lat: 33.95684
-    lon: -83.97971
-  end:
-    lat: 33.95653
-    lon: -83.97973
-  trigger: com.example.package.MyTriggerClass
-- id: id2
-  start:
-    lat: 33.95584
-    lon: -83.97871
-  end:
-    lat: 33.95553
-    lon: -83.97873
-  trigger: com.example.package.MyTriggerClass
-...
-```
-
-Known trigger classes below are in package `org.opentripplanner.middleware.triptracker.interactions`
-and implement its `Interaction` interface:
-
-| Class | Description |
-| ----- | ----------- |
-| UsGdotGwinnettTrafficSignalNotifier | Triggers select pedestrian signals in Gwinnett County, GA, USA |
-#### Bus Notify Actions
-
-Bus notifier actions are defined in the optional file `bus-notifier-actions.yml` in the same configuration folder as `env.yml`.
-The file contains a list of actions defined by an agency ID and a fully-qualified trigger class:
-
-```yaml
-- agencyId: id1
-  trigger: com.example.package.MyTriggerClass
-```
-
-Known trigger classes below are in package `org.opentripplanner.middleware.triptracker.interactions.busnotifiers`
-and implement its `BusOperatorInteraction` interface:
-
-| Class | Description                                                                  |
-| ----- |------------------------------------------------------------------------------|
-| UsRideGwinnettNotifyBusOperator | Triggers select route bus operator notifications in Gwinnett County, GA, USA |
+See [OTP-middleware Live Tracking](docs/live-tracking.md) for configuration and more information about live tracking.
 
 ### Monitored Components
 
