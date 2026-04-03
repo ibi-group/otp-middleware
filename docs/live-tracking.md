@@ -22,6 +22,7 @@ classDiagram
     class MonitoredTrip {
         Itinerary itinerary
         JourneyState journeyState
+        Itinerary reroutedItinerary
     }
     class TrackingLocation {
         Date timestamp
@@ -72,11 +73,11 @@ stateDiagram-v2
 | `/track` | `{ tripId, { lat, lon, timestamp, speed }[] }` | Starts or updates tracking on a monitored trip with an array of locations with timestamp.<br>Supersedes both ~~`/starttracking`~~ and ~~`/updatetracking`~~ |
 | `/endtracking` | `{ journeyId }` | Terminates the tracking of a monitored trip by the user |
 | `/forciblyendtracking` | `{ tripId }` | Forcibly terminates tracking of a monitored trip by trip ID |
-| `/reroute` | `{ tripId, { lat, lon, timestamp, speed }[] }` | Reroute from the traveler's current location to the original trip destination. That action is recorded in `TrackedJourney`, and the `MonitoredTrip`'s `JourneyState` is updated with the new itinerary. |
+| `/reroute` | `{ tripId, { lat, lon, timestamp, speed }[] }` | Reroute from the traveler's current location to the original trip destination. That action is recorded in `TrackedJourney`, and the `MonitoredTrip`'s `reroutedItinerary` and `JourneyState.matchingItinerary` are updated with the new itinerary. The new itinerary becomes the reference for trip monitoring and subsequent calls to `/track`, until live tracking ends. |
 
 ## Tracked Journey Logical Flow
 
-For active tracked journeys, calling the `/track` or `/reroute` endpoints triggers the following logic in the `ManageTripTracking` class:
+For active tracked journeys, calling the `/track` endpoint triggers the following logic in the `ManageTripTracking` class:
 - The locations are saved in Mongo.
 - An on-track/deviated status is computed and saved in Mongo.
 - Location-based actions are triggered, including notifications to observers.
