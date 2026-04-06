@@ -2780,6 +2780,8 @@ definitions:
       attemptsToGetMatchingItinerary:
         type: "integer"
         format: "int32"
+      reroutedItinerary:
+        $ref: "#/definitions/Itinerary"
   Trip:
     type: "object"
     properties:
