@@ -65,32 +65,35 @@ Within 30 minutes the trip start time, checks are performed every minute.
 
 ### Target Date and Matching Itinerary
 
-When a user saves an itinerary for monitoring, that itinerary is saved in Mongo as template without real-time updates
-or alerts. The query parameters used to obtain that itinerary are also saved.
+When a user saves an itinerary for monitoring, that itinerary is saved in Mongo as a template without real-time updates
+or alerts. The query parameters used to obtain that itinerary are also saved, so that a request to OTP to
+replan the trip can be made, if needed.
 
 The *target date* is the date a trip is supposed to take place. For one-time trips, the target date is the date of the trip.
 For recurring trips, the target date is the next occurrence of the trip, according to the days the trip is being monitored.
 
-When monitoring real-time updates, a *matching itinerary* is fetched from OTP using the query parameters used to obtain the origina itinerary.
+When monitoring real-time updates, a *matching itinerary* is fetched from OTP using the query parameters used to obtain the original itinerary.
 A matching itinerary looks similar to the saved itinerary, however, the itinerary date corresponds to the target date.
 Some of the times can be shifted, and real-time alerts can be present.
 
 Whether an itinerary matches another one is determined by the `ItineraryMatcher` utility class.
 
-### Itinerary Fetching from OTP
+### Itinerary Fetching and Matching
 
 The `ItineraryMatcher` class uses two methods to find a matching itinerary:
 
-- leg id: Transit legs are fetched for a particular day by computing a leg id. The leg id is simply a hash that combines the date, service id, and from and to places.
-If all transit legs are found using leg id, an itinerary is reconstructed by attempting to insert the transfer legs between the transit legs.
-If enough slack time remains, the itinerary is deemed feasible.
-- plan query: If the leg id method fails, a plan query is sent to OTP using the query parameters of the monitored trip.
+- leg id: Transit legs are fetched from OTP for a particular day by computing a leg id.
+The leg id is a hash used by OTP to quickly lookup a leg.
+A leg id combines the date, service id, and from and to places of a transit leg.
+If all transit legs are found by querying leg ids, an itinerary is reconstructed by attempting to insert the transfer legs between the corresponding transit legs.
+If enough slack time remains, the itinerary can be reconstructed and is deemed feasible. If not, the itinerary is not feasible given the real-time updates.
+- plan query: If the leg id method fails, a query is sent to OTP to replan the entire trip for the target date, using the query parameters of the monitored trip.
 This method is slower than leg id because OTP has to perform a full itinerary search, where as a leg id query is a simpler lookup operation.
-Itineraries returned from the OTP plan query are checked.
+Itineraries returned from the OTP plan query are matched against the original monitored itinerary.
 
 ### Journey State
 
-The journey state contains various attributes that touch real-time trip monitoring, including:
+The journey state contains various attributes that deal with real-time trip monitoring, including:
 - Matching itinerary
 - Target date and trip status (upcoming, in the past, active, trip not found)
 - Latest departure and arrival delay updates
