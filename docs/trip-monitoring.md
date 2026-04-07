@@ -108,17 +108,21 @@ the submission is rejected, and the trip is not saved or monitored.
 
 ## Notifications
 
-Notifications are of the following types:
-- Advance trip reminder ("Reminder for My Trip at 8:30")
-- Trip alerts for any GTFS-realtime alerts attached to transit legs, or for previous alerts that are cleared.
-- Trip delay notifications ("Your trip is departing/arriving 5 minutes late")
+Notifications are of the following types.
+Multiple notifications for the same check are generally combined into a single notification message.
 
-One or many notifications can be combined into one.
+- Advance trip reminder ("Reminder for My Trip at 8:30") - Sent once at the lead monitoring time for all monitored trips on the day the trip occurs.
+- Trip alerts - Sent once each new GTFS-realtime alerts attached to transit legs, and once when a previously present alert is no longer there (i.e. cleared).
+- Trip delay notifications ("Your trip is departing/arriving 5 minutes late") - Sent if delays exceed 5 minutes from the original trip time.
+- Loss of real-time data in OTP - Sent each time a matching itinerary is fetched and contains no real-time updates, while the previously fetched matching itinerary did.
+- Unable to monitor trip - Sent when real-time conditions are so that a trip can no longer be performed because of
+missed transfers or other reasons.
 
 Trip notifications can be sent using the following channels as selected by the user in their account settings:
 - Email to the account's email address, using Sparkpost
 - SMS to the number stored and verified in their account, using Twilio
-- Push notifications to mobile apps that subscribe to a specific AWS SNS service.
+- Push notifications to mobile apps that subscribe to a specific AWS SNS service. A separate push middleware must be
+implemented that manages registered devices and forwards notifications to them.
 
 A notification message template (.ftl file) is provided for each notification channel,
 so that notifications are formatted to fit the receiving device.
