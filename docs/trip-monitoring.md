@@ -39,7 +39,7 @@ flowchart LR
     Timer --> job --thread 1--> analyzer1
     job --thread 2--> analyzer2
     job -.-> analyzerX
-    job --"thread n"--> analyzerN
+    job --thread n--> analyzerN
     analyzer1 --> queue1
     analyzer2 --> queue2
     analyzerN --> queueN
@@ -82,14 +82,90 @@ Whether an itinerary matches another one is determined by the `ItineraryMatcher`
 
 The `ItineraryMatcher` class uses two methods to find a matching itinerary:
 
-- leg id: Transit legs are fetched from OTP for a particular day by computing a leg id.
+#### Leg ID Method
+
+Transit legs are fetched using OTP's `leg` query for a particular day by computing a leg id.
 The leg id is a hash used by OTP to quickly lookup a leg.
 A leg id combines the date, service id, and from and to places of a transit leg.
-If all transit legs are found by querying leg ids, an itinerary is reconstructed by attempting to insert the transfer legs between the corresponding transit legs.
-If enough slack time remains, the itinerary can be reconstructed and is deemed feasible. If not, the itinerary is not feasible given the real-time updates.
-- plan query: If the leg id method fails, a query is sent to OTP to replan the entire trip for the target date, using the query parameters of the monitored trip.
-This method is slower than leg id because OTP has to perform a full itinerary search, where as a leg id query is a simpler lookup operation.
+If all transit legs are found by querying leg ids, an itinerary is reconstructed by attempting to fit the
+transfer legs between the fetched, updated transit legs.
+
+When fitting transfers between updated transit legs, two things remain constant:
+- The duration of transfer legs
+- The transfer slack or margin between the ending time of the transfer leg and the departure time of the next transit leg.
+
+The duration of transfer legs (and other walk/bicycle legs) is constant remains the same because the physical ability of the traveler is constant. Transfer legs are incompressible, so if a transfer between two transit vehicles requires a three-minute walk, 
+
+Likewise, the transfer slack is a constant included to insure a traveler has enough time to get to the boarding location
+of the next transit vehicle. The transfer slack is part of the routing configuration in OTP.
+OTP-middleware computes that quantity from the original itinerary (departure time of the first transit leg minus arrival time of the first walk/bicycle leg).
+
+If, after fitting the transfer legs, the wait time is more than the transfer slack, we have an updated, feasible itinerary.
+If not, the itinerary is not feasible given the real-time updates.
+
+```mermaid
+---
+title: Matching Itinerary Example Using Leg ID
+---
+flowchart TB
+    subgraph subBus1[Bus 1]
+        direction LR
+        BusA1[Original<br>Depart 12:33<br>Arrive 12:39]
+        BusB1[Updated: 2 min late<br>Depart 12:35<br>Arrive 12:41]
+    end
+    subgraph wait[Wait, including 5 min boarding slack]
+        direction LR
+        waitA[Original: Wait 8 min<br>from 12:42<br>to 12:50]
+        waitB[Updated: Wait 6 min<br>from 12:44<br>to 12:50]
+    end
+    subgraph subBus2[Bus 2]
+        direction LR
+        BusA2[Depart 12:50,on time]
+    end
+    Xfer[Walk 3 min]
+    Walk1A[Walk<br>Wait at 12:28<br>Boarding slack 5 min<br>] --> BusA1 --> Xfer --> waitA --> subBus2 --> Walk2[Walk]
+    Walk1B[Walk<br>Wait at 12:30<br>Boarding slack 5 min<br>] --> BusB1 --> Xfer --> waitB --> subBus2
+```
+
+```mermaid
+---
+title: Infeasible Itinerary Example Using Leg ID
+---
+flowchart TB
+    subgraph subBus1[Bus 1]
+        direction LR
+        BusA1[Original<br>Depart 12:33<br>Arrive 12:39]
+        BusB1[Updated: 10 min late<br>Depart 12:43<br>Arrive 12:49]
+    end
+    subgraph wait[Wait, including 5 min boarding slack]
+        direction LR
+        waitA[Original: Wait 8 min<br>from 12:42<br>to 12:50]
+        waitB[Updated: Wait 5 min<br>from 12:52<br>to 12:57]
+    end
+    subgraph subBus2[Bus 2]
+        direction LR
+        BusA2[Depart 12:50, on time]
+    end
+    Xfer[Walk 3 min]
+    Walk1A[Walk<br>Wait at 12:28<br>Boarding slack 5 min<br>] --> BusA1 --> Xfer --> waitA --> subBus2 --> Walk2[Walk]
+    Walk1B[Walk<br>Wait at 12:38<br>Boarding slack 5 min<br>] --> BusB1 --> Xfer --> waitB -.Infeasible.-> subBus2
+```
+
+#### Plan Method
+
+If the leg id method fails, a `plan` query is sent to OTP to replan the entire trip for the target date, using the
+query parameters of the monitored trip. This method is slower than leg id because OTP has to perform a full itinerary
+search, whereas a leg id query is a simple lookup operation.
 Itineraries returned from the OTP plan query are matched against the original monitored itinerary.
+
+Two itineraries match if they meet the conditions below:
+- Both itineraries can be monitored (they don't contain rentals)
+- The have the same number of legs
+- The origin and destination stops match
+- The same modes and transit routes are used in the same order
+- The transit vehicles must present the same headsign
+- The same interlining between routes must be present (e.g. situations when the same vehicle continues as a different route starting from a stop)
+- The start times and end times are the same.
 
 ### Journey State
 
