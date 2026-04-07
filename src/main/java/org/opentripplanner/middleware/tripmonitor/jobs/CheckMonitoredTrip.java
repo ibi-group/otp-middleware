@@ -257,7 +257,7 @@ public class CheckMonitoredTrip implements Runnable {
     public boolean checkOtpAndUpdateTripStatus() {
         // If matching itinerary has concluded, and live tracking is ongoing or the trip is one-time, don't check OTP.
         boolean oneTime = trip.isOneTime();
-        boolean trackingOngoing = isTrackingOngoing();
+        boolean trackingOngoing = isTripActiveAndTrackingOngoing();
         Itinerary matchingItin = trip.journeyState.matchingItinerary;
         if ((oneTime || trackingOngoing) && (matchingItin == null || matchingItin.hasEnded())) {
             if (oneTime && !trackingOngoing) {
@@ -269,8 +269,25 @@ public class CheckMonitoredTrip implements Runnable {
         return makeOTPRequestAndUpdateMatchingItineraryInternal();
     }
 
-    private boolean isTrackingOngoing() {
-        return trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE && TripTrackingData.getOngoingTrackedJourney(trip.id) != null;
+    private boolean isTripActiveAndTrackingOngoing() {
+        return trip.journeyState.tripStatus == TripStatus.TRIP_ACTIVE && getOngoingTrackedJourney() != null;
+    }
+
+    /**
+     * @return The most recent active {@link TrackedJourney} for the monitored trip, or null if there are no active journeys.
+     */
+    private TrackedJourney getOngoingTrackedJourney() {
+        return TripTrackingData.getOngoingTrackedJourney(trip.id);
+    }
+
+    /**
+     * @return The last rerouting location, if any, of the most recent journey for this trip, if any, or null.
+     */
+    private String ongoingJourneyReroutingLocation() {
+        TrackedJourney trackedJourney = getOngoingTrackedJourney();
+        return trackedJourney != null
+            ? trackedJourney.getLastReroutingLocation()
+            : null;
     }
 
     /**
@@ -305,13 +322,16 @@ public class CheckMonitoredTrip implements Runnable {
      * Retrieve itinerary from leg query or OTP plan response.
      */
     private Itinerary getCandidateItinerary() {
-        ItineraryChecker checker = new ItineraryChecker(trip.itinerary, legFinder, targetZonedDateTime.toLocalDate());
+        Itinerary referenceItinerary = ongoingJourneyReroutingLocation() != null && trip.reroutedItinerary != null
+            ? trip.reroutedItinerary
+            : trip.itinerary;
+        ItineraryChecker checker = new ItineraryChecker(referenceItinerary, legFinder, targetZonedDateTime.toLocalDate());
         ItineraryCheckStatus itineraryCheckStatus = checker.checkLegs();
 
         if (!itineraryCheckStatus.isFailed()) {
             return itineraryCheckStatus.rebuiltItinerary;
         }
-        Itinerary candidateItinerary = ItineraryExistence.checkOtpResponse(otpResponseProvider, null, trip.id, trip.itinerary, false);
+        Itinerary candidateItinerary = ItineraryExistence.checkOtpResponse(otpResponseProvider, null, trip.id, referenceItinerary, false);
         ItineraryExistence.logItineraryNotFound(trip.id, itineraryCheckStatus, candidateItinerary == null);
         return candidateItinerary;
     }
@@ -463,12 +483,9 @@ public class CheckMonitoredTrip implements Runnable {
      * attributed to the trip.
      */
     public void checkForRerouting(OtpGraphQLVariables params) {
-        TrackedJourney trackedJourney = TripTrackingData.getOngoingTrackedJourney(trip.id);
-        if (trackedJourney != null) {
-            String reroutingLocation = trackedJourney.getLastReroutingLocation();
-            if (reroutingLocation != null) {
-                params.fromPlace = reroutingLocation;
-            }
+        String reroutingLocation = ongoingJourneyReroutingLocation();
+        if (reroutingLocation != null) {
+            params.fromPlace = reroutingLocation;
         }
     }
 
@@ -921,9 +938,15 @@ public class CheckMonitoredTrip implements Runnable {
      * and applying offsets corresponding to the number of days between "now" and the target date.
      */
     private void resetJourneyState() {
-        long millis = trip.itinerary.startTime.toInstant().until(targetZonedDateTime, ChronoUnit.MILLIS);
-        journeyState.scheduledDepartureTimeEpochMillis = trip.itinerary.getScheduledStartTimeEpochMillis() + millis;
-        journeyState.scheduledArrivalTimeEpochMillis = trip.itinerary.getScheduledEndTimeEpochMillis() + millis;
+        boolean isOngoingRerouting = ongoingJourneyReroutingLocation() != null;
+        if (isOngoingRerouting) {
+            journeyState.scheduledDepartureTimeEpochMillis = trip.reroutedItinerary.getScheduledStartTimeEpochMillis();
+            journeyState.scheduledArrivalTimeEpochMillis = trip.reroutedItinerary.getScheduledEndTimeEpochMillis();
+        } else {
+            long millis = trip.itinerary.startTime.toInstant().until(targetZonedDateTime, ChronoUnit.MILLIS);
+            journeyState.scheduledDepartureTimeEpochMillis = trip.itinerary.getScheduledStartTimeEpochMillis() + millis;
+            journeyState.scheduledArrivalTimeEpochMillis = trip.itinerary.getScheduledEndTimeEpochMillis() + millis;
+        }
         journeyState.hasRealtimeData = false;
     }
 

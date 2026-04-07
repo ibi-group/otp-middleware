@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.utils;
 
 import jersey.repackaged.com.google.common.collect.Lists;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
+import org.opentripplanner.middleware.triptracker.TripTrackingData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -380,5 +381,13 @@ public class DateTimeUtils {
     public static long diffInMinutes(long millis1, long millis2) {
         // Calculate the deviation of current itinerary target time from the baseline target time in minutes
         return TimeUnit.MINUTES.convert(millis1 - millis2, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * The mobile app sends timestamps in seconds which is then converted into milliseconds in {@link TripTrackingData}.
+     * To represent this in testing, provide the time in seconds from epoch.
+     */
+    public static Date dateAsSeconds() {
+        return new Date(Instant.now().getEpochSecond());
     }
 }
