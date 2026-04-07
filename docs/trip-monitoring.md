@@ -9,7 +9,57 @@ Trips saved by users can be retrieved at a later point for viewing/editing.
 OtpUser
 MonitoredTrip
 JourneyState
+TripAnalyzer
 CheckMonitoredTrip
+
+## Trip Monitoring Lifecycle
+
+Trip monitoring is run as a background, recurring job `MonitorAllTripsJob` that runs every minute.
+The job splits the monitoring of all qualifying trips between threads as determined by the number of CPUs on the instance.
+Each thread runs a `TripAnalyzer`, and each analyzer processes a queue of `MonitoredTrip`, one trip at a time.
+
+Trip monitoring is currently intended to be performed by a single instance.
+Running trip monitoring on multiple instances is possible, however race conditions may occur.
+
+The trip monitoring lifecycle is illustrated in the following diagram, where the executing instance has *n* cores:
+
+```mermaid
+---
+title: Trip Monitoring Lifecycle (Single Instance with n cores)
+---
+flowchart LR
+    job[MonitorAllTripsJob]
+    analyzer1[TripAnalyzer]
+    analyzer2[TripAnalyzer]
+    analyzerX[...]
+    analyzerN[TripAnalyzer]
+    queue1[Trip 1<br>Trip n+1<br>...]
+    queue2[Trip 2<br>Trip n+2<br>...]
+    queueN[Trip n<br>...]
+    Timer --> job --thread 1--> analyzer1
+    job --thread 2--> analyzer2
+    job -.-> analyzerX
+    job --"thread n"--> analyzerN
+    analyzer1 --> queue1
+    analyzer2 --> queue2
+    analyzerN --> queueN
+
+```
+
+## Trip Monitoring Conditions
+
+Class `CheckMonitoredTrip` contains the actual trip monitoring logic.
+All saved trips are checked for the following conditions:
+
+- Trip is active
+- Trip is not snoozed
+- Trip is one-time not in the past, or trip is recurring
+- Trip is not deemed no longer possible
+- Trip is being monitored on a particular day
+- Trip start time is within the lead monitoring time, and the trip end time has not passed yet.
+
+Within an hour of the trip start time, checks are performed every 15 minutes.
+Within 30 minutes the trip start time, checks are performed every minute.
 
 ## Important concepts
 
@@ -49,29 +99,9 @@ The journey state contains various attributes that touch real-time trip monitori
 ## Itinerary Existence Checking
 
 Itinerary existence checking is performed prior to saving a new monitored trip.
-Typically, OTP-RR will request an itinerary check for a given itinerary.
+Typically, the OTP-react-redux UI will request an itinerary check for a given itinerary.
 OTP-middleware will perform an additional check upon submission (POST). If the check does not succeed,
 the submission is rejected, and the trip is not saved or monitored.
-
-## Monitoring Job
-
-Trip monitoring is run as a background, recurring job, running typically every minute.
-The job divides monitoring of all qualifying trips between threads as determined by the CPUs available.
-Each thread analyzes one trip at a time.
-
-### Conditions for Trip Monitoring
-
-All saved trips are checked for the following conditions:
-
-- Trip is active
-- Trip is not snoozed
-- Trip is one-time not in the past, or trip is recurring
-- Trip is not deemed no longer possible
-- Trip is being monitored on a particular day
-- Trip start time is within the lead monitoring time, and the trip end time has not passed yet.
-
-Within an hour of the trip start time, checks are performed every 15 minutes.
-Within 30 minutes the trip start time, checks are performed every minute.
 
 ## Notifications
 
