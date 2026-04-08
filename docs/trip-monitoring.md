@@ -4,7 +4,17 @@ This file provides an overview of the trip monitoring functionality.
 Trip monitoring lets users save a trip from a search in OTP and receive any real-time updates such as delays and alerts.
 Trips saved by users can be retrieved at a later point for viewing/editing.
 
-## Classes
+## Configuration Items
+
+| Key | Default Value | Description |
+| --- | --- | --- |
+| `MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS` | 3 | The maximum number of attempts to obtain a monitored trip itinerary. |
+| `MAXIMUM_PERMITTED_MONITORED_TRIPS` | 5 | Constant. The maximum number of saved monitored trips. |
+| `OTP_REQUESTS_THREADING_ENABLED` | true | Use multi-threading to handle OTP requests and responses. |
+| `OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS` | 30 | The maximum time for making requests to OTP. |
+| `OTP_TRANSFER_SLACK_SECONDS` | 0 | Extra time added by OTP between two transit legs to ensure transfers can be made, accounting for small timing variations that happen in reality. |
+
+## Overview
 
 OtpUser
 MonitoredTrip
