@@ -84,26 +84,29 @@ The `ItineraryMatcher` class uses two methods to find a matching itinerary:
 
 #### Leg ID Method
 
-Transit legs are fetched using OTP's `leg` query for a particular day by computing a leg id.
-The leg id is a hash used by OTP to quickly lookup a leg.
+Transit legs are fetched using OTP's `leg` query for a particular day.
+Returned legs, if found, contain rela-time delays or alerts.
+Legs are queried using a leg id, which is a hash used by OTP to quickly lookup a leg.
 A leg id combines the date, service id, and from and to places of a transit leg.
-
-If found, the returned transit leg contains any real-time updates, such as delays or alerts.
 
 If all transit legs are found by querying leg ids, an itinerary is reconstructed by attempting to fit the
 transfer legs between the fetched, updated transit legs.
-Two things remain constant during that process:
-- The duration of transfer legs
-- Slack or margins before and after transit legs.
+There are two constraints in that process:
 
-The duration of transfer legs (and other walk/bicycle legs) remains the same because the physical ability
-of the traveler is constant. If a transfer between two transit routes requires
-a three-minute walk, that duration is preserved while reconstructing the itinerary.
+- Transfer legs
+: The duration of transfer legs (and other walk/bicycle legs) does not change because the physical ability
+of travelers is constant. A three-minute walk to transfer between two transit routes is thus preserved while reconstructing the itinerary.
 
-Likewise, slacks are constants to insure a traveler has enough time to get to the boarding location
-of the next transit vehicle. Slacks are part of the routing configuration in OTP.
-OTP-middleware can compute the boarding slack and the alighting slack from the original itinerary, assuming that they are global constants.
-The boarding and alighting slack are the time between the transit leg and the previous leg end/following leg start, respectively.
+- Slack or margins before, between, and after transit legs.
+: Slacks are constants that ensure a traveler has enough time to get to the boarding location
+of the next transit vehicle. Slacks are part of the OTP routing configuration.
+From the original itinerary, OTP-middleware can compute:
+
+  - the boarding slack (minimum time between the end of a walk leg and the start of the next transit leg)
+  - the alighting slack (minimum time between the end of a transit leg and the start of the next walk leg)
+  
+If an additional transfer slack is configured in OTP, it must also be configured in OTP-middleware using the
+`OTP_TRANSFER_SLACK_SECONDS` configuration parameter.
 
 If, after fitting the transfer legs, the wait time is more than the transfer slack, we have an updated, feasible itinerary.
 If not, the itinerary is not feasible given the real-time updates (see diagram below).
