@@ -78,6 +78,10 @@ The follow parameters are used to interact with an OTP server.
 | --- | --- | --- |
 | OTP_API_ROOT | This is the address of the OTP server, including the root path to the OTP API, to which all OTP related requests will be sent to. | http://otp-server.example.com/otp | 
 
+### Trip Monitoring
+
+See [Trip Monitoring](docs/trip-monitoring.md) for configuration and more information about trip monitoring.
+
 ### Live Tracking Actions
 
 See [OTP-middleware Live Tracking](docs/live-tracking.md) for configuration and more information about live tracking.
