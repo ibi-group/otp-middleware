@@ -192,14 +192,18 @@ the submission is rejected, and the trip is not saved or monitored.
 ## Notifications
 
 Notifications are of the following types.
-Multiple notifications for the same check are generally combined into a single notification message.
+If the same run of `CheckMonitoredTrip` results in multiple notifications, the notifications are generally combined into a single
+notification message.
 
-- Advance trip reminder ("Reminder for My Trip at 8:30") - Sent once at the lead monitoring time for all monitored trips on the day the trip occurs.
-- Trip alerts - Sent once each new GTFS-realtime alerts attached to transit legs, and once when a previously present alert is no longer there (i.e. cleared).
-- Trip delay notifications ("Your trip is departing/arriving 5 minutes late") - Sent if delays exceed 5 minutes from the original trip time.
-- Loss of real-time data in OTP - Sent each time a matching itinerary is fetched and contains no real-time updates, while the previously fetched matching itinerary did.
-- Unable to monitor trip - Sent when real-time conditions are so that a trip can no longer be performed because of
-missed transfers or other reasons.
+| Notification Type | Description |
+| --- | --- |
+| `INITIAL_REMINDER` | Advance trip reminder ("Reminder for My Trip at 8:30") sent once at the lead monitoring time for all monitored trips on the day the trip occurs. |
+| `ALERT_FOUND` | Trip alerts - Sent once each new GTFS-realtime alerts in the matching itinerary, and once when a previously present alert is no longer there (i.e. cleared). |
+| `DEPARTURE_DELAY`<br>`ARRIVAL_DELAY`<br>`DEPARTURE_AND_ARRIVAL_DELAY` | Trip delay notifications ("Your trip is departing/arriving 5 minutes late") - Sent if delays exceed 5 minutes from the original trip time. |
+| `REALTIME_UPDATES_LOST` | Loss of real-time data in OTP - Sent each time a matching itinerary is fetched and contains no real-time updates, while the previously fetched matching itinerary did. |
+| `ITINERARY_NOT_FOUND` | "Unable to monitor trip" - Sent when trip can no longer be performed, either because because of missed transfers or other reasons. |
+
+Other notifications are discussed in [Notifications to Companions/Observers](live-tracking.md#notifications-to-companionsobservers).
 
 Trip notifications can be sent using the following channels as selected by the user in their account settings:
 - Email to the account's email address, using Sparkpost
