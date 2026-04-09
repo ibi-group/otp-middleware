@@ -14,6 +14,11 @@ Trips saved by users can be retrieved at a later point for viewing/editing.
 | `OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS` | 30 | The maximum time for making requests to OTP. |
 | `OTP_TRANSFER_SLACK_SECONDS` | 0 | Extra time added by OTP between two transit legs to ensure transfers can be made, accounting for small timing variations that happen in reality. |
 
+Other configuration items:
+- [Email notifications](#email-notifications)
+- [SMS notifications](#sms-notifications)
+- [Push notifications](#push-notifications)
+
 ## Overview
 
 OtpUser
@@ -189,10 +194,10 @@ Typically, the OTP-react-redux UI will request an itinerary check for a given it
 OTP-middleware will perform an additional check upon submission (POST). If the check does not succeed,
 the submission is rejected, and the trip is not saved or monitored.
 
-## Notifications
+## Trip Notifications
 
-Notifications are of the following types.
-If the same run of `CheckMonitoredTrip` results in multiple notifications, the notifications are generally combined into a single
+Trip notifications are of the following types.
+Multiple notifications from a single run of `CheckMonitoredTrip` are generally combined into a single
 notification message.
 
 | Notification Type | Description |
@@ -201,17 +206,76 @@ notification message.
 | `ALERT_FOUND` | Trip alerts - Sent once each new GTFS-realtime alerts in the matching itinerary, and once when a previously present alert is no longer there (i.e. cleared). |
 | `DEPARTURE_DELAY`<br>`ARRIVAL_DELAY`<br>`DEPARTURE_AND_ARRIVAL_DELAY` | Trip delay notifications ("Your trip is departing/arriving 5 minutes late") - Sent if delays exceed 5 minutes from the original trip time. |
 | `REALTIME_UPDATES_LOST` | Loss of real-time data in OTP - Sent each time a matching itinerary is fetched and contains no real-time updates, while the previously fetched matching itinerary did. |
-| `ITINERARY_NOT_FOUND` | "Unable to monitor trip" - Sent when trip can no longer be performed, either because because of missed transfers or other reasons. |
+| `ITINERARY_NOT_FOUND` | "Unable to monitor trip" - Sent when a trip can no longer be performed, for instance because of a schedule change or real-time conditions resulting in missed transfers. |
 
 Other notifications are discussed in [Notifications to Companions/Observers](live-tracking.md#notifications-to-companionsobservers).
 
-Trip notifications can be sent using the following channels as selected by the user in their account settings:
-- Email to the account's email address, using Sparkpost
-- SMS to the number stored and verified in their account, using Twilio
-- Push notifications to mobile apps that subscribe to a specific AWS SNS service. A separate push middleware must be
-implemented that manages registered devices and forwards notifications to them.
+Trip notifications are sent using the channels set by the user in `OtpUser.notificationChannel`
+in the language/locale set in `OtpUser.preferredLocale` at the time notifications are sent.
+The notification channels are as follows:
 
-A notification message template (.ftl file) is provided for each notification channel,
-so that notifications are formatted to fit the receiving device.
-The length of the content sent via SMS can impact the amount billed by the SMS service.
-Push notification content may be trimmed automatically to fit the message format of the mobile platform.
+- Email to the account's email address
+- SMS to a verified phone number
+- Push notifications to mobile apps
+
+Message templates in [Freemarker](https://freemarker.apache.org/) format (.ftl files) are provided for each notification
+channel and each supported language, so that notifications are formatted to fit the receiving device.
+
+### Email notifications
+
+Email notifications are sent with [Sparkpost (now known as Bird Email)](https://bird.com/en/resources/blog/sparkpost-is-now-bird-email).
+The destination email is the email a user entered when creating an OTP-middleware account using Auth0.
+It is recommended to verify the email address by having users open a link sent to them by Auth0
+(`Auth0Users.resendVerificationEmail` method).
+OTP-middleware uses Auth0 login data to extract the user's email and does not store it.
+
+The email configuration parameters are as follows:
+
+| Key | Description |
+| --- | --- |
+| `NOTIFICATION_FROM_EMAIL` | The `from` email address used in notification emails, e.g. `OTP Middleware <no-reply@example.com>`. The domain name of this address must be whitelisted in the Sparkpost dashboard, otherwise, messages are not sent. |
+| `SPARKPOST_KEY` | Get Sparkpost key at: https://app.sparkpost.com/account/api-keys |
+| `OTP_UI_NAME` | Contains the name of the trip planner, used in the email footer |
+| `OTP_UI_URL` | The URL of the trip planner, used in the email footer |
+
+### SMS Notifications
+
+SMS notifications are sent to the number stored in `OtpUser.phoneNumber`, using [Twilio](https://www.twilio.com/).
+The phone number must be verified (`OtpUser.isPhoneNumberVerified`, ),
+typically using a UI where the user enters a Twilio validation code sent to that number.
+
+Because cell phone carriers often charge fees for SMS, it is recommended to record the user's consent date
+for SMS communications using `OtpUser.smsConsentDate`.
+
+Content for SMS notifications should fit in 160 characters. Contents above that limit is
+[split into multiple messages](https://www.twilio.com/docs/glossary/what-sms-character-limit),
+each billed separately.
+
+The SMS configuration parameters are as follows:
+
+| Key | Description |
+| --- | --- |
+| `NOTIFICATION_FROM_PHONE` | The phone number that users will see SMS messages coming from. That number must be whitelisted in the Twilio dashboard, otherwise SMS messages are not sent. |
+| `TWILIO_ACCOUNT_SID`<br>`TWILIO_AUTH_TOKEN`<br>`TWILIO_VERIFICATION_SERVICE_SID` | Twilio settings available at: https://twilio.com/user/account |
+
+### Push Notifications
+
+Push notifications can be sent to mobile apps that subscribe to a specific AWS SNS service.
+A separate push middleware must be implemented (not documented here) that manages registered devices
+and forwards notifications to them.
+The number of registered devices is available in `OtpUser.pushDevices`.
+
+Push notification content is trimmed automatically to fit the message format of the mobile platform.
+Only one notification sent, and contents that exceeds the limits below will not be split into multiple notifications.
+
+| Character limit for... | Android | iOS | All Push Notifications |
+| --- | --- | --- | --- |
+| Notification title | 65 | None | 65 |
+| Notification total length (title + message) | 240 | 178 | 178 |
+
+Push configuration parameters are as follows:
+
+| Key | Description |
+| --- | --- |
+| PUSH_API_KEY | Key for Mobile Team push notifications internal API. |
+| PUSH_API_URL | URL for Mobile Team push notifications internal API, in the form https://example.com/api/otp_push/instance_name. |
