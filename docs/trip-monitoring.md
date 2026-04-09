@@ -90,7 +90,9 @@ Whether an itinerary matches another one is determined by the `ItineraryMatcher`
 
 ### Itinerary Fetching and Matching
 
-The `ItineraryMatcher` class uses two methods to find a matching itinerary:
+The `ItineraryMatcher` class uses two methods to find a matching itinerary: Leg ID and Plan.
+Either one can optionally run in multiple threads if `OTP_REQUESTS_THREADING_ENABLED` is set to `true`,
+independently from the threading from `MonitorAllTripsJob`.
 
 #### Leg ID Method
 
@@ -164,6 +166,13 @@ Two itineraries match if they meet the conditions below:
 - The transit vehicles must present the same headsign
 - The same interlining between routes must be present (e.g. situations when the same vehicle continues as a different route starting from a stop)
 - The start times and end times are the same.
+
+#### Itinerary Matching Attempts
+
+In case no matching itinerary is found using either method above, the process can be re-attempted at the next run of `MonitorAllTripsJob`,
+up to the number of attempts set by `MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS`.
+If the number of attempts is reached and a matching itinerary is not found, a notification of type `ITINERARY_NOT_FOUND`
+("Unable to monitor trip") is sent.
 
 ### Journey State
 
