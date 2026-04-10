@@ -117,6 +117,15 @@ Within 30 minutes the trip start time, checks are performed every minute.
 
 ## Important concepts
 
+### Recurring vs. One-Time Trips
+
+A recurring trip is a trip that is taken repeatedly, at least once a week.
+At least one of the `MonitoredTrip.monday`...`MonitoredTrip.sunday` fields is set to true for a trip to be recurring.
+If all of these fields are set to false, the trip is deemed one-time.
+
+One-time trips are only monitored on the day they occur until they end.
+After a recurring trip ends, the next date for that trip is computed, and monitoring for that trip resumes on that date.
+
 ### Target Date and Matching Itinerary
 
 When a user saves an itinerary for monitoring, that itinerary is saved in Mongo as a template without real-time updates
