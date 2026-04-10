@@ -246,6 +246,9 @@ The number of consecutive failed attempts is recorded in `MonitoredTrip.attempts
 If the number of attempts is reached and a matching itinerary is not found, a notification of type `ITINERARY_NOT_FOUND`
 ("Unable to monitor trip") is sent.
 
+A provision exists in the logic of `CheckMonitorTrip` to issue a notification that a trip is no longer possible
+if no matching itinerary has been found for over a week. (This is not currently implemented.)
+
 ### Journey State
 
 The journey state contains various attributes that deal with real-time trip monitoring, including:
