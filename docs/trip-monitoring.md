@@ -140,11 +140,9 @@ When monitoring real-time updates, a *matching itinerary* is fetched from OTP us
 A matching itinerary looks similar to the saved itinerary, however, the itinerary date corresponds to the target date.
 Some of the times can be shifted, and real-time alerts can be present.
 
-Whether an itinerary matches another one is determined by the `ItineraryMatcher` utility class.
-
 ### Itinerary Fetching and Matching
 
-The `ItineraryMatcher` class uses two methods to find a matching itinerary from OTP: Leg ID and Plan.
+The `ItineraryExistence` class uses two methods to find a matching itinerary from OTP: Leg ID and Plan.
 Either one can optionally run in multiple threads if `OTP_REQUESTS_THREADING_ENABLED` is set to `true`,
 independently from the threading from `MonitorAllTripsJob`.
 
@@ -163,13 +161,14 @@ Itinerary fetching uses the following OTP configuration parameters:
 
 #### Leg ID Method
 
+The `ItineraryChecker` class contains the logic for the Leg ID method.
 Transit legs are fetched using OTP's `leg` GraphQL query for a particular day.
-Returned legs, if found, contain rela-time delays or alerts.
+Returned legs, if found, contain real-time delays or alerts.
 Legs are queried using a leg id, which is a hash used by OTP to quickly lookup a leg.
 A leg id combines the date, service id, and from and to places of a transit leg.
 
 If all transit legs are found by querying leg ids, an itinerary is reconstructed by attempting to fit the
-transfer legs between the fetched, updated transit legs.
+transfer legs between the fetched, updated transit legs. Class `ItineraryFromLegMatcher` handles reconstructing the itinerary.
 There are two constraints in that process:
 
 - Transfer legs
@@ -225,7 +224,7 @@ If the leg id method fails, a `plan` GraphQL query is sent to OTP to replan the 
 search, whereas a leg id query is a simple lookup operation.
 Itineraries returned from the OTP plan query are stripped from delay data and matched against the original monitored itinerary.
 
-Two itineraries match if they meet the conditions below:
+Two itineraries match if they meet the conditions below defined in `ItineraryMatcher` and `LegMatcher` classes:
 - Both itineraries can be monitored (they don't contain rentals)
 - The have the same number of legs
 - The origin and destination stops match
