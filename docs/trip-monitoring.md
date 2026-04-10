@@ -13,9 +13,41 @@ Trips saved by users can be retrieved at a later point for viewing/editing.
 
 ## Overview
 
-OtpUser
-MonitoredTrip
-JourneyState
+```mermaid
+---
+title: Trip Monitoring Classes and Relevant Fields/Methods
+---
+classDiagram
+    direction RL
+    class OtpUser {
+        EnumSet~Notification~ notificationChannel
+        String phoneNumber
+        boolean isPhoneNumberVerified
+        Date smsConsentDate
+        String preferredLocale
+        int pushDevices
+    }
+    class MonitoredTrip {
+        boolean monday, tuesday, ..., sunday
+        boolean isActive
+        boolean snoozed
+        OtpGraphQLVariables otp2QueryParams
+        Itinerary itinerary
+        int leadTimeInMinutes
+        boolean notifyOnAlert
+        int departureVarianceMinutesThreshold
+        int arrivalVarianceMinutesThreshold
+        ItineraryExistence itineraryExistence
+        JourneyState journeyState
+        boolean notifyAtLeadingInterval
+        int attemptsToGetMatchingItinerary
+    }
+    MonitoredTrip --> OtpUser
+    JourneyState --> MonitoredTrip
+    MonitoredTripController --> MonitoredTrip
+
+```
+
 TripAnalyzer
 CheckMonitoredTrip
 
@@ -58,12 +90,12 @@ flowchart LR
 Class `CheckMonitoredTrip` contains the actual trip monitoring logic.
 All saved trips are checked for the following conditions:
 
-- Trip is active
-- Trip is not snoozed
+- `MonitoredTrip.active` true,
+- `MonitoredTrip.isSnoozed` not true
 - Trip is one-time not in the past, or trip is recurring
 - Trip is not deemed no longer possible
-- Trip is being monitored on a particular day
-- Trip start time is within the lead monitoring time, and the trip end time has not passed yet.
+- Trip is being monitored on the current day of the week
+- Current time is within `MonitoredTrip.leadTimeInMinutes` of the matching itinerary's start time, and that itinerary end time has not passed yet.
 
 Within an hour of the trip start time, checks are performed every 15 minutes.
 Within 30 minutes the trip start time, checks are performed every minute.
@@ -78,6 +110,7 @@ replan the trip can be made, if needed.
 
 The *target date* is the date a trip is supposed to take place. For one-time trips, the target date is the date of the trip.
 For recurring trips, the target date is the next occurrence of the trip, according to the days the trip is being monitored.
+Note that holidays are not supported yet.
 
 When monitoring real-time updates, a *matching itinerary* is fetched from OTP using the query parameters used to obtain the original itinerary.
 A matching itinerary looks similar to the saved itinerary, however, the itinerary date corresponds to the target date.
@@ -102,7 +135,7 @@ Itinerary fetching uses the following OTP configuration parameters:
 | `OTP_TIMEZONE` | The timezone identifier (e.g. `America/Los_Angeles`) that OTP is using to parse dates and times. |
 | `OTP_TRANSFER_SLACK_SECONDS` | Optional extra time added by OTP between two transit legs to ensure transfers can be made, accounting for small timing variations that happen in reality. |
 | `PLAN_QUERY_RESOURCE_URI` | Optional location of a custom GraphQL template for the OTP `plan` query.  |
-| `MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS` | The maximum number of attempts to obtain a monitored trip itinerary (default 3). |
+| `MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS` | The maximum number of attempts to obtain a matching itinerary (default 3). Used with `MonitoredTrip.attemptsToGetMatchingItinerary`. |
 
 #### Leg ID Method
 
@@ -163,8 +196,8 @@ gantt
 
 #### Plan Method
 
-If the leg id method fails, a `plan` GraphQL query is sent to OTP to replan the entire trip for the target date, using the
-query parameters of the monitored trip. This method is slower than leg id method because OTP has to perform a full itinerary
+If the leg id method fails, a `plan` GraphQL query is sent to OTP to replan the entire trip for the target date, using
+`MonitoredTrip.otp2QueryParams`. This method is slower than leg id method because OTP has to perform a full itinerary
 search, whereas a leg id query is a simple lookup operation.
 Itineraries returned from the OTP plan query are stripped from delay data and matched against the original monitored itinerary.
 
@@ -177,11 +210,15 @@ Two itineraries match if they meet the conditions below:
 - The same interlining between routes must be present (e.g. situations when the same vehicle continues as a different route starting from a stop)
 - The start times and end times are the same.
 
+Note that suggesting alternate itineraries is not implemented yet.
+
 #### Itinerary Matching Attempts
 
 In case no matching itinerary is found using either method above, or there is a connection timeout,
 the process can be re-attempted at the next run of `MonitorAllTripsJob`,
 up to the number of attempts set by `MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS`.
+
+The number of consecutive failed attempts is recorded in `MonitoredTrip.attemptsToGetMatchingItinerary`.
 If the number of attempts is reached and a matching itinerary is not found, a notification of type `ITINERARY_NOT_FOUND`
 ("Unable to monitor trip") is sent.
 
@@ -196,9 +233,12 @@ The journey state contains various attributes that deal with real-time trip moni
 ## Itinerary Existence Checking
 
 Itinerary existence checking is performed prior to saving a new monitored trip.
-Typically, the OTP-react-redux UI will request an itinerary check for a given itinerary.
-OTP-middleware will perform an additional check upon submission (POST). If the check does not succeed,
-the submission is rejected, and the trip is not saved or monitored.
+Typically, the OTP-react-redux UI will request an existence check for a given itinerary
+and display the result.
+
+Upon saving (POST), OTP-middleware will perform an additional existence check. If the check does not succeed,
+the submission is rejected, and the trip is not saved or monitored. If the check passes,
+the result is saved in `MonitoredTrip.itineraryExistence`.
 
 ## Trip Notifications
 
@@ -208,8 +248,8 @@ notification message.
 
 | Notification Type | Description |
 | --- | --- |
-| `INITIAL_REMINDER` | Advance trip reminder ("Reminder for My Trip at 8:30") sent once at the lead monitoring time for all monitored trips on the day the trip occurs. |
-| `ALERT_FOUND` | Trip alerts - Sent once each new GTFS-realtime alerts in the matching itinerary, and once when a previously present alert is no longer there (i.e. cleared). |
+| `INITIAL_REMINDER` | Advance trip reminder ("Reminder for My Trip at 8:30"). If `MonitoredTrip.notifyAtLeadingInterval` is true, sent once at the lead monitoring time on the day a given trip occurs. |
+| `ALERT_FOUND` | Trip alerts - If `MonitoredTrip.notifyOnAlert` is true, an alert is sent once for each new GTFS-realtime alert in the matching itinerary, and once when a previously present alert is no longer there (i.e. cleared). |
 | `DEPARTURE_DELAY`<br>`ARRIVAL_DELAY`<br>`DEPARTURE_AND_ARRIVAL_DELAY` | Trip delay notifications ("Your trip is departing/arriving 5 minutes late") - Sent if delays exceed 5 minutes from the original trip time. |
 | `REALTIME_UPDATES_LOST` | Loss of real-time data in OTP - Sent each time a matching itinerary is fetched and contains no real-time updates, while the previously fetched matching itinerary did. |
 | `ITINERARY_NOT_FOUND` | "Unable to monitor trip" - Sent when a trip can no longer be performed, for instance because of a schedule change or real-time conditions resulting in missed transfers. |
