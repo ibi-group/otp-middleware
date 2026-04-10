@@ -4,17 +4,9 @@ This file provides an overview of the trip monitoring functionality.
 Trip monitoring lets users save a trip from a search in OTP and receive any real-time updates such as delays and alerts.
 Trips saved by users can be retrieved at a later point for viewing/editing.
 
-## Configuration Items
+## Shortcuts to Configuration Items
 
-| Key | Default Value | Description |
-| --- | --- | --- |
-| `MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS` | 3 | The maximum number of attempts to obtain a monitored trip itinerary. |
-| `MAXIMUM_PERMITTED_MONITORED_TRIPS` | 5 | Constant. The maximum number of saved monitored trips. |
-| `OTP_REQUESTS_THREADING_ENABLED` | true | Use multi-threading to handle OTP requests and responses. |
-| `OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS` | 30 | The maximum time for making requests to OTP. |
-| `OTP_TRANSFER_SLACK_SECONDS` | 0 | Extra time added by OTP between two transit legs to ensure transfers can be made, accounting for small timing variations that happen in reality. |
-
-Other configuration items:
+- [OTP configuration](#itinerary-fetching-and-matching)
 - [Email notifications](#email-notifications)
 - [SMS notifications](#sms-notifications)
 - [Push notifications](#push-notifications)
@@ -95,13 +87,26 @@ Whether an itinerary matches another one is determined by the `ItineraryMatcher`
 
 ### Itinerary Fetching and Matching
 
-The `ItineraryMatcher` class uses two methods to find a matching itinerary: Leg ID and Plan.
+The `ItineraryMatcher` class uses two methods to find a matching itinerary from OTP: Leg ID and Plan.
 Either one can optionally run in multiple threads if `OTP_REQUESTS_THREADING_ENABLED` is set to `true`,
 independently from the threading from `MonitorAllTripsJob`.
 
+Itinerary fetching uses the following OTP configuration parameters:
+
+| Key | Description |
+| --- | --- |
+| `OTP_API_ROOT` | The URL of an operational OTP (v2.x) server. Should end with the `/otp` path. |
+| `OTP_GRAPHQL_ENDPOINT` | Endpoint for OTP GraphQL queries, typically `/routers/default/index/graphql` or `/gtfs/v1` | 
+| `OTP_REQUESTS_THREADING_ENABLED` | Use multi-threading to handle OTP requests and responses (default true). |
+| `OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS` | The maximum time for making requests to OTP (default 30s) |
+| `OTP_TIMEZONE` | The timezone identifier (e.g. `America/Los_Angeles`) that OTP is using to parse dates and times. |
+| `OTP_TRANSFER_SLACK_SECONDS` | Optional extra time added by OTP between two transit legs to ensure transfers can be made, accounting for small timing variations that happen in reality. |
+| `PLAN_QUERY_RESOURCE_URI` | Optional location of a custom GraphQL template for the OTP `plan` query.  |
+| `MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS` | The maximum number of attempts to obtain a monitored trip itinerary (default 3). |
+
 #### Leg ID Method
 
-Transit legs are fetched using OTP's `leg` query for a particular day.
+Transit legs are fetched using OTP's `leg` GraphQL query for a particular day.
 Returned legs, if found, contain rela-time delays or alerts.
 Legs are queried using a leg id, which is a hash used by OTP to quickly lookup a leg.
 A leg id combines the date, service id, and from and to places of a transit leg.
@@ -158,7 +163,7 @@ gantt
 
 #### Plan Method
 
-If the leg id method fails, a `plan` query is sent to OTP to replan the entire trip for the target date, using the
+If the leg id method fails, a `plan` GraphQL query is sent to OTP to replan the entire trip for the target date, using the
 query parameters of the monitored trip. This method is slower than leg id method because OTP has to perform a full itinerary
 search, whereas a leg id query is a simple lookup operation.
 Itineraries returned from the OTP plan query are stripped from delay data and matched against the original monitored itinerary.
@@ -174,7 +179,8 @@ Two itineraries match if they meet the conditions below:
 
 #### Itinerary Matching Attempts
 
-In case no matching itinerary is found using either method above, the process can be re-attempted at the next run of `MonitorAllTripsJob`,
+In case no matching itinerary is found using either method above, or there is a connection timeout,
+the process can be re-attempted at the next run of `MonitorAllTripsJob`,
 up to the number of attempts set by `MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS`.
 If the number of attempts is reached and a matching itinerary is not found, a notification of type `ITINERARY_NOT_FOUND`
 ("Unable to monitor trip") is sent.
@@ -265,6 +271,13 @@ A separate push middleware must be implemented (not documented here) that manage
 and forwards notifications to them.
 The number of registered devices is available in `OtpUser.pushDevices`.
 
+Push configuration parameters are as follows:
+
+| Key | Description |
+| --- | --- |
+| `PUSH_API_KEY` | Key for Mobile Team push notifications internal API. |
+| `PUSH_API_URL` | URL for Mobile Team push notifications internal API, in the form https://example.com/api/otp_push/instance_name. |
+
 Push notification content is trimmed automatically to fit the message format of the mobile platform.
 Only one notification sent, and contents that exceeds the limits below will not be split into multiple notifications.
 
@@ -272,10 +285,3 @@ Only one notification sent, and contents that exceeds the limits below will not 
 | --- | --- | --- | --- |
 | Notification title | 65 | None | 65 |
 | Notification total length (title + message) | 240 | 178 | 178 |
-
-Push configuration parameters are as follows:
-
-| Key | Description |
-| --- | --- |
-| PUSH_API_KEY | Key for Mobile Team push notifications internal API. |
-| PUSH_API_URL | URL for Mobile Team push notifications internal API, in the form https://example.com/api/otp_push/instance_name. |
