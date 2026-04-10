@@ -43,7 +43,17 @@ classDiagram
         int attemptsToGetMatchingItinerary
     }
     class JourneyState {
-
+        long baselineArrivalTimeEpochMillis
+        long baselineDepartureTimeEpochMillis
+        long scheduledArrivalTimeEpochMillis
+        long scheduledDepartureTimeEpochMillis
+        long lastCheckedEpochMillis
+        Set~TripMonitorNotification~ lastNotifications
+        long lastNotificationTimeMillis
+        Itinerary matchingItinerary
+        String targetDate
+        TripStatus tripStatus
+        boolean hasRealtimeData
     }
     class ItineraryExistence {
         ItineraryExistenceResult monday, tuesday, ... sunday
@@ -57,9 +67,11 @@ classDiagram
         /checkitinerary
     }
     MonitoredTrip --> OtpUser
+    MonitoredTrip --> TripAnalyzer
     JourneyState --> MonitoredTrip
     ItineraryExistence --> MonitoredTrip
     MonitoredTripController --> MonitoredTrip
+    CheckMonitoredTrip --> MonitoredTrip
 
 ```
 
@@ -108,7 +120,7 @@ All saved trips are checked for the following conditions:
 - `MonitoredTrip.active` true,
 - `MonitoredTrip.isSnoozed` not true
 - Trip is one-time not in the past, or trip is recurring
-- Trip is not deemed no longer possible
+- Trip is not deemed `NO_LONGER_POSSIBLE`
 - Trip is being monitored on the current day of the week
 - Current time is within `MonitoredTrip.leadTimeInMinutes` of the matching itinerary's start time, and that itinerary end time has not passed yet.
 
@@ -144,7 +156,7 @@ Some of the times can be shifted, and real-time alerts can be present.
 
 The `ItineraryExistence` class uses two methods to find a matching itinerary from OTP: Leg ID and Plan.
 Either one can optionally run in multiple threads if `OTP_REQUESTS_THREADING_ENABLED` is set to `true`,
-independently from the threading from `MonitorAllTripsJob`.
+independently of the threading from `MonitorAllTripsJob`.
 
 Itinerary fetching uses the following OTP configuration parameters:
 
@@ -164,7 +176,7 @@ Itinerary fetching uses the following OTP configuration parameters:
 The `ItineraryChecker` class contains the logic for the Leg ID method.
 Transit legs are fetched using OTP's `leg` GraphQL query for a particular day.
 Returned legs, if found, contain real-time delays or alerts.
-Legs are queried using a leg id, which is a hash used by OTP to quickly lookup a leg.
+Legs are queried using a leg id, which is a hash used by OTP to quickly look up a leg.
 A leg id combines the date, service id, and from and to places of a transit leg.
 
 If all transit legs are found by querying leg ids, an itinerary is reconstructed by attempting to fit the
@@ -226,7 +238,7 @@ Itineraries returned from the OTP plan query are stripped from delay data and ma
 
 Two itineraries match if they meet the conditions below defined in `ItineraryMatcher` and `LegMatcher` classes:
 - Both itineraries can be monitored (they don't contain rentals)
-- The have the same number of legs
+- They have the same number of legs
 - The origin and destination stops match
 - The same modes and transit routes are used in the same order
 - The transit vehicles must present the same headsign
@@ -250,11 +262,26 @@ if no matching itinerary has been found for over a week. (This is not currently 
 
 ### Journey State
 
-The journey state contains various attributes that deal with real-time trip monitoring, including:
-- Matching itinerary
-- Target date and trip status (upcoming, in the past, active, trip not found)
-- Latest departure and arrival delay updates
-- Notifications sent, so that the same notifications are not unnecessarily repeated to users.
+Each `MonitoredTrip` object has a `JourneyState` instance that contains the latest trip monitoring state as a result of
+running `CheckMonitoredTrip` logic. If a `JourneyState` object's fields are not populated (or are zero),
+the trip is deemed to not have been monitored before.
+
+Once an occurrence of a trip completes, the journey state is "reset",
+so that notifications can be sent again for the next trip occurrence.
+
+A `JourneyState` consists of the following attributes:
+
+- `matchingItinerary` with any real-time updates
+- `targetDate` and `tripStatus`
+  - `NO_LONGER_POSSIBLE` (not used) if no matching itinerary has been found in a week
+  - `NEXT_TRIP_NOT_POSSIBLE` if no matching itinerary has been found for the next occurrence of the trip
+  - `TRIP_UPCOMING` if a matching itinerary could be fetched for the next occurrence of the trip
+  - `TRIP_ACTIVE` if the current time is after the start time and before the end time of the matching itinerary most recently fetched
+  - `PAST_TRIP` for one-time trips that happened in the past
+- `scheduled{arrival/departure}TimeEpochMillis` contains the scheduled trip start/end times (in millis) for the `targetDate`.
+- `baseline{arrival/departure}TimeEpochMillis` and `hasRealtimeData` contains the most recent updated trip start/end times (in millis) for the matching itinerary.
+- `lastNotifications` (and `lastNotificationTimeMillis`) holds all notifications sent , so that the same notifications are not unnecessarily repeated to users.
+- `lastCheckedEpochMillis` used to space out checks within 30 minutes and one hour before trip starts.
 
 ## Itinerary Existence Checking
 
