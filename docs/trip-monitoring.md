@@ -42,8 +42,23 @@ classDiagram
         boolean notifyAtLeadingInterval
         int attemptsToGetMatchingItinerary
     }
+    class JourneyState {
+
+    }
+    class ItineraryExistence {
+        ItineraryExistenceResult monday, tuesday, ... sunday
+        String message
+        boolean error
+        Date timestamp
+    }
+    class MonitoredTripController {
+        / [GET, POST]
+        /:id [GET, PUT, DELETE]
+        /checkitinerary
+    }
     MonitoredTrip --> OtpUser
     JourneyState --> MonitoredTrip
+    ItineraryExistence --> MonitoredTrip
     MonitoredTripController --> MonitoredTrip
 
 ```
@@ -232,13 +247,22 @@ The journey state contains various attributes that deal with real-time trip moni
 
 ## Itinerary Existence Checking
 
-Itinerary existence checking is performed prior to saving a new monitored trip.
-Typically, the OTP-react-redux UI will request an existence check for a given itinerary
-and display the result.
+Itinerary existence checking is handled by the `/checkitinerary` (POST) endpoint of `MonitoredTripController`.
+The endpoint takes a `MonitoredTrip` object with a populated `itinerary` and `otp2QueryParams` fields.
 
-Upon saving (POST), OTP-middleware will perform an additional existence check. If the check does not succeed,
-the submission is rejected, and the trip is not saved or monitored. If the check passes,
+The itinerary existence check queries OTP and tries to find matching itineraries in a seven-day window
+that starts from `MonitoredTrip.otp2QueryParams.date`.
+The result is an `ItineraryExistence` object with fields for each day of the week (monday, ..., sunday),
+each day containing a valid flag, valid and invalid dates.
+
+Itinerary existence should be checked prior to saving a new monitored trip.
+Typically, the OTP-react-redux UI will request an existence check for a given itinerary
+and display the days of the week the itinerary is possible.
+
+Upon saving a trip (POST), if the trip is recurring, OTP-middleware will perform an additional existence check. If the check does not succeed,
+the request is rejected, and the trip is not saved or monitored. If the check passes,
 the result is saved in `MonitoredTrip.itineraryExistence`.
+(The check is not performed when saving one-time trips.)
 
 ## Trip Notifications
 
