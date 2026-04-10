@@ -216,18 +216,15 @@ notification message.
 
 Other notifications are discussed in [Notifications to Companions/Observers](live-tracking.md#notifications-to-companionsobservers).
 
-Trip notifications are sent using the channels set by the user in `OtpUser.notificationChannel`
-in the language/locale set in `OtpUser.preferredLocale` at the time notifications are sent.
-The notification channels are as follows:
-
-- Email to the account's email address
-- SMS to a verified phone number
-- Push notifications to mobile apps
+Trip notifications are sent using the channels set in `OtpUser.notificationChannel`, which is a combination of
+`EMAIL`, `SMS`, `PUSH` defined in enum `OtpUser.Notification`. `HAPTIC` is reserved for mobile app use and is not
+handled by OTP-middleware.
+The notification language/locale is set in `OtpUser.preferredLocale` at the time notifications are sent.
 
 Message templates in [Freemarker](https://freemarker.apache.org/) format (.ftl files) are provided for each notification
 channel and each supported language, so that notifications are formatted to fit the receiving device.
 
-### Email notifications
+###  Email notifications
 
 Email notifications are sent with [Sparkpost (now known as Bird Email)](https://bird.com/en/resources/blog/sparkpost-is-now-bird-email).
 The destination email is the email a user entered when creating an OTP-middleware account using Auth0.
