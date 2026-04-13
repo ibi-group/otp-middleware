@@ -267,8 +267,9 @@ if no matching itinerary has been found for over a week. (This is not currently 
 
 ### Journey State
 
-Each `MonitoredTrip` object has a `JourneyState` instance that contains the latest trip monitoring state as a result of
-running `CheckMonitoredTrip` logic. If a `JourneyState` object's fields are not populated (or are zero),
+Each `MonitoredTrip` object contains a [`JourneyState`](../src/main/java/org/opentripplanner/middleware/tripmonitor/JourneyState.java)
+instance, which is a snapshot of the latest trip monitoring state as a result of
+running `CheckMonitoredTrip`. If a `JourneyState` object's fields are not populated (or are zero),
 the trip is deemed to not have been monitored before.
 
 Once an occurrence of a trip completes, the journey state is "reset",
@@ -277,16 +278,22 @@ so that notifications can be sent again for the next trip occurrence.
 A `JourneyState` consists of the following attributes:
 
 - `matchingItinerary` with any real-time updates
-- `targetDate` and `tripStatus`
-  - `NO_LONGER_POSSIBLE` (not used) if no matching itinerary has been found in a week
-  - `NEXT_TRIP_NOT_POSSIBLE` if no matching itinerary has been found for the next occurrence of the trip
-  - `TRIP_UPCOMING` if a matching itinerary could be fetched for the next occurrence of the trip
-  - `TRIP_ACTIVE` if the current time is after the start time and before the end time of the matching itinerary most recently fetched
-  - `PAST_TRIP` for one-time trips that happened in the past
+- `targetDate` of the next occurrence of a monitored trip
+- `tripStatus` of the current or next occurrence of a monitored trip
 - `scheduled{arrival/departure}TimeEpochMillis` contains the scheduled trip start/end times (in millis) for the `targetDate`.
 - `baseline{arrival/departure}TimeEpochMillis` and `hasRealtimeData` contains the most recent updated trip start/end times (in millis) for the matching itinerary.
 - `lastNotifications` (and `lastNotificationTimeMillis`) holds all notifications sent , so that the same notifications are not unnecessarily repeated to users.
 - `lastCheckedEpochMillis` used to space out checks within 30 minutes and one hour before trip starts.
+
+The possible values for `tripStatus` are as follows:
+
+| `TripStatus` value | Description |
+| --- | --- |
+| `TRIP_UPCOMING` | A matching itinerary was found at the last run of `CheckMonitoredTrip` before the start time of next occurrence of the trip |
+| `TRIP_ACTIVE` | The current time is after the start time and before the end time of the matching itinerary most recently fetched |
+| `PAST_TRIP` | Indicates a one-time trip that happened in the past |
+| `NEXT_TRIP_NOT_POSSIBLE` | No matching itinerary has been found for the next occurrence of the trip |
+| `NO_LONGER_POSSIBLE` | (Not used) No matching itinerary has been found in a week |
 
 ## Itinerary Existence Checking
 
