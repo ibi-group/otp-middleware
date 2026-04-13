@@ -10,7 +10,7 @@ regarding that itinerary. Users can retrieve monitored trips at a later point fo
 - [SMS notifications](#sms-notifications)
 - [Push notifications](#push-notifications)
 
-## Overview
+## Class Overview
 
 ```mermaid
 ---
@@ -80,9 +80,6 @@ Trip monitoring is orchestrated by [`MonitorAllTripsJob`](../src/main/java/org/o
 monitoring of all qualifying trips between threads as determined by the number of CPUs on the instance.
 Each thread runs a `TripAnalyzer` instance that processes a queue of `MonitoredTrip`, one trip at a time.
 
-Trip monitoring is currently intended to be performed by a single instance.
-Running trip monitoring on multiple instances is possible, however race conditions may occur.
-
 The trip monitoring lifecycle is illustrated in the following diagram:
 
 ```mermaid
@@ -106,6 +103,14 @@ flowchart LR
     analyzer2 --Trip 2<br>Trip n+2, …--> queue2
     analyzerN --Trip n, …--> queueN
 ```
+
+Trip monitoring is currently intended to be performed by a single server.
+Running trip monitoring on multiple servers is possible, however race conditions may occur.
+This is because when a trip is being analyzed, a thread-safe in-memory lock is set on the trip so that other threads
+running on the same machine don't repeat the trip monitoring work already ongoing. The lock is released when trip
+monitoring logic completes.
+
+At the time of writing, the memory lock does not apply across multiple machines (a database lock would be needed).
 
 ## Trip Monitoring Conditions
 
