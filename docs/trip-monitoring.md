@@ -74,9 +74,6 @@ classDiagram
 
 ```
 
-TripAnalyzer
-CheckMonitoredTrip
-
 ## Trip Monitoring Lifecycle
 
 Trip monitoring is orchestrated by [`MonitorAllTripsJob`](../src/main/java/org/opentripplanner/middleware/tripmonitor/jobs/MonitorAllTripsJob.java) that runs every minute in the background. The job splits the
@@ -312,9 +309,7 @@ the result is saved in `MonitoredTrip.itineraryExistence`.
 
 ## Trip Notifications
 
-Trip notifications are of the following types.
-Multiple notifications from a single run of `CheckMonitoredTrip` are generally combined into a single
-notification message.
+Trip notifications are of the following types:
 
 | Notification Type | Description |
 | --- | --- |
@@ -327,19 +322,18 @@ notification message.
 Other notifications are discussed in [Notifications to Companions/Observers](live-tracking.md#notifications-to-companionsobservers).
 
 Trip notifications are sent using the channels set in `OtpUser.notificationChannel`, which is a combination of
-`EMAIL`, `SMS`, `PUSH` defined in enum `OtpUser.Notification`. `HAPTIC` is reserved for mobile app use and is not
-handled by OTP-middleware.
+`OtpUser.Notification.EMAIL`, `SMS`, and `PUSH` enum members. `HAPTIC` is reserved for mobile app use.
 The notification language/locale is set in `OtpUser.preferredLocale` at the time notifications are sent.
 
 Message templates in [Freemarker](https://freemarker.apache.org/) format (.ftl files) are provided for each notification
 channel and each supported language, so that notifications are formatted to fit the receiving device.
+The templates can accommodate multiple notifications from a single run of `CheckMonitoredTrip` into a single message.
 
 ###  Email notifications
 
 Email notifications are sent with [Sparkpost (now known as Bird Email)](https://bird.com/en/resources/blog/sparkpost-is-now-bird-email).
 The destination email is the email a user entered when creating an OTP-middleware account using Auth0.
-It is recommended to verify the email address by having users open a link sent to them by Auth0
-(`Auth0Users.resendVerificationEmail` method).
+It is recommended to verify the email address by sending users an Auth0 verification link they can open (`Auth0Users.resendVerificationEmail` method).
 OTP-middleware uses Auth0 login data to extract the user's email and does not store it.
 
 The email configuration parameters are as follows:
@@ -354,7 +348,7 @@ The email configuration parameters are as follows:
 ### SMS Notifications
 
 SMS notifications are sent to the number stored in `OtpUser.phoneNumber`, using [Twilio](https://www.twilio.com/).
-The phone number must be verified (`OtpUser.isPhoneNumberVerified`, ),
+The phone number must be verified (`OtpUser.isPhoneNumberVerified`),
 typically using a UI where the user enters a Twilio validation code sent to that number.
 
 Because cell phone carriers often charge fees for SMS, it is recommended to record the user's consent date
