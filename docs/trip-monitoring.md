@@ -79,7 +79,7 @@ CheckMonitoredTrip
 
 ## Trip Monitoring Lifecycle
 
-Trip monitoring is orchestrated by `MonitorAllTripsJob` that runs every minute in the background. The job splits the
+Trip monitoring is orchestrated by [`MonitorAllTripsJob`](../src/main/java/org/opentripplanner/middleware/tripmonitor/jobs/MonitorAllTripsJob.java) that runs every minute in the background. The job splits the
 monitoring of all qualifying trips between threads as determined by the number of CPUs on the instance.
 Each thread runs a `TripAnalyzer` instance that processes a queue of `MonitoredTrip`, one trip at a time.
 
