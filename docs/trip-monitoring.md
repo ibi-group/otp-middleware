@@ -1,8 +1,7 @@
 # Trip Monitoring
 
-This file provides an overview of the trip monitoring functionality.
-Trip monitoring lets users save a trip from a search in OTP and receive any real-time updates such as delays and alerts.
-Trips saved by users can be retrieved at a later point for viewing/editing.
+Trip monitoring lets users save an itinerary searched in OTP and receive any real-time updates such as delays and alerts
+regarding that itinerary. Users can retrieve monitored trips at a later point for viewing/editing.
 
 ## Shortcuts to Configuration Items
 
@@ -80,36 +79,35 @@ CheckMonitoredTrip
 
 ## Trip Monitoring Lifecycle
 
-Trip monitoring is run as a background, recurring job `MonitorAllTripsJob` that runs every minute.
-The job splits the monitoring of all qualifying trips between threads as determined by the number of CPUs on the instance.
-Each thread runs a `TripAnalyzer`, and each analyzer processes a queue of `MonitoredTrip`, one trip at a time.
+Trip monitoring is orchestrated by `MonitorAllTripsJob` that runs every minute in the background. The job splits the
+monitoring of all qualifying trips between threads as determined by the number of CPUs on the instance.
+Each thread runs a `TripAnalyzer` instance that processes a queue of `MonitoredTrip`, one trip at a time.
 
 Trip monitoring is currently intended to be performed by a single instance.
 Running trip monitoring on multiple instances is possible, however race conditions may occur.
 
-The trip monitoring lifecycle is illustrated in the following diagram, where the executing instance has *n* cores:
+The trip monitoring lifecycle is illustrated in the following diagram:
 
 ```mermaid
 ---
-title: Trip Monitoring Lifecycle (Single Instance with n cores)
+title: Trip Monitoring Lifecycle (Single Instance with n threads)
 ---
 flowchart LR
-    job[MonitorAllTripsJob]
+    job["⏱️ MonitorAllTripsJob"]
     analyzer1[TripAnalyzer]
     analyzer2[TripAnalyzer]
     analyzerX[...]
     analyzerN[TripAnalyzer]
-    queue1[Trip 1<br>Trip n+1<br>...]
-    queue2[Trip 2<br>Trip n+2<br>...]
-    queueN[Trip n<br>...]
-    Timer --> job --thread 1--> analyzer1
+    queue1[Notifications]
+    queue2[Notifications]
+    queueN[Notifications]
+    job --thread 1--> analyzer1
     job --thread 2--> analyzer2
     job -.-> analyzerX
     job --thread n--> analyzerN
-    analyzer1 --> queue1
-    analyzer2 --> queue2
-    analyzerN --> queueN
-
+    analyzer1 --Trip 1<br>Trip n+1, …--> queue1
+    analyzer2 --Trip 2<br>Trip n+2, …--> queue2
+    analyzerN --Trip n, …--> queueN
 ```
 
 ## Trip Monitoring Conditions
@@ -140,23 +138,21 @@ After a recurring trip ends, the next date for that trip is computed, and monito
 
 ### Target Date and Matching Itinerary
 
-When a user saves an itinerary for monitoring, that itinerary is saved in Mongo as a template without real-time updates
-or alerts. The query parameters used to obtain that itinerary are also saved, so that a request to OTP to
-replan the trip can be made, if needed.
+When a user saves an itinerary for monitoring, a new `MonitoredTrip` instance is created, and that itinerary is written
+under `MonitoredTrip.itinerary` as a template without real-time updates
+or alerts. The query parameters used to obtain that itinerary are also saved under `MonitoredTrip.otp2QueryParameters`,
+so that a request to OTP to replan the trip can be made, if needed.
+The `MonitoredTrip` instance is persisted in Mongo.
 
-The *target date* is the date a trip is supposed to take place. For one-time trips, the target date is the date of the trip.
-For recurring trips, the target date is the next occurrence of the trip, according to the days the trip is being monitored.
-Note that holidays are not supported yet.
+`MonitoredTrip.targetDate` is the date a trip is supposed to take place. For one-time trips, the target date is simply
+the date of the trip. For recurring trips, the target date is the next occurrence of the trip, according to the days the
+trip is being monitored. Note that holidays are not supported yet.
 
-When monitoring real-time updates, a *matching itinerary* is fetched from OTP using the query parameters used to obtain the original itinerary.
-A matching itinerary looks similar to the saved itinerary, however, the itinerary date corresponds to the target date.
-Some of the times can be shifted, and real-time alerts can be present.
+During trip monitoring, a *matching itinerary* is fetched from OTP using the query parameters from which the original
+itinerary was obtained. A matching itinerary looks similar to the saved itinerary, however, the itinerary date
+corresponds to the target date, trip times can be shifted due to service delays, and real-time alerts can be present.
 
 ### Itinerary Fetching and Matching
-
-The `ItineraryExistence` class uses two methods to find a matching itinerary from OTP: Leg ID and Plan.
-Either one can optionally run in multiple threads if `OTP_REQUESTS_THREADING_ENABLED` is set to `true`,
-independently of the threading from `MonitorAllTripsJob`.
 
 Itinerary fetching uses the following OTP configuration parameters:
 
@@ -164,12 +160,14 @@ Itinerary fetching uses the following OTP configuration parameters:
 | --- | --- |
 | `OTP_API_ROOT` | The URL of an operational OTP (v2.x) server. Should end with the `/otp` path. |
 | `OTP_GRAPHQL_ENDPOINT` | Endpoint for OTP GraphQL queries, typically `/routers/default/index/graphql` or `/gtfs/v1` | 
-| `OTP_REQUESTS_THREADING_ENABLED` | Use multi-threading to handle OTP requests and responses (default true). |
+| `OTP_REQUESTS_THREADING_ENABLED` | Use multi-threading to handle OTP requests and responses (default true), independently of the threading from `MonitorAllTripsJob` |
 | `OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS` | The maximum time for making requests to OTP (default 30s) |
 | `OTP_TIMEZONE` | The timezone identifier (e.g. `America/Los_Angeles`) that OTP is using to parse dates and times. |
 | `OTP_TRANSFER_SLACK_SECONDS` | Optional extra time added by OTP between two transit legs to ensure transfers can be made, accounting for small timing variations that happen in reality. |
 | `PLAN_QUERY_RESOURCE_URI` | Optional location of a custom GraphQL template for the OTP `plan` query.  |
 | `MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS` | The maximum number of attempts to obtain a matching itinerary (default 3). Used with `MonitoredTrip.attemptsToGetMatchingItinerary`. |
+
+The `ItineraryExistence` class uses two methods to find a matching itinerary from OTP: Leg ID and Plan.
 
 #### Leg ID Method
 
