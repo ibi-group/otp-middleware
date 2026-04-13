@@ -175,26 +175,36 @@ The `ItineraryChecker` class contains the logic for the Leg ID method.
 Transit legs are fetched using OTP's `leg` GraphQL query for a particular day.
 Returned legs, if found, contain real-time delays or alerts.
 Legs are queried using a leg id, which is a hash used by OTP to quickly look up a leg.
-A leg id combines the date, service id, and from and to places of a transit leg.
+A leg id combines the date, service id, and from and to places of a transit leg (see class `LegIdProcessor`).
 
 If all transit legs are found by querying leg ids, an itinerary is reconstructed by attempting to fit the
 transfer legs between the fetched, updated transit legs. Class `ItineraryFromLegMatcher` handles reconstructing the itinerary.
 There are two constraints in that process:
 
-- Transfer legs
-: The duration of transfer legs (and other walk/bicycle legs) does not change because the physical ability
-of travelers is constant. A three-minute walk to transfer between two transit routes is thus preserved while reconstructing the itinerary.
+- **Transfer leg durations are fixed**<br>
+This is because someone's physical ability to walk is constant.
+A three-minute walk to transfer between two given transit routes is thus preserved while reconstructing the itinerary.
 
-- Slack or margins before, between, and after transit legs.
-: Slacks are constants that ensure a traveler has enough time to get to the boarding location
-of the next transit vehicle. Slacks are part of the OTP routing configuration.
-From the original itinerary, OTP-middleware can compute:
+- **Padding/slack before, between, and after transit legs** (boarding, transfer, alighting slack, respectively)<br>
+These constants ensure a traveler has enough time to exit a vehicle and go to the boarding location
+of the next transit vehicle (see diagram below). OTP-middleware can guess the boarding and alighting slacks
+from the original itinerary, however if an overall transfer slack is configured in OTP, it must also be configured in
+OTP-middleware using the `OTP_TRANSFER_SLACK_SECONDS` parameter.
 
-  - the boarding slack (minimum time between the end of a walk leg and the start of the next transit leg)
-  - the alighting slack (minimum time between the end of a transit leg and the start of the next walk leg)
-  
-If an additional transfer slack is configured in OTP, it must also be configured in OTP-middleware using the
-`OTP_TRANSFER_SLACK_SECONDS` configuration parameter.
+```mermaid
+gantt
+    title Boarding, Alighting, and Transfer Slacks
+    dateFormat HH:mm
+    axisFormat %H:%M
+    Walk : 12:14, 12:18
+    Boarding Slack 5min : 5m
+    Bus: 12:23, 12:39
+    Alighting Slack 3min : 3m
+    Walk : 6m
+    Boarding Slack 5min: 5m
+    Transfer Slack 7min: 12:39, 12:46
+    Bus 2: 12:53, 13:00
+```
 
 If, after fitting the transfer legs, the wait time is more than the transfer slack, we have an updated, feasible itinerary.
 If not, the itinerary is not feasible given the real-time updates (see diagram below).
@@ -232,7 +242,7 @@ gantt
 If the leg id method fails, a `plan` GraphQL query is sent to OTP to replan the entire trip for the target date, using
 `MonitoredTrip.otp2QueryParams`. This method is slower than leg id method because OTP has to perform a full itinerary
 search, whereas a leg id query is a simple lookup operation.
-Itineraries returned from the OTP plan query are stripped from delay data and matched against the original monitored itinerary.
+Itineraries returned from OTP are stripped from delay data and matched against the original monitored itinerary.
 
 Two itineraries match if they meet the conditions below defined in `ItineraryMatcher` and `LegMatcher` classes:
 - Both itineraries can be monitored (they don't contain rentals)
@@ -240,14 +250,14 @@ Two itineraries match if they meet the conditions below defined in `ItineraryMat
 - The origin and destination stops match
 - The same modes and transit routes are used in the same order
 - The transit vehicles must present the same headsign
-- The same interlining between routes must be present (e.g. situations when the same vehicle continues as a different route starting from a stop)
+- The same interlining between routes must exist (where the same vehicle continues as a different route at a terminus)
 - The start times and end times are the same.
 
-Note that suggesting alternate itineraries is not implemented yet.
+Note that suggesting alternate itineraries if no matching itinerary is found is not implemented yet.
 
 #### Itinerary Matching Attempts
 
-In case no matching itinerary is found using either method above, or there is a connection timeout,
+In case no matching itinerary is found using either method above, or there is an internet connection timeout,
 the process can be re-attempted at the next run of `MonitorAllTripsJob`,
 up to the number of attempts set by `MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS`.
 
@@ -255,7 +265,7 @@ The number of consecutive failed attempts is recorded in `MonitoredTrip.attempts
 If the number of attempts is reached and a matching itinerary is not found, a notification of type `ITINERARY_NOT_FOUND`
 ("Unable to monitor trip") is sent.
 
-A provision exists in the logic of `CheckMonitorTrip` to issue a notification that a trip is no longer possible
+A provision exists in the `CheckMonitorTrip` logic, so that a notification that a trip is no longer possible is sent
 if no matching itinerary has been found for over a week. (This is not currently implemented.)
 
 ### Journey State
