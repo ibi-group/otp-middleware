@@ -55,7 +55,7 @@ classDiagram
         boolean hasRealtimeData
     }
     class ItineraryExistence {
-        ItineraryExistenceResult monday, tuesday, ... sunday
+        ItineraryExistenceResult monday, ... sunday
         String message
         boolean error
         Date timestamp
@@ -65,8 +65,10 @@ classDiagram
         /:id [GET, PUT, DELETE]
         /checkitinerary
     }
+    class CheckMonitoredTrip {
+        run()
+    }
     MonitoredTrip --> OtpUser
-    MonitoredTrip --> TripAnalyzer
     JourneyState --> MonitoredTrip
     ItineraryExistence --> MonitoredTrip
     MonitoredTripController --> MonitoredTrip
@@ -76,9 +78,13 @@ classDiagram
 
 ## Trip Monitoring Lifecycle
 
-Trip monitoring is orchestrated by [`MonitorAllTripsJob`](../src/main/java/org/opentripplanner/middleware/tripmonitor/jobs/MonitorAllTripsJob.java) that runs every minute in the background. The job splits the
-monitoring of all qualifying trips between threads as determined by the number of CPUs on the instance.
-Each thread runs a `TripAnalyzer` instance that processes a queue of `MonitoredTrip`, one trip at a time.
+Trip monitoring is orchestrated by
+[`MonitorAllTripsJob`](../src/main/java/org/opentripplanner/middleware/tripmonitor/jobs/MonitorAllTripsJob.java)
+that runs every minute in the background. The job splits the monitoring of all qualifying trips between threads
+as determined by the number of CPUs on the instance. Each thread runs a
+[`TripAnalyzer`](../src/main/java/org/opentripplanner/middleware/tripmonitor/jobs/TripAnalyzer.java)
+instance that processes a queue of 
+[`MonitoredTrip`](../src/main/java/org/opentripplanner/middleware/models/MonitoredTrip.java), one trip at a time.
 
 The trip monitoring lifecycle is illustrated in the following diagram:
 
@@ -88,10 +94,10 @@ title: Trip Monitoring Lifecycle (Single Instance with n threads)
 ---
 flowchart LR
     job["⏱️ MonitorAllTripsJob"]
-    analyzer1[TripAnalyzer]
-    analyzer2[TripAnalyzer]
+    analyzer1[TripAnalyzer<br>CheckMonitoredTrip]
+    analyzer2[TripAnalyzer<br>CheckMonitoredTrip]
     analyzerX[...]
-    analyzerN[TripAnalyzer]
+    analyzerN[TripAnalyzer<br>CheckMonitoredTrip]
     queue1[Notifications]
     queue2[Notifications]
     queueN[Notifications]
@@ -114,16 +120,24 @@ At the time of writing, the memory lock does not apply across multiple machines 
 
 ## Trip Monitoring Conditions
 
-Class `CheckMonitoredTrip` contains the actual trip monitoring logic.
-All saved trips are checked for the following conditions:
+The actual trip monitoring logic is contained in the
+[`CheckMonitoredTrip`](src/main/java/org/opentripplanner/middleware/tripmonitor/jobs/CheckMonitoredTrip.java) class
+and is triggered by calling `CheckMonitoredTrip.run()` from a `TripAnalyzer`.
 
-- `MonitoredTrip.active` true,
-- `MonitoredTrip.isSnoozed` not true
-- Trip is one-time not in the past, or trip is recurring
-- Trip is not deemed `NO_LONGER_POSSIBLE`
-- Trip is being monitored on the current day of the week
-- Current time is within `MonitoredTrip.leadTimeInMinutes` of the matching itinerary's start time, and that itinerary end time has not passed yet.
+The basic steps of monitoring a trip are:
+1. Checking that a trip should/should not be skipped
+2. Finding the target date and matching itinerary
+3. Looking for any delays or alerts
+4. Send notifications
 
+To avoid unnecessary processing, the monitoring of a trip is skipped if:
+
+- `MonitoredTrip.active` is false,
+- `MonitoredTrip.isSnoozed` is true
+- Trip is one-time in the past
+- Trip is deemed `NO_LONGER_POSSIBLE`
+- Trip is not being monitored on the current day of the week
+- Current time is before `MonitoredTrip.leadTimeInMinutes` on the day that a trip is monitored.
 Within an hour of the trip start time, checks are performed every 15 minutes.
 Within 30 minutes the trip start time, checks are performed every minute.
 
@@ -146,11 +160,11 @@ or alerts. The query parameters used to obtain that itinerary are also saved und
 so that a request to OTP to replan the trip can be made, if needed.
 The `MonitoredTrip` instance is persisted in Mongo.
 
-`MonitoredTrip.targetDate` is the date a trip is supposed to take place. For one-time trips, the target date is simply
-the date of the trip. For recurring trips, the target date is the next occurrence of the trip, according to the days the
-trip is being monitored. Note that holidays are not supported yet.
+The **target date** (`MonitoredTrip.journeyState.targetDate`) is the date a trip is supposed to take place.
+For one-time trips, the target date is simply the date of the trip. For recurring trips, the target date is the next
+occurrence of the trip, based on the days the trip is being monitored. Note that holidays are not supported yet.
 
-During trip monitoring, a *matching itinerary* is fetched from OTP using the query parameters from which the original
+During trip monitoring, a **matching itinerary** is fetched from OTP using the query parameters from which the original
 itinerary was obtained. A matching itinerary looks similar to the saved itinerary, however, the itinerary date
 corresponds to the target date, trip times can be shifted due to service delays, and real-time alerts can be present.
 
