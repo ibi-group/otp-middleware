@@ -121,7 +121,7 @@ At the time of writing, the memory lock does not apply across multiple machines 
 ## Trip Monitoring Conditions
 
 The actual trip monitoring logic is contained in the
-[`CheckMonitoredTrip`](src/main/java/org/opentripplanner/middleware/tripmonitor/jobs/CheckMonitoredTrip.java) class
+[`CheckMonitoredTrip`](../src/main/java/org/opentripplanner/middleware/tripmonitor/jobs/CheckMonitoredTrip.java) class
 and is triggered by calling `CheckMonitoredTrip.run()` from a `TripAnalyzer`.
 
 The basic steps of monitoring a trip are:
@@ -141,7 +141,7 @@ To avoid unnecessary processing, the monitoring of a trip is skipped if:
 Within an hour of the trip start time, checks are performed every 15 minutes.
 Within 30 minutes the trip start time, checks are performed every minute.
 
-## Important concepts
+## Important Concepts
 
 ### Recurring vs. One-Time Trips
 
@@ -183,18 +183,22 @@ Itinerary fetching uses the following OTP configuration parameters:
 | `PLAN_QUERY_RESOURCE_URI` | Optional location of a custom GraphQL template for the OTP `plan` query.  |
 | `MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS` | The maximum number of attempts to obtain a matching itinerary (default 3). Used with `MonitoredTrip.attemptsToGetMatchingItinerary`. |
 
-The `ItineraryExistence` class uses two methods to find a matching itinerary from OTP: Leg ID and Plan.
+The [`ItineraryExistence`](../src/main/java/org/opentripplanner/middleware/models/ItineraryExistence.java) class
+uses two methods to find a matching itinerary from OTP: Leg ID and Plan.
 
 #### Leg ID Method
 
-The `ItineraryChecker` class contains the logic for the Leg ID method.
+The [`ItineraryChecker`](../src/main/java/org/opentripplanner/middleware/itinerarymatching/ItineraryChecker.java) class
+contains the logic for the Leg ID method.
 Transit legs are fetched using OTP's `leg` GraphQL query for a particular day.
 Returned legs, if found, contain real-time delays or alerts.
 Legs are queried using a leg id, which is a hash used by OTP to quickly look up a leg.
-A leg id combines the date, service id, and from and to places of a transit leg (see class `LegIdProcessor`).
+A leg id combines the date, service id, and from and to places of a transit leg
+(see class [`LegIdProcessor`](../src/main/java/org/opentripplanner/middleware/itinerarymatching/LegIdProcessor.java)).
 
-If all transit legs are found by querying leg ids, an itinerary is reconstructed by attempting to fit the
-transfer legs between the fetched, updated transit legs. Class `ItineraryFromLegMatcher` handles reconstructing the itinerary.
+If all transit legs are found by querying leg ids, an itinerary is reconstructed
+([`ItineraryFromLegMatcher`](../src/main/java/org/opentripplanner/middleware/itinerarymatching/ItineraryFromLegMatcher.java)
+class) by attempting to fit the transfer legs between the fetched, updated transit legs.
 There are two constraints in that process:
 
 - **Transfer leg durations are fixed**<br>
@@ -260,8 +264,10 @@ If the leg id method fails, a `plan` GraphQL query is sent to OTP to replan the 
 search, whereas a leg id query is a simple lookup operation.
 Itineraries returned from OTP are stripped from delay data and matched against the original monitored itinerary.
 
-Two itineraries match if they meet the conditions below defined in `ItineraryMatcher` and `LegMatcher` classes:
-- Both itineraries can be monitored (they don't contain rentals)
+Two itineraries match if they meet the conditions below defined in 
+[`ItineraryMatcher`](../src/main/java/org/opentripplanner/middleware/itinerarymatching/ItineraryMatcher.java) and
+[`LegMatcher`](../src/main/java/org/opentripplanner/middleware/itinerarymatching/LegMatcher.java) classes:
+- Both itineraries can be monitored (no bicycle/scooter rentals)
 - They have the same number of legs
 - The origin and destination stops match
 - The same modes and transit routes are used in the same order
@@ -286,7 +292,8 @@ if no matching itinerary has been found for over a week. (This is not currently 
 
 ### Journey State
 
-Each `MonitoredTrip` object contains a [`JourneyState`](../src/main/java/org/opentripplanner/middleware/tripmonitor/JourneyState.java)
+Each `MonitoredTrip` object contains a
+[`JourneyState`](../src/main/java/org/opentripplanner/middleware/tripmonitor/JourneyState.java)
 instance, which is a snapshot of the latest trip monitoring state as a result of
 running `CheckMonitoredTrip`. If a `JourneyState` object's fields are not populated (or are zero),
 the trip is deemed to not have been monitored before.
@@ -316,20 +323,23 @@ The possible values for `tripStatus` are as follows:
 
 ## Itinerary Existence Checking
 
-Itinerary existence checking is handled by the `/checkitinerary` (POST) endpoint of `MonitoredTripController`.
+Itinerary existence checking is handled by the `/checkitinerary` (POST) endpoint of 
+[`MonitoredTripController`](../src/main/java/org/opentripplanner/middleware/controllers/api/MonitoredTripController.java).
 The endpoint takes a `MonitoredTrip` object with a populated `itinerary` and `otp2QueryParams` fields.
 
 The itinerary existence check queries OTP and tries to find matching itineraries in a seven-day window
 that starts from `MonitoredTrip.otp2QueryParams.date`.
-The result is an `ItineraryExistence` object with fields for each day of the week (monday, ..., sunday),
+The result is an
+[`ItineraryExistence`](../src/main/java/org/opentripplanner/middleware/models/ItineraryExistence.java) object
+with fields for each day of the week (`monday`, ..., `sunday`),
 each day containing a valid flag, valid and invalid dates.
 
 Itinerary existence should be checked prior to saving a new monitored trip.
 Typically, the OTP-react-redux UI will request an existence check for a given itinerary
 and display the days of the week the itinerary is possible.
 
-Upon saving a trip (POST), if the trip is recurring, OTP-middleware will perform an additional existence check. If the check does not succeed,
-the request is rejected, and the trip is not saved or monitored. If the check passes,
+Upon saving a trip (POST), if the trip is recurring, OTP-middleware will perform an additional existence check.
+If the check does not succeed, the request is rejected, and the trip is not saved or monitored. If the check passes,
 the result is saved in `MonitoredTrip.itineraryExistence`.
 (The check is not performed when saving one-time trips.)
 
@@ -347,7 +357,8 @@ Trip notifications are of the following types:
 
 Other notifications are discussed in [Notifications to Companions/Observers](live-tracking.md#notifications-to-companionsobservers).
 
-Trip notifications are sent using the channels set in `OtpUser.notificationChannel`, which is a combination of
+Trip notifications are sent to the [`OtpUser`](../src/main/java/org/opentripplanner/middleware/models/OtpUser.java)
+using the channels set in `OtpUser.notificationChannel`, which is a combination of
 `OtpUser.Notification.EMAIL`, `SMS`, and `PUSH` enum members. `HAPTIC` is reserved for mobile app use.
 The notification language/locale is set in `OtpUser.preferredLocale` at the time notifications are sent.
 
@@ -355,11 +366,12 @@ Message templates in [Freemarker](https://freemarker.apache.org/) format (.ftl f
 channel and each supported language, so that notifications are formatted to fit the receiving device.
 The templates can accommodate multiple notifications from a single run of `CheckMonitoredTrip` into a single message.
 
-###  Email notifications
+###  Email Notifications
 
 Email notifications are sent with [Sparkpost (now known as Bird Email)](https://bird.com/en/resources/blog/sparkpost-is-now-bird-email).
 The destination email is the email a user entered when creating an OTP-middleware account using Auth0.
-It is recommended to verify the email address by sending users an Auth0 verification link they can open (`Auth0Users.resendVerificationEmail` method).
+It is recommended to verify the email address by sending users an Auth0 verification link they can open
+([`Auth0Users`](../src/main/java/org/opentripplanner/middleware/auth/Auth0Users.java)`.resendVerificationEmail` method).
 OTP-middleware uses Auth0 login data to extract the user's email and does not store it.
 
 The email configuration parameters are as follows:
