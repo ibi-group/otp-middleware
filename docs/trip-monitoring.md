@@ -189,14 +189,39 @@ uses two methods to find a matching itinerary from OTP: Leg ID and Plan.
 #### Leg ID Method
 
 The [`ItineraryChecker`](../src/main/java/org/opentripplanner/middleware/itinerarymatching/ItineraryChecker.java) class
-contains the logic for the Leg ID method.
-Transit legs are fetched using OTP's `leg` GraphQL query for a particular day.
-Returned legs, if found, contain real-time delays or alerts.
-Legs are queried using a leg id, which is a hash used by OTP to quickly look up a leg.
-A leg id combines the date, service id, and from and to places of a transit leg
-(see class [`LegIdProcessor`](../src/main/java/org/opentripplanner/middleware/itinerarymatching/LegIdProcessor.java)).
+contains the logic for the Leg ID method. Transit legs are fetched using
+[OTP's `leg` GraphQL query](https://docs.opentripplanner.org/api/dev-2.x/graphql-gtfs/queries/leg) by passing a leg ID
+corresponding to a particular day. An example OTP `leg` GraphQL query is as follows.
+The returned leg for a given query, if found, contain real-time delays or alerts.
+```
+query ($legId: String!) {
+    leg(id: $legId) {
+        id
+        startTime
+        endTime
+        departureDelay
+        arrivalDelay
+        realTime
+        alerts {
+            alertDescriptionText
+            alertHeaderText
+            alertUrl
+            effectiveStartDate
+        }
+        <other fields>
+    }
+}
+```
 
-If all transit legs are found by querying leg ids, an itinerary is reconstructed
+A leg ID is a hash used by OTP to quickly look up a leg.
+A leg ID combines the date, service ID, and from and to places of a transit leg.
+
+Desired leg IDs are computed for the next or current day that a monitored trip occurs, using the leg IDs
+of the itinerary originally saved. The
+[`LegIdProcessor`](../src/main/java/org/opentripplanner/middleware/itinerarymatching/LegIdProcessor.java)
+class contains methods for computing such leg IDs.
+
+If all transit legs are found by querying leg IDs, an itinerary is reconstructed
 ([`ItineraryFromLegMatcher`](../src/main/java/org/opentripplanner/middleware/itinerarymatching/ItineraryFromLegMatcher.java)
 class) by attempting to fit the transfer legs between the fetched, updated transit legs.
 There are two constraints in that process:
@@ -257,11 +282,17 @@ gantt
         Bus 2, on time: 12:50, 13:00
 ```
 
+The Leg ID method will fail if either
+- not all legs can be retrieved using the `leg` OTP query. This can happen with GTFS feeds using different trip ids
+for similar trips with the same stops and stop times (e.g. the same 8:00am bus weekday trip uses `trip_id_1` on Monday
+and `trip_id_2` on Tuesday).
+- not all transfer legs can be fitted between transit legs because of delays, as explained above.
+
 #### Plan Method
 
-If the leg id method fails, a `plan` GraphQL query is sent to OTP to replan the entire trip for the target date, using
-`MonitoredTrip.otp2QueryParams`. This method is slower than leg id method because OTP has to perform a full itinerary
-search, whereas a leg id query is a simple lookup operation.
+If the Leg ID method fails, a `plan` GraphQL query is sent to OTP to replan the entire trip for the target date, using
+`MonitoredTrip.otp2QueryParams`. This method is slower than the Leg ID method because OTP has to perform a full itinerary
+search, whereas a `leg` query is a simple lookup operation.
 Itineraries returned from OTP are stripped from delay data and matched against the original monitored itinerary.
 
 Two itineraries match if they meet the conditions below defined in 
