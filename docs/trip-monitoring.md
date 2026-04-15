@@ -179,7 +179,7 @@ Itinerary fetching uses the following OTP configuration parameters:
 | `OTP_REQUESTS_THREADING_ENABLED` | Use multi-threading to handle OTP requests and responses (default true), independently of the threading from `MonitorAllTripsJob` |
 | `OTP_SERVER_REQUEST_TIMEOUT_IN_SECONDS` | The maximum time for making requests to OTP (default 30s) |
 | `OTP_TIMEZONE` | The timezone identifier (e.g. `America/Los_Angeles`) that OTP is using to parse dates and times. |
-| `OTP_TRANSFER_SLACK_SECONDS` | Optional extra time added by OTP between two transit legs to ensure transfers can be made, accounting for small timing variations that happen in reality. |
+| `OTP_TRANSFER_SLACK_SECONDS` | Optional extra time added by OTP between two transit legs to ensure transfers can be made, accounting for small timing variations that happen in reality. See OTP's [`transferSlack`](https://github.com/opentripplanner/OpenTripPlanner/blob/dev-2.x/doc/user/RouteRequest.md#transferslack) configuration parameter. |
 | `PLAN_QUERY_RESOURCE_URI` | Optional location of a custom GraphQL template for the OTP `plan` query.  |
 | `MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS` | The maximum number of attempts to obtain a matching itinerary (default 3). Used with `MonitoredTrip.attemptsToGetMatchingItinerary`. |
 
@@ -230,10 +230,17 @@ There are two constraints in that process:
 This is because someone's physical ability to walk is constant.
 A three-minute walk to transfer between two given transit routes is thus preserved while reconstructing the itinerary.
 
-- **Padding/slack before, between, and after transit legs** (boarding, transfer, alighting slack, respectively)<br>
+- **Padding/slack before, between, and after transit legs**<br>
 These constants ensure a traveler has enough time to exit a vehicle and go to the boarding location
-of the next transit vehicle (see diagram below). OTP-middleware can guess the boarding and alighting slacks
-from the original itinerary, however if an overall transfer slack is configured in OTP, it must also be configured in
+of the next transit vehicle (see diagram below). In OTP, these are known as
+[`boardSlack`](https://github.com/opentripplanner/OpenTripPlanner/blob/dev-2.x/doc/user/RouteRequest.md#boardslack),
+[`alightSlack`](https://github.com/opentripplanner/OpenTripPlanner/blob/dev-2.x/doc/user/RouteRequest.md#alightslack), and
+[`transferSlack`](https://github.com/opentripplanner/OpenTripPlanner/blob/dev-2.x/doc/user/RouteRequest.md#transferslack).
+OTP-middleware can guess the `board-` and `alightSlack` from the original itinerary because they occur immediately
+before/after the first transit leg. (Note that OTP's mode-specific slacks are not supported yet
+in OTP-middleware.) The transfer slack is not obvious to guess because, most often,
+the wait between transit legs is in excess of the transfer slack. Therefore, if
+`transferSlack` is configured in OTP, it must also be configured in
 OTP-middleware using the `OTP_TRANSFER_SLACK_SECONDS` parameter.
 
 ```mermaid
@@ -241,14 +248,21 @@ gantt
     title Boarding, Alighting, and Transfer Slacks
     dateFormat HH:mm
     axisFormat %H:%M
-    Walk : 12:14, 12:18
-    Boarding Slack 5min : 5m
-    Bus: 12:23, 12:39
-    Alighting Slack 3min : 3m
-    Walk : 6m
-    Boarding Slack 5min: 5m
-    Transfer Slack 7min: 12:39, 12:46
-    Bus 2: 12:53, 13:00
+    section Walk
+        Walk: 12:14, 12:18
+        Boarding Slack 5min: crit, 5m
+        Wait: 12:18, 12:23
+    section Bus 1
+        Bus 1: 12:23, 12:35
+    section Transfer
+        Alighting Slack 3min: crit, 3m
+        Walk: crit, 6m
+        Transfer Slack 2min: crit, 2m
+        Wiggle Room: 12:46, 12:55
+        Boarding Slack 5min: crit, 12:55, 13:00
+    Wait: 12:44, 13:00
+    section Bus 2
+        Bus 2: 13:00, 13:10
 ```
 
 If, after fitting the transfer legs, the wait time is more than the transfer slack, we have an updated, feasible itinerary.
