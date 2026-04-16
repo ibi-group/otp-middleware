@@ -116,7 +116,8 @@ This is because when a trip is being analyzed, a thread-safe in-memory lock is s
 running on the same machine don't repeat the trip monitoring work already ongoing. The lock is released when trip
 monitoring logic completes.
 
-[!NOTE] At the time of writing, the memory lock does not apply across multiple machines (a database lock would be needed).
+> [!NOTE]
+> At the time of writing, the memory lock does not apply across multiple machines (a database lock would be needed).
 
 ## Trip Monitoring Conditions
 
@@ -164,7 +165,8 @@ The **target date** (`MonitoredTrip.journeyState.targetDate`) is the date a trip
 For one-time trips, the target date is simply the date of the trip. For recurring trips, the target date is the next
 occurrence of the trip, based on the days the trip is being monitored.
 
-[!NOTE] Holidays are not yet supported for trip monitoring.
+> [!NOTE]
+> Holidays are not yet supported for trip monitoring.
 
 During trip monitoring, a **matching itinerary** is fetched from OTP using the query parameters from which the original
 itinerary was obtained. A matching itinerary looks similar to the saved itinerary, however, the itinerary date
@@ -245,7 +247,8 @@ the wait between transit legs is in excess of the transfer slack. Therefore, if
 `transferSlack` is configured in OTP, it must also be configured in
 OTP-middleware using the `OTP_TRANSFER_SLACK_SECONDS` parameter.
 
-[!NOTE] OTP's mode-specific slacks are not supported yet in OTP-middleware.
+> [!NOTE]
+> OTP's mode-specific slacks are not supported yet in OTP-middleware.
 
 ```mermaid
 gantt
@@ -324,7 +327,8 @@ Two itineraries match if they meet the conditions below defined in
 - The same interlining between routes must exist (where the same vehicle continues as a different route at a terminus)
 - The start times and end times are the same.
 
-[!NOTE] Suggesting alternate itineraries if no matching itinerary is found is not implemented yet.
+> [!NOTE]
+> Suggesting alternate itineraries if no matching itinerary is found is not implemented yet.
 
 #### Itinerary Matching Attempts
 
