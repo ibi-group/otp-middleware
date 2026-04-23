@@ -40,6 +40,11 @@ classDiagram
         JourneyState journeyState
         boolean notifyAtLeadingInterval
         int attemptsToGetMatchingItinerary
+        boolean checkItineraryExistence([3 overloads])
+        List~OtpRequest~ getItineraryExistenceQueries()
+        ZonedDatedTime computeTargetZonedDateTime(itinerary)
+        boolean tripStateIsConsistentWithMatchingItinerary()
+        boolean tripTargetDateIsConsistentWithMatchingItinerary()
     }
     class JourneyState {
         long baselineArrivalTimeEpochMillis
@@ -67,6 +72,7 @@ classDiagram
     }
     class CheckMonitoredTrip {
         run()
+        boolean shouldSkipMonitoredTripCheck()
     }
     MonitoredTrip --> OtpUser
     JourneyState --> MonitoredTrip
@@ -133,14 +139,18 @@ The basic steps of monitoring a trip are:
 
 To avoid unnecessary processing, the monitoring of a trip is skipped if:
 
-- `MonitoredTrip.active` is false,
-- `MonitoredTrip.isSnoozed` is true
-- Trip is one-time in the past
-- Trip is deemed `NO_LONGER_POSSIBLE`
-- Trip is not being monitored on the current day of the week
-- Current time is before `MonitoredTrip.leadTimeInMinutes` on the day that a trip is monitored.
-Within an hour of the trip start time, checks are performed every 15 minutes.
-Within 30 minutes the trip start time, checks are performed every minute.
+- `CheckMonitoredTrip.shouldSkipMonitoredTripCheck()` returns `true`, namely if:
+  - `MonitoredTrip.active` is false,
+  - `MonitoredTrip.isSnoozed` is true
+  - Trip is one-time in the past
+  - Trip is deemed `NO_LONGER_POSSIBLE`
+  - Trip is not being monitored on the current day of the week
+  - Current time is before `MonitoredTrip.leadTimeInMinutes` on the day that a trip is monitored.
+  Within an hour of the trip start time, checks are performed every 15 minutes.
+  Within 30 minutes the trip start time, checks are performed every minute.
+- the journey state and target dates are not consistent with the last matching itinerary saved:
+  - `MonitoredTrip.tripStateIsConsistentWithMatchingItinerary()` returns `false`.
+  - `MonitoredTrip.tripTargetDateIsConsistentWithMatchingItinerary()` returns `false`.
 
 ## Important Concepts
 
@@ -162,6 +172,8 @@ so that a request to OTP to replan the trip can be made, if needed.
 The `MonitoredTrip` instance is persisted in Mongo.
 
 The **target date** (`MonitoredTrip.journeyState.targetDate`) is the date a trip is supposed to take place.
+It is computed using `MonitoredTrip.computeTargetZonedDateTime()` This method does take in a matching itinerary
+to prevent the target date from being changed while the matching itinerary is still ongoing.
 For one-time trips, the target date is simply the date of the trip. For recurring trips, the target date is the next
 occurrence of the trip, based on the days the trip is being monitored.
 
@@ -379,9 +391,12 @@ The possible values for `tripStatus` are as follows:
 Itinerary existence checking is handled by the `/checkitinerary` (POST) endpoint of 
 [`MonitoredTripController`](../src/main/java/org/opentripplanner/middleware/controllers/api/MonitoredTripController.java).
 The endpoint takes a `MonitoredTrip` object with a populated `itinerary` and `otp2QueryParams` fields.
+Internally, the controller calls `MonitoredTrip.checkItineraryExistence()` without replacing/overwriting the saved itinerary.
 
 The itinerary existence check queries OTP and tries to find matching itineraries in a seven-day window
-that starts from `MonitoredTrip.otp2QueryParams.date`.
+that starts from `MonitoredTrip.otp2QueryParams.date`. The queries are derived from `MonitoredTrip.otp2QueryParams`
+in method `MonitoredTrip.getItineraryExistenceQueries()`.
+
 The result is an
 [`ItineraryExistence`](../src/main/java/org/opentripplanner/middleware/models/ItineraryExistence.java) object
 with fields for each day of the week (`monday`, ..., `sunday`),
