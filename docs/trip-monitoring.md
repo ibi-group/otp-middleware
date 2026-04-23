@@ -64,6 +64,8 @@ classDiagram
         String message
         boolean error
         Date timestamp
+        checkExistence(trip)
+        boolean allMonitoredDaysAreValid(trip)
     }
     class MonitoredTripController {
         / [GET, POST]
@@ -83,12 +85,27 @@ classDiagram
         NotificationType type
         String body
     }
+    class ItineraryChecker {
+        Itinerary itinerary
+        LegFinder legFinder
+        LocalDate targetDate
+        checkLegs()
+    }
+    class LegFinder {
+        Leg queryLeg([2 overloads])
+    }
+    class OtpDispatcher {
+        OtpResponse sendOtpRequestWithErrorHandling(params)
+    }
     MonitoredTrip --> OtpUser
     JourneyState --> MonitoredTrip
     ItineraryExistence --> MonitoredTrip
     MonitoredTripController --> MonitoredTrip
     CheckMonitoredTrip --> MonitoredTrip
     CheckMonitoredTrip --> TripMonitorNotification
+    ItineraryChecker --> ItineraryExistence
+    LegFinder --> ItineraryChecker
+    OtpDispatcher --> ItineraryChecker
 
 ```
 
@@ -212,13 +229,14 @@ Itinerary fetching uses the following OTP configuration parameters:
 | `PLAN_QUERY_RESOURCE_URI` | Optional location of a custom GraphQL template for the OTP `plan` query.  |
 | `MAXIMUM_MONITORED_TRIP_ITINERARY_CHECKS` | The maximum number of attempts to obtain a matching itinerary (default 3). Used with `MonitoredTrip.attemptsToGetMatchingItinerary`. |
 
-The [`ItineraryExistence`](../src/main/java/org/opentripplanner/middleware/models/ItineraryExistence.java) class
-uses two methods to find a matching itinerary from OTP: Leg ID and Plan.
+The [`ItineraryExistence`](../src/main/java/org/opentripplanner/middleware/models/ItineraryExistence.java)`.checkExistence`
+and function uses two methods to find a matching itinerary from OTP: Leg ID and Plan.
 
 #### Leg ID Method
 
 The [`ItineraryChecker`](../src/main/java/org/opentripplanner/middleware/itinerarymatching/ItineraryChecker.java) class
-contains the logic for the Leg ID method. Transit legs are fetched using
+and [`LegFinder`](../src/main/java/org/opentripplanner/middleware/otp/LegFinder.java) class
+contain the logic for the Leg ID method. Transit legs are fetched using
 [OTP's `leg` GraphQL query](https://docs.opentripplanner.org/api/dev-2.x/graphql-gtfs/queries/leg) by passing a leg ID
 corresponding to a particular day. An example OTP `leg` GraphQL query is as follows.
 The returned leg for a given query, if found, contain real-time delays or alerts.
@@ -336,7 +354,10 @@ and `trip_id_2` on Tuesday).
 
 #### Plan Method
 
-If the Leg ID method fails, a `plan` GraphQL query is sent to OTP to replan the entire trip for the target date, using
+If the Leg ID method fails,
+an [OTP's `plan` GraphQL query](https://docs.opentripplanner.org/api/dev-2.x/graphql-gtfs/queries/plan) is sent to OTP
+using the [`OtpDispatcher`](../src/main/java/org/opentripplanner/middleware/otp/OtpDispatcher.java) class
+to replan the entire trip for the target date, using
 `MonitoredTrip.otp2QueryParams`. This method is slower than the Leg ID method because OTP has to perform a full itinerary
 search, whereas a `leg` query is a simple lookup operation.
 Itineraries returned from OTP are stripped from delay data and matched against the original monitored itinerary.
