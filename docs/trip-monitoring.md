@@ -14,7 +14,7 @@ regarding that itinerary. Users can retrieve monitored trips at a later point fo
 
 ```mermaid
 ---
-title: Trip Monitoring Classes and Relevant Fields/Methods
+title: Selected Trip Monitoring Classes and Relevant Fields/Methods
 ---
 classDiagram
     direction RL
@@ -97,6 +97,27 @@ classDiagram
     class OtpDispatcher {
         OtpResponse sendOtpRequestWithErrorHandling(params)
     }
+    class Itinerary {
+        Date startTime
+        Date endTime
+        List~Leg~ legs
+        boolean canBeMonitored()
+        boolean hasTransit()
+        long getScheduledStartTimeEpochMillis()
+        long getScheduledEndTimeEpochMillis()
+    }
+    class Leg {
+        String serviceDate
+        Date startTime
+        Date endTime
+        Integer departureDelay
+        Integer arrivalDelay
+        Boolean realTime
+        String mode
+        Boolean transitLeg
+        ZonedDateTime getScheduledStartTime()
+        ZonedDateTime getScheduledEndTime()
+    }
     MonitoredTrip --> OtpUser
     JourneyState --> MonitoredTrip
     ItineraryExistence --> MonitoredTrip
@@ -106,6 +127,10 @@ classDiagram
     ItineraryChecker --> ItineraryExistence
     LegFinder --> ItineraryChecker
     OtpDispatcher --> ItineraryChecker
+    Itinerary --> MonitoredTrip
+    Itinerary --> CheckMonitoredTrip
+    Itinerary --> JourneyState
+    Leg --> Itinerary
 
 ```
 
@@ -365,7 +390,7 @@ Itineraries returned from OTP are stripped from delay data and matched against t
 Two itineraries match if they meet the conditions below defined in 
 [`ItineraryMatcher`](../src/main/java/org/opentripplanner/middleware/itinerarymatching/ItineraryMatcher.java) and
 [`LegMatcher`](../src/main/java/org/opentripplanner/middleware/itinerarymatching/LegMatcher.java) classes:
-- Both itineraries can be monitored (no bicycle/scooter rentals)
+- Both itineraries can be monitored (no bicycle/scooter rentals) (`Itinerary.canBeMonitored()`)
 - They have the same number of legs
 - The origin and destination stops match
 - The same modes and transit routes are used in the same order
