@@ -83,8 +83,8 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
         var routeId = getRouteGtfsIdFromLeg(busLeg);
         try {
             boolean hasNotNotified = hasNotSentNotificationForRoute(travelerPosition.trackedJourney, routeId);
-            LOG.info("About to notify bus for journey {} trip {} hasNotified={}", travelerPosition.trackedJourney.id, travelerPosition.trackedJourney.tripId, !hasNotNotified);
             if (hasNotNotified && supportsBusOperatorNotification(routeId)) {
+                LOG.info("About to notify bus for journey {} trip {} hasNotified={}", travelerPosition.trackedJourney.id, travelerPosition.trackedJourney.tripId, !hasNotNotified);
                 // Immediately set the notification state to pending, so that subsequent calls don't initiate another
                 // request before this one completes.
                 travelerPosition.trackedJourney.updateNotificationMessage(routeId, "pending");
