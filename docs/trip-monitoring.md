@@ -110,10 +110,10 @@ title: Trip Monitoring Lifecycle (Single Instance with n threads)
 ---
 flowchart LR
     job["⏱️ MonitorAllTripsJob"]
-    analyzer1[TripAnalyzer<br>CheckMonitoredTrip]
-    analyzer2[TripAnalyzer<br>CheckMonitoredTrip]
+    analyzer1["TripAnalyzer<br>CheckMonitoredTrip.run()"]
+    analyzer2["TripAnalyzer<br>CheckMonitoredTrip.run()"]
     analyzerX[...]
-    analyzerN[TripAnalyzer<br>CheckMonitoredTrip]
+    analyzerN["TripAnalyzer<br>CheckMonitoredTrip.run()"]
     queue1[Notifications]
     queue2[Notifications]
     queueN[Notifications]
@@ -365,8 +365,9 @@ The number of consecutive failed attempts is recorded in `MonitoredTrip.attempts
 If the number of attempts is reached and a matching itinerary is not found, a notification of type `ITINERARY_NOT_FOUND`
 ("Unable to monitor trip") is sent.
 
-A provision exists in the `CheckMonitorTrip` logic, so that a notification that a trip is no longer possible is sent
-if no matching itinerary has been found for over a week. (This is not currently implemented.)
+> [!NOTE]
+> A provision exists in the `CheckMonitorTrip` logic, so that a notification that a trip is no longer possible is sent
+> if no matching itinerary has been found for over a week. (This is not currently implemented.)
 
 ### Journey State
 
@@ -422,7 +423,9 @@ and display the days of the week the itinerary is possible.
 Upon saving a trip (POST), if the trip is recurring, OTP-middleware will perform an additional existence check.
 If the check does not succeed, the request is rejected, and the trip is not saved or monitored. If the check passes,
 the result is saved in `MonitoredTrip.itineraryExistence`.
-(The check is not performed when saving one-time trips.)
+
+> [!NOTE]
+> The check is not performed when saving one-time trips.
 
 ## Trip Notifications
 
