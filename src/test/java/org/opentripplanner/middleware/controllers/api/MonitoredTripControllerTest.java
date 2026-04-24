@@ -25,9 +25,15 @@ import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -198,9 +204,12 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void canCreateMonitoredTripUsingPriorExistenceCheck(boolean monitorAllDays) throws Exception {
+        final String WED_2026_04_22 = "2026-04-22";
         // Create a trip for the solo OTP user without persisting.
         MonitoredTrip trip = createMonitoredTripForUser(soloOtpUser);
         trip.tripName = UUID.randomUUID().toString();
+        trip.otp2QueryParams.date = WED_2026_04_22;
+        trip.itinerary.startTime = Date.from(Instant.ofEpochMilli(0));
         if (!monitorAllDays) {
             trip.updateAllDaysOfWeek(false);
             trip.wednesday = true;
@@ -210,7 +219,13 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         ItineraryExistence existence = new ItineraryExistence();
         existence.id = UUID.randomUUID().toString();
         existence.wednesday = new ItineraryExistence.ItineraryExistenceResult();
-        existence.wednesday.validDates.add("2026-04-22");
+        existence.wednesday.validDates.add(WED_2026_04_22);
+        Itinerary verifiedItinerary = new Itinerary();
+        verifiedItinerary.startTime = DateTimeUtils.convertToDate(
+            LocalDateTime.of(LocalDate.parse(WED_2026_04_22, DateTimeFormatter.ISO_LOCAL_DATE), LocalTime.MIDNIGHT)
+        );
+        verifiedItinerary.legs = List.of(new Leg());
+        existence.wednesday.itineraries = List.of(verifiedItinerary);
 
         int checksSize = MonitoredTripController.getChecksSize();
         MonitoredTripController.simulateExistenceCheck(existence);
@@ -237,7 +252,8 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
             // The persisted trip should have its existence overwritten with the one simulated above.
             assertEquals(existence.id, persistedTrip.itineraryExistence.id);
             assertEquals(1, persistedTrip.itineraryExistence.wednesday.validDates.size());
-            assertTrue(persistedTrip.itineraryExistence.wednesday.validDates.contains("2026-04-22"));
+            assertTrue(persistedTrip.itineraryExistence.wednesday.validDates.contains(WED_2026_04_22));
+            assertEquals(verifiedItinerary.startTime, persistedTrip.itinerary.startTime);
             // The previous itinerary check should have been removed.
             assertEquals(checksSize, MonitoredTripController.getChecksSize());
         }

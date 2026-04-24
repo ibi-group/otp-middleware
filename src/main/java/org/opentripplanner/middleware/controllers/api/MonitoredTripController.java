@@ -119,6 +119,8 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 if (previousExistence.allMonitoredDaysAreValid(monitoredTrip)) {
                     LOG.info("Skipping itinerary check in preCreateHook because we have already checked it exists.");
                     monitoredTrip.itineraryExistence = previousExistence;
+                    monitoredTrip.updateTripWithVerifiedItinerary();
+
                     // Consume (remove) the check
                     checksPerformed.remove(checkId);
                 } else {
