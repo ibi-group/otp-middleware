@@ -7,6 +7,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
@@ -16,6 +18,7 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
@@ -28,8 +31,10 @@ import org.opentripplanner.middleware.utils.JsonUtils;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -124,8 +129,8 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canGetOwnMonitoredTrips() throws Exception {
         // Create a trip for the solo and the multi OTP user.
-        createMonitoredTripForUser(soloOtpUser);
-        createMonitoredTripForUser(multiOtpUser);
+        persistNewMonitoredTripForUser(soloOtpUser);
+        persistNewMonitoredTripForUser(multiOtpUser);
 
         // Get trips for solo Otp user.
         ResponseList<MonitoredTrip> soloTrips = getMonitoredTripsForUser(MONITORED_TRIP_PATH, soloOtpUser);
@@ -150,7 +155,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canPreserveTripFields() throws Exception {
         // Create a trip for the solo OTP user.
-        createMonitoredTripForUser(soloOtpUser);
+        persistNewMonitoredTripForUser(soloOtpUser);
 
         Bson filter = filterByUserId(soloOtpUser.id);
 
@@ -190,6 +195,54 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertNotNull(updatedTrip.itineraryExistence.wednesday);
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void canCreateMonitoredTripUsingPriorExistenceCheck(boolean monitorAllDays) throws Exception {
+        // Create a trip for the solo OTP user without persisting.
+        MonitoredTrip trip = createMonitoredTripForUser(soloOtpUser);
+        trip.tripName = UUID.randomUUID().toString();
+        if (!monitorAllDays) {
+            trip.updateAllDaysOfWeek(false);
+            trip.wednesday = true;
+        }
+
+        // Simulate a prior itinerary existence check for that trip.
+        ItineraryExistence existence = new ItineraryExistence();
+        existence.id = UUID.randomUUID().toString();
+        existence.wednesday = new ItineraryExistence.ItineraryExistenceResult();
+        existence.wednesday.validDates.add("2026-04-22");
+
+        int checksSize = MonitoredTripController.getChecksSize();
+        MonitoredTripController.simulateExistenceCheck(existence);
+        assertEquals(checksSize + 1, MonitoredTripController.getChecksSize());
+
+        // Add existence id to the trip above
+        trip.itineraryExistence.id = existence.id;
+        assertTrue(trip.itineraryExistence.wednesday.validDates.isEmpty());
+
+        // Make call to persist the trip.
+        mockAuthenticatedRequest(MONITORED_TRIP_PATH,
+            JsonUtils.toJson(trip),
+            soloOtpUser,
+            HttpMethod.POST
+        );
+
+        MonitoredTrip persistedTrip = Persistence.monitoredTrips.getOneFiltered(eq("tripName", trip.tripName));
+        if (monitorAllDays) {
+            assertNull(persistedTrip);
+            // The previous itinerary check should have been kept.
+            assertEquals(checksSize + 1, MonitoredTripController.getChecksSize());
+        } else {
+            assertNotNull(persistedTrip);
+            // The persisted trip should have its existence overwritten with the one simulated above.
+            assertEquals(existence.id, persistedTrip.itineraryExistence.id);
+            assertEquals(1, persistedTrip.itineraryExistence.wednesday.validDates.size());
+            assertTrue(persistedTrip.itineraryExistence.wednesday.validDates.contains("2026-04-22"));
+            // The previous itinerary check should have been removed.
+            assertEquals(checksSize, MonitoredTripController.getChecksSize());
+        }
+    }
+
     /**
      * Helper method to get trips for user.
      */
@@ -201,12 +254,18 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     /**
      * Creates a {@link MonitoredTrip} for the specified user.
      */
-    private static void createMonitoredTripForUser(OtpUser otpUser) {
+    private static void persistNewMonitoredTripForUser(OtpUser otpUser) {
+        MonitoredTrip monitoredTrip = createMonitoredTripForUser(otpUser);
+        Persistence.monitoredTrips.create(monitoredTrip);
+    }
+
+    private static MonitoredTrip createMonitoredTripForUser(OtpUser otpUser) {
         MonitoredTrip monitoredTrip = new MonitoredTrip();
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
         monitoredTrip.otp2QueryParams = OtpTestUtils.getSampleQueryParams();
         monitoredTrip.itinerary = new Itinerary();
+        monitoredTrip.itinerary.legs = List.of(new Leg());
         monitoredTrip.itinerary.startTime = new Date();
         monitoredTrip.itineraryExistence = new ItineraryExistence();
         monitoredTrip.itineraryExistence.id = "itinerary-existence-id";
@@ -215,8 +274,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.from.name = "From Place";
         monitoredTrip.to = new Place();
         monitoredTrip.to.name = "To Place";
-
-        Persistence.monitoredTrips.create(monitoredTrip);
+        return monitoredTrip;
     }
 
     @Test
