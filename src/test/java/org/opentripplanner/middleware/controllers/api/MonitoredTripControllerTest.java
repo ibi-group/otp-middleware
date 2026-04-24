@@ -17,9 +17,12 @@ import org.opentripplanner.middleware.models.MobilityProfileLite;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
+import org.opentripplanner.middleware.otp.OtpRequest;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
+import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Place;
+import org.opentripplanner.middleware.otp.response.TripPlan;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
@@ -27,12 +30,14 @@ import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
+import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
@@ -126,6 +131,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     void tearDownAfterTest() {
         Persistence.monitoredTrips.removeFiltered(filterByUserId(soloOtpUser.id));
         Persistence.monitoredTrips.removeFiltered(filterByUserId(multiOtpUser.id));
+        ItineraryExistence.otpResponseProviderOverride = null;
     }
 
     /**
@@ -220,11 +226,9 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         existence.id = UUID.randomUUID().toString();
         existence.wednesday = new ItineraryExistence.ItineraryExistenceResult();
         existence.wednesday.validDates.add(WED_2026_04_22);
-        Itinerary verifiedItinerary = new Itinerary();
-        verifiedItinerary.startTime = DateTimeUtils.convertToDate(
+        Itinerary verifiedItinerary = makeItinerary(DateTimeUtils.convertToDate(
             LocalDateTime.of(LocalDate.parse(WED_2026_04_22, DateTimeFormatter.ISO_LOCAL_DATE), LocalTime.MIDNIGHT)
-        );
-        verifiedItinerary.legs = List.of(new Leg());
+        ));
         existence.wednesday.itineraries = List.of(verifiedItinerary);
 
         int checksSize = MonitoredTripController.getChecksSize();
@@ -259,6 +263,53 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         }
     }
 
+    @Test
+    void canCreateMonitoredTripWithoutPriorExistenceCheck() throws Exception {
+        ItineraryExistence.otpResponseProviderOverride = this::fakeOtpResponse;
+
+        final String WED_2026_04_22 = "2026-04-22";
+        // Create a trip for the solo OTP user without persisting.
+        MonitoredTrip trip = createMonitoredTripForUser(soloOtpUser);
+        trip.tripName = UUID.randomUUID().toString();
+        trip.otp2QueryParams.date = WED_2026_04_22;
+        trip.itinerary.startTime = Date.from(Instant.ofEpochMilli(0));
+
+        // Make call to persist the trip.
+        mockAuthenticatedRequest(MONITORED_TRIP_PATH,
+            JsonUtils.toJson(trip),
+            soloOtpUser,
+            HttpMethod.POST
+        );
+
+        MonitoredTrip persistedTrip = Persistence.monitoredTrips.getOneFiltered(eq("tripName", trip.tripName));
+        assertNotNull(persistedTrip);
+        ZonedDateTime tripTime = ItineraryUtils.getDatesToCheckItineraryExistence(trip).get(0);
+        assertEquals(Date.from(tripTime.toInstant()), persistedTrip.itinerary.startTime);
+    }
+
+    /**
+     * Fake OTP response provider whose itineraries always match the original itinerary of the test.
+     */
+    private OtpResponse fakeOtpResponse(OtpRequest request) {
+        Itinerary itinerary = makeItinerary(Date.from(request.dateTime.toInstant()));
+        OtpResponse response = new OtpResponse();
+        response.plan = new TripPlan();
+        response.plan.itineraries = List.of(itinerary);
+        return response;
+    }
+
+    /**
+     * Creates a trivial itinerary with one leg, with the start and end date of the itinerary and leg the same.
+     */
+    private static Itinerary makeItinerary(Date date) {
+        Itinerary itinerary = new Itinerary();
+        itinerary.startTime = itinerary.endTime = date;
+        Leg leg = new Leg();
+        leg.startTime = leg.endTime = date;
+        itinerary.legs = List.of(leg);
+        return itinerary;
+    }
+
     /**
      * Helper method to get trips for user.
      */
@@ -280,9 +331,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
         monitoredTrip.otp2QueryParams = OtpTestUtils.getSampleQueryParams();
-        monitoredTrip.itinerary = new Itinerary();
-        monitoredTrip.itinerary.legs = List.of(new Leg());
-        monitoredTrip.itinerary.startTime = new Date();
+        monitoredTrip.itinerary = makeItinerary(new Date());
         monitoredTrip.itineraryExistence = new ItineraryExistence();
         monitoredTrip.itineraryExistence.id = "itinerary-existence-id";
         monitoredTrip.itineraryExistence.wednesday = new ItineraryExistence.ItineraryExistenceResult();
