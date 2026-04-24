@@ -20,19 +20,23 @@ import java.util.List;
 import static com.mongodb.client.model.Filters.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.*;
+import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserId;
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserAndDateRange;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createTripRequest;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createTripRequests;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createTripSummary;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createTripSummaryWithError;
+import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.createUser;
 
 /**
  * Tests to verify that trip request and trip summary persistence in MongoDB collections are functioning properly. A
  * number of {@link TypedPersistence} methods are tested here, but the HTTP endpoints defined in
  * {@link org.opentripplanner.middleware.controllers.api.ApiController} are not themselves tested here.
  */
-public class TripHistoryPersistenceTest extends OtpMiddlewareTestEnvironment {
+class TripHistoryPersistenceTest extends OtpMiddlewareTestEnvironment {
     private static final int LIMIT = 3;
     private static final String TEST_EMAIL = "john.doe@example.com";
     private static final String TRIP_REQUEST_DATE_CREATED_FIELD_NAME = "dateCreated";
-    private static final String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
 
     private static OtpUser otpUser = null;
     private static TripRequest tripRequest = null;
@@ -41,7 +45,7 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTestEnvironment {
     private static List<TripRequest> tripRequests = null;
 
     @BeforeAll
-    public static void setup() throws Exception {
+    static void setup() throws Exception {
         otpUser = createUser(TEST_EMAIL);
         tripRequest = createTripRequest(otpUser.id);
         tripRequests = createTripRequests(LIMIT, otpUser.id);
@@ -50,20 +54,20 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTestEnvironment {
     }
 
     @AfterAll
-    public static void tearDown() {
+    static void tearDown() {
         if (otpUser != null) otpUser.delete(false);
         if (tripSummaryWithError != null) Persistence.tripSummaries.removeById(tripSummaryWithError.id);
     }
 
     @Test
-    public void canCreateTripRequest() {
+    void canCreateTripRequest() {
         if (tripRequest == null) tripRequest = createTripRequest(otpUser.id);
         TripRequest retrieved = Persistence.tripRequests.getById(tripRequest.id);
         assertEquals(tripRequest.id, retrieved.id, "Found Trip request ID should equal inserted ID.");
     }
 
     @Test
-    public void canDeleteTripRequest() {
+    void canDeleteTripRequest() {
         Persistence.tripRequests.removeById(tripRequest.id);
         TripRequest deletedTripRequest = Persistence.tripRequests.getById(tripRequest.id);
         tripRequest = null;
@@ -71,26 +75,26 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    public void canCreateTripSummaryWithError() {
+    void canCreateTripSummaryWithError() {
         TripSummary retrieved = Persistence.tripSummaries.getById(tripSummaryWithError.id);
         assertEquals(tripSummaryWithError.id, retrieved.id, "Found Trip summary ID should equal inserted ID.");
     }
 
     @Test
-    public void canCreateTripSummary() {
+    void canCreateTripSummary() {
         TripSummary retrieved = Persistence.tripSummaries.getById(tripSummary.id);
         assertEquals(tripSummary.id, retrieved.id, "Found Trip summary ID should equal inserted ID.");
     }
 
     @Test
-    public void canDeleteTripSummary() {
+    void canDeleteTripSummary() {
         Persistence.tripSummaries.removeById(tripSummary.id);
         TripSummary deletedTripSummary = Persistence.tripSummaries.getById(tripSummary.id);
         assertNull(deletedTripSummary, "Deleted trip summary should no longer exist in database (should return as null).");
     }
 
     @Test
-    public void canGetFilteredTripRequestsWithFromAndToDate() {
+    void canGetFilteredTripRequestsWithFromAndToDate() {
         LocalDateTime fromStartOfDay = DateTimeUtils.nowAsLocalDate().atTime(LocalTime.MIN);
         LocalDateTime toEndOfDay = DateTimeUtils.nowAsLocalDate().atTime(LocalTime.MAX);
         Date fromDate = Date.from(fromStartOfDay
@@ -105,47 +109,43 @@ public class TripHistoryPersistenceTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    public void canGetFilteredTripRequestsFromDate() {
+    void canGetFilteredTripRequestsFromDate() {
         LocalDateTime fromStartOfDay = DateTimeUtils.nowAsLocalDate().atTime(LocalTime.MIN);
         Bson filter = Filters.and(
             gte(
                 TRIP_REQUEST_DATE_CREATED_FIELD_NAME,
                 Date.from(fromStartOfDay.atZone(DateTimeUtils.getSystemZoneId()).toInstant())
             ),
-            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, otpUser.id)
+            filterByUserId(otpUser.id)
         );
         List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, LIMIT);
         assertEquals(result.size(), tripRequests.size());
     }
 
     @Test
-    public void canGetFilteredTripRequestsToDate() {
+    void canGetFilteredTripRequestsToDate() {
         LocalDateTime toEndOfDay = DateTimeUtils.nowAsLocalDate().atTime(LocalTime.MAX);
         Bson filter = Filters.and(
             lte(
                 TRIP_REQUEST_DATE_CREATED_FIELD_NAME,
                 Date.from(toEndOfDay.atZone(DateTimeUtils.getSystemZoneId()).toInstant())
             ),
-            eq(TRIP_REQUEST_USER_ID_FIELD_NAME, otpUser.id)
+            filterByUserId(otpUser.id)
         );
         List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, LIMIT);
         assertEquals(result.size(), tripRequests.size());
     }
 
     @Test
-    public void canGetFilteredTripRequestsForUser() {
-        String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
-        Bson filter = Filters.eq(TRIP_REQUEST_USER_ID_FIELD_NAME, otpUser.id);
-        List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, LIMIT);
+    void canGetFilteredTripRequestsForUser() {
+        List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filterByUserId(otpUser.id), LIMIT);
         assertEquals(result.size(), tripRequests.size());
     }
 
     @Test
-    public void canGetFilteredTripRequestsForUserWithMaxLimit() {
+    void canGetFilteredTripRequestsForUserWithMaxLimit() {
         int max = 2;
-        String TRIP_REQUEST_USER_ID_FIELD_NAME = "userId";
-        Bson filter = Filters.eq(TRIP_REQUEST_USER_ID_FIELD_NAME, otpUser.id);
-        List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filter, max);
-        assertEquals(result.size(), max);
+        List<TripRequest> result = Persistence.tripRequests.getFilteredWithLimit(filterByUserId(otpUser.id), max);
+        assertEquals(max, result.size());
     }
 }
