@@ -1,7 +1,7 @@
 package org.opentripplanner.middleware.controllers.api;
 
 import com.auth0.json.mgmt.users.User;
-import com.mongodb.BasicDBObject;
+import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpMethod;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -37,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
+import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserId;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.createAndAssignAuth0User;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
@@ -59,7 +60,7 @@ import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.dele
  *
  * Auth0 must be correctly configured as described here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow
  */
-public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
+class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static AdminUser multiAdminUser;
     private static OtpUser soloOtpUser;
     private static OtpUser multiOtpUser;
@@ -72,7 +73,7 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
      * an Auth0 account is created for the admin user it will fail because the email address already exists.
      */
     @BeforeAll
-    public static void setUp() {
+    static void setUp() {
         assumeTrue(IS_END_TO_END);
         setAuthDisabled(false);
 
@@ -97,7 +98,7 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
      * Delete the users if they were not already deleted during the test script.
      */
     @AfterAll
-    public static void tearDown() {
+    static void tearDown() {
         assumeTrue(IS_END_TO_END);
         restoreDefaultAuthDisabled();
         multiAdminUser = Persistence.adminUsers.getById(multiAdminUser.id);
@@ -110,15 +111,9 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     @AfterEach
-    public void tearDownAfterTest() {
-        Persistence.monitoredTrips.removeFiltered(getUserFilter(soloOtpUser.id));
-        Persistence.monitoredTrips.removeFiltered(getUserFilter(multiOtpUser.id));
-    }
-
-    private static BasicDBObject getUserFilter(String id) {
-        BasicDBObject userFilter = new BasicDBObject();
-        userFilter.put("userId", id);
-        return userFilter;
+    void tearDownAfterTest() {
+        Persistence.monitoredTrips.removeFiltered(filterByUserId(soloOtpUser.id));
+        Persistence.monitoredTrips.removeFiltered(filterByUserId(multiOtpUser.id));
     }
 
     /**
@@ -156,7 +151,7 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         // Create a trip for the solo OTP user.
         createMonitoredTripForUser(soloOtpUser);
 
-        BasicDBObject filter = getUserFilter(soloOtpUser.id);
+        Bson filter = filterByUserId(soloOtpUser.id);
 
         // Expect only 1 trip for solo Otp user.
         assertEquals(1, Persistence.monitoredTrips.getCountFiltered(filter));
