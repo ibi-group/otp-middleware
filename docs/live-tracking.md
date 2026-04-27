@@ -298,10 +298,13 @@ A companion travels with the traveler. An observer does not.
 When travelers assign companions and observers, recipients receive an email on that matter and must accept the request
 by clicking a link in the email. Once accepted, the status on the traveler account page will show as "Verified".
 
-Verified companions and Observers can receive the following notifications in addition to the usual trip monitoring notifications:
-- A traveler departs their origin location,
-- A traveler approaches a transit stop,
-- A traveler arrives at their destination.
+Verified companions and observers can receive the following notifications in addition to the usual trip monitoring notifications:
+
+| Notification Type | Description |
+| --- | --- |
+| `DEPARTED_NOTIFICATION` | A traveler departs their origin location |
+| `MODE_CHANGE_NOTIFICATION` | A traveler approaches a transit stop |
+| `ARRIVED_NOTIFICATION` | A traveler arrives at their destination |
 
 These messages are managed by the `LegTansitionNotification` class.
 No notification is sent when a user reroutes from a deviated position.
