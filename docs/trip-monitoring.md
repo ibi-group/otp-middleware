@@ -423,7 +423,50 @@ instance, which is a snapshot of the latest trip monitoring state as a result of
 running `CheckMonitoredTrip`. If a `JourneyState` object's fields are not populated (or are zero),
 the trip is deemed to not have been monitored before.
 
-Once an occurrence of a trip completes, the journey state is "reset",
+```mermaid
+---
+title: JourneyState Updates
+---
+classDiagram
+    class state1["Initial JourneyState"] {
+        matchingItinerary
+        targetDate
+        tripStatus
+        scheduledDepartureEpochMillis
+        scheduledArrivalEpochMillis
+        baselineDepartureEpochMillis
+        baselineArrivalEpochMillis
+        hasRealtimeData
+        lastNotifications
+        lastCheckedEpochMillis
+    }
+    class state2["New JourneyState"] {
+        matchingItinerary
+        targetDate
+        tripStatus
+        scheduledDepartureEpochMillis
+        scheduledArrivalEpochMillis
+        baselineDepartureEpochMillis
+        baselineArrivalEpochMillis
+        hasRealtimeData
+        lastNotifications
+        lastCheckedEpochMillis
+    }
+    class CheckMonitoredTrip {
+        shouldSkipMonitoredTripCheck()
+        runCheckLogic()
+        -↳checkOtpAndUpdateTripStatus()
+        -↳makeOTPRequestAndUpdateMatchingItineraryInternal()
+        --↳resetJourneyState()
+        --↳updateTripStatus()
+        --↳updateMonitoredTrip()
+    }
+    state2 <-- CheckMonitoredTrip
+    CheckMonitoredTrip <-- state1
+
+```
+
+Once an occurrence of a trip completes, the journey state is "reset" (`ChackMonitoredTrip.resetJourneyState()`),
 so that notifications can be sent again for the next trip occurrence.
 
 A `JourneyState` consists of the following attributes:
