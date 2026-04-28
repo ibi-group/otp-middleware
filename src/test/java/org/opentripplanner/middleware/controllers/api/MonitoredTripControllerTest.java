@@ -33,11 +33,13 @@ import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -261,7 +263,9 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         // Check that we got data populated in the result.
         ItineraryExistence existence = JsonUtils.getPOJOFromJSON(result.responseBody, ItineraryExistence.class);
-        assertEquals(1, existence.wednesday.validDates.size());
+        Arrays.stream(DayOfWeek.values()).forEach(day -> {
+            assertEquals(1, existence.getResultForDayOfWeek(day).validDates.size());
+        });
     }
 
     @ParameterizedTest
