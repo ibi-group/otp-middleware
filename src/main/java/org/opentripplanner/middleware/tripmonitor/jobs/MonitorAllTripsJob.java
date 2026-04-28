@@ -1,8 +1,9 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
-import com.mongodb.BasicDBObject;
+import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.recurringjobs.RecurringJobScheduler;
+import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.ne;
+import static com.mongodb.client.model.Filters.nor;
 import static org.opentripplanner.middleware.controllers.api.ApiController.ID_FIELD_NAME;
 
 /**
@@ -109,18 +114,30 @@ public class MonitorAllTripsJob implements Runnable, RecurringJobScheduler {
     }
 
     /**
-     * Create a BSON clause to filter out trips that would not be checked.
+     * Create a BSON clause to filter out trips that should not be checked.
      */
-    private static BasicDBObject makeTripFilter() {
-        BasicDBObject tripFilter = new BasicDBObject();
-
-        //.Trips must be active.
-        tripFilter.put("isActive", true);
-
-        // Other conditions (e.g. in CheckMonitoredTrip) that would result in a trip to be not checked
-        // should eventually be moved here.
-
-        return tripFilter;
+    public static Bson makeTripFilter() {
+        return and(
+            // Trips must be active.
+            eq("isActive", true),
+            // If trip is no longer possible, no further checking is needed.
+            ne("journeyState.tripStatus", TripStatus.NO_LONGER_POSSIBLE.name()),
+            // Exclude one-time trips in the past
+            nor(
+                and(
+                    eq("journeyState.tripStatus", TripStatus.PAST_TRIP.name()),
+                    eq("monday", false),
+                    eq("tuesday", false),
+                    eq("wednesday", false),
+                    eq("thursday", false),
+                    eq("friday", false),
+                    eq("saturday", false),
+                    eq("sunday", false)
+                )
+            )
+            // Other conditions (e.g. in CheckMonitoredTrip) that would result in a trip to be not checked
+            // should eventually be moved here.
+        );
     }
 
     /**
