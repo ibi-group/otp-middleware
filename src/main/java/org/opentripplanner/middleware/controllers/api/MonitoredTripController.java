@@ -49,6 +49,10 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     private static final int MAXIMUM_PERMITTED_MONITORED_TRIPS
         = getConfigPropertyAsInt("MAXIMUM_PERMITTED_MONITORED_TRIPS", 5);
 
+    public static final String MONITORED_TRIP_PATH = "secure/monitoredtrip";
+
+    public static final String CHECK_ITINERARY_SUBPATH = "/checkitinerary";
+
     /**
      * Size of the cached itinerary checks that we should not repeat.
      */
@@ -70,14 +74,14 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     };
 
     public MonitoredTripController(String apiPrefix) {
-        super(apiPrefix, Persistence.monitoredTrips, "secure/monitoredtrip");
+        super(apiPrefix, Persistence.monitoredTrips, MONITORED_TRIP_PATH);
     }
 
     @Override
     protected void buildEndpoint(ApiEndpoint baseEndpoint) {
         // Add the api key route BEFORE the regular CRUD methods
         ApiEndpoint modifiedEndpoint = baseEndpoint
-            .post(path("/checkitinerary")
+            .post(path(CHECK_ITINERARY_SUBPATH)
                     .withDescription("Returns the itinerary existence check results for a monitored trip.")
                     .withRequestType(MonitoredTrip.class)
                     .withProduces(JSON_ONLY)
@@ -279,7 +283,12 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         }
         trip.initializeFromItineraryAndQueryParams(trip.otp2QueryParams);
         trip.checkItineraryExistence(false);
-        checksPerformed.put(trip.itineraryExistence.id, trip.itineraryExistence);
+        boolean isNewTrip = Persistence.monitoredTrips.getCountFiltered(eq(trip.id)) == 0;
+        if (isNewTrip) {
+            checksPerformed.put(trip.itineraryExistence.id, trip.itineraryExistence);
+        } else {
+            Persistence.monitoredTrips.replace(trip.id, trip);
+        }
         return trip.itineraryExistence;
     }
 

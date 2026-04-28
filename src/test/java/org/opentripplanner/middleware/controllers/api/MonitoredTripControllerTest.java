@@ -54,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.opentripplanner.middleware.auth.Auth0Connection.restoreDefaultAuthDisabled;
 import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisabled;
+import static org.opentripplanner.middleware.controllers.api.MonitoredTripController.CHECK_ITINERARY_SUBPATH;
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserId;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.createAndAssignAuth0User;
@@ -81,7 +82,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static AdminUser multiAdminUser;
     private static OtpUser soloOtpUser;
     private static OtpUser multiOtpUser;
-    private static final String MONITORED_TRIP_PATH = "api/secure/monitoredtrip";
+    private static final String MONITORED_TRIP_PATH = String.join("/", "api", MonitoredTripController.MONITORED_TRIP_PATH);
 
     private static final String DUMMY_STRING = "ABCDxyz";
 
@@ -190,7 +191,8 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         modifiedTrip.itineraryExistence.id = DUMMY_STRING;
         modifiedTrip.itineraryExistence.thursday = new ItineraryExistence.ItineraryExistenceResult();
 
-        mockAuthenticatedRequest(MONITORED_TRIP_PATH,
+        mockAuthenticatedRequest(
+            MONITORED_TRIP_PATH,
             JsonUtils.toJson(modifiedTrip),
             soloOtpUser,
             HttpMethod.PUT
@@ -205,6 +207,38 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(originalTrip.itineraryExistence.id, updatedTrip.itineraryExistence.id);
         assertNull(updatedTrip.itineraryExistence.thursday);
         assertNotNull(updatedTrip.itineraryExistence.wednesday);
+    }
+
+    @Test
+    void canUpdateMonitoredTripAfterRecheckingExistence() throws Exception {
+        ItineraryExistence.otpResponseProviderOverride = this::fakeOtpResponse;
+
+        // Create a trip for the solo OTP user.
+        persistNewMonitoredTripForUser(soloOtpUser);
+
+        Bson filter = filterByUserId(soloOtpUser.id);
+        MonitoredTrip originalTrip = Persistence.monitoredTrips.getOneFiltered(filter);
+        assertTrue(originalTrip.itineraryExistence.wednesday.validDates.isEmpty());
+
+        int checksSize = MonitoredTripController.getChecksSize();
+
+        // Make call to check itinerary existence.
+        mockAuthenticatedRequest(
+            MONITORED_TRIP_PATH + CHECK_ITINERARY_SUBPATH,
+            JsonUtils.toJson(originalTrip),
+            soloOtpUser,
+            HttpMethod.POST
+        );
+
+        MonitoredTrip updatedTrip = Persistence.monitoredTrips.getOneFiltered(filter);
+        assertNotNull(updatedTrip);
+        // The persisted trip should have its existence overwritten with the one simulated above.
+        assertNotNull(updatedTrip.itineraryExistence.id);
+        assertNotEquals(originalTrip.itineraryExistence.id, updatedTrip.itineraryExistence.id);
+        assertEquals(1, updatedTrip.itineraryExistence.wednesday.validDates.size());
+        // No checks should have been added/cached.
+        assertEquals(checksSize, MonitoredTripController.getChecksSize());
+
     }
 
     @ParameterizedTest
