@@ -137,6 +137,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             } else {
                 // Check itinerary existence for all days and replace the provided trip's itinerary with a verified,
                 // non-realtime version of it.
+                LOG.info("Running itinerary check in preCreateHook because it has not been run before.");
                 boolean success = monitoredTrip.checkItineraryExistence(true);
                 if (!success) {
                     logMessageAndHalt(
