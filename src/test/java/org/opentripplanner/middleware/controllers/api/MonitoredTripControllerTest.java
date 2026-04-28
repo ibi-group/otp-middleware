@@ -82,6 +82,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static AdminUser multiAdminUser;
     private static OtpUser soloOtpUser;
     private static OtpUser multiOtpUser;
+    private static Bson soloUserFilter;
     private static final String MONITORED_TRIP_PATH = String.join("/", "api", MonitoredTripController.MONITORED_TRIP_PATH);
 
     private static final String DUMMY_STRING = "ABCDxyz";
@@ -97,6 +98,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         String multiUserEmail = ApiTestUtils.generateEmailAddress("test-multiotpuser");
         soloOtpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-solootpuser"));
+        soloUserFilter = filterByUserId(soloOtpUser.id);
         multiOtpUser = PersistenceTestUtils.createUser(multiUserEmail);
         multiAdminUser = PersistenceTestUtils.createAdminUser(multiUserEmail);
         try {
@@ -130,7 +132,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     @AfterEach
     void tearDownAfterTest() {
-        Persistence.monitoredTrips.removeFiltered(filterByUserId(soloOtpUser.id));
+        Persistence.monitoredTrips.removeFiltered(soloUserFilter);
         Persistence.monitoredTrips.removeFiltered(filterByUserId(multiOtpUser.id));
         ItineraryExistence.otpResponseProviderOverride = null;
     }
@@ -170,12 +172,10 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         // Create a trip for the solo OTP user.
         persistNewMonitoredTripForUser(soloOtpUser);
 
-        Bson filter = filterByUserId(soloOtpUser.id);
-
         // Expect only 1 trip for solo Otp user.
-        assertEquals(1, Persistence.monitoredTrips.getCountFiltered(filter));
+        assertEquals(1, Persistence.monitoredTrips.getCountFiltered(soloUserFilter));
 
-        MonitoredTrip originalTrip = Persistence.monitoredTrips.getOneFiltered(filter);
+        MonitoredTrip originalTrip = Persistence.monitoredTrips.getOneFiltered(soloUserFilter);
         assertNotNull(originalTrip.itinerary);
         assertNotNull(originalTrip.itineraryExistence);
         // Can't really assert journeyState because itinerary checks will not be run for these tests.
@@ -216,8 +216,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         // Create a trip for the solo OTP user.
         persistNewMonitoredTripForUser(soloOtpUser);
 
-        Bson filter = filterByUserId(soloOtpUser.id);
-        MonitoredTrip originalTrip = Persistence.monitoredTrips.getOneFiltered(filter);
+        MonitoredTrip originalTrip = Persistence.monitoredTrips.getOneFiltered(soloUserFilter);
         assertTrue(originalTrip.itineraryExistence.wednesday.validDates.isEmpty());
 
         int checksSize = MonitoredTripController.getChecksSize();
@@ -230,7 +229,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
             HttpMethod.POST
         );
 
-        MonitoredTrip updatedTrip = Persistence.monitoredTrips.getOneFiltered(filter);
+        MonitoredTrip updatedTrip = Persistence.monitoredTrips.getOneFiltered(soloUserFilter);
         assertNotNull(updatedTrip);
         // The persisted trip should have its existence overwritten with the one simulated above.
         assertNotNull(updatedTrip.itineraryExistence.id);
