@@ -33,7 +33,6 @@ import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import org.opentripplanner.middleware.utils.JsonUtils;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -84,8 +83,8 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser multiOtpUser;
     private static Bson soloUserFilter;
     private static final String MONITORED_TRIP_PATH = String.join("/", "api", MonitoredTripController.MONITORED_TRIP_PATH);
-
     private static final String DUMMY_STRING = "ABCDxyz";
+    private static final String WED_2026_04_22 = "2026-04-22";
 
     /**
      * Create Otp and Admin user accounts. Create Auth0 account for just the Otp users. If
@@ -237,18 +236,39 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertEquals(1, updatedTrip.itineraryExistence.wednesday.validDates.size());
         // No checks should have been added/cached.
         assertEquals(checksSize, MonitoredTripController.getChecksSize());
+    }
 
+    @Test
+    void canCreateCheckForNewMonitoredTrip() throws Exception {
+        ItineraryExistence.otpResponseProviderOverride = this::fakeOtpResponse;
+
+        // Create a trip for the solo OTP user without persisting.
+        MonitoredTrip trip = createMonitoredTripForUser(soloOtpUser);
+
+        int checksSize = MonitoredTripController.getChecksSize();
+
+        // Make call to check itinerary existence.
+        var result = mockAuthenticatedRequest(
+            MONITORED_TRIP_PATH + CHECK_ITINERARY_SUBPATH,
+            JsonUtils.toJson(trip),
+            soloOtpUser,
+            HttpMethod.POST
+        );
+
+        assertNull(Persistence.monitoredTrips.getOneFiltered(soloUserFilter));
+        // A check should have been added/cached.
+        assertEquals(checksSize + 1, MonitoredTripController.getChecksSize());
+
+        // Check that we got data populated in the result.
+        ItineraryExistence existence = JsonUtils.getPOJOFromJSON(result.responseBody, ItineraryExistence.class);
+        assertEquals(1, existence.wednesday.validDates.size());
     }
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void canCreateMonitoredTripUsingPriorExistenceCheck(boolean monitorAllDays) throws Exception {
-        final String WED_2026_04_22 = "2026-04-22";
         // Create a trip for the solo OTP user without persisting.
         MonitoredTrip trip = createMonitoredTripForUser(soloOtpUser);
-        trip.tripName = UUID.randomUUID().toString();
-        trip.otp2QueryParams.date = WED_2026_04_22;
-        trip.itinerary.startTime = Date.from(Instant.ofEpochMilli(0));
         if (!monitorAllDays) {
             trip.updateAllDaysOfWeek(false);
             trip.wednesday = true;
@@ -300,12 +320,8 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     void canCreateMonitoredTripWithoutPriorExistenceCheck() throws Exception {
         ItineraryExistence.otpResponseProviderOverride = this::fakeOtpResponse;
 
-        final String WED_2026_04_22 = "2026-04-22";
         // Create a trip for the solo OTP user without persisting.
         MonitoredTrip trip = createMonitoredTripForUser(soloOtpUser);
-        trip.tripName = UUID.randomUUID().toString();
-        trip.otp2QueryParams.date = WED_2026_04_22;
-        trip.itinerary.startTime = Date.from(Instant.ofEpochMilli(0));
 
         // Make call to persist the trip.
         mockAuthenticatedRequest(MONITORED_TRIP_PATH,
@@ -364,6 +380,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.updateAllDaysOfWeek(true);
         monitoredTrip.userId = otpUser.id;
         monitoredTrip.otp2QueryParams = OtpTestUtils.getSampleQueryParams();
+        monitoredTrip.otp2QueryParams.date = WED_2026_04_22;
         monitoredTrip.itinerary = makeItinerary(new Date());
         monitoredTrip.itineraryExistence = new ItineraryExistence();
         monitoredTrip.itineraryExistence.id = "itinerary-existence-id";
@@ -372,6 +389,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.from.name = "From Place";
         monitoredTrip.to = new Place();
         monitoredTrip.to.name = "To Place";
+        monitoredTrip.tripName = UUID.randomUUID().toString();
         return monitoredTrip;
     }
 
