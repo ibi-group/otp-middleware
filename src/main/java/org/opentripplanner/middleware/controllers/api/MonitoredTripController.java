@@ -282,13 +282,15 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Error parsing JSON for MonitoredTrip", e);
             return null;
         }
-        trip.initializeFromItineraryAndQueryParams(trip.otp2QueryParams);
-        trip.checkItineraryExistence(false);
-        boolean isNewTrip = Persistence.monitoredTrips.getCountFiltered(eq(trip.id)) == 0;
+        MonitoredTrip existingTrip = Persistence.monitoredTrips.getById(trip.id);
+        boolean isNewTrip = existingTrip == null;
         if (isNewTrip) {
+            trip.initializeFromItineraryAndQueryParams(trip.otp2QueryParams);
+            trip.checkItineraryExistence(false);
             checksPerformed.put(trip.itineraryExistence.id, trip.itineraryExistence);
         } else {
-            Persistence.monitoredTrips.replace(trip.id, trip);
+            existingTrip.checkItineraryExistence(false);
+            Persistence.monitoredTrips.replace(trip.id, existingTrip);
         }
         return trip.itineraryExistence;
     }

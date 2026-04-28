@@ -220,6 +220,11 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         MonitoredTrip originalTrip = Persistence.monitoredTrips.getOneFiltered(soloUserFilter);
         assertTrue(originalTrip.itineraryExistence.wednesday.validDates.isEmpty());
 
+        // Mess up some fields in the trip. The modified field values should not appear in the persisted trip.
+        originalTrip.tripName = DUMMY_STRING;
+        originalTrip.otp2QueryParams.fromPlace = DUMMY_STRING;
+        originalTrip.userId = DUMMY_STRING;
+
         int checksSize = MonitoredTripController.getChecksSize();
 
         // Make call to check itinerary existence.
@@ -232,6 +237,10 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         MonitoredTrip updatedTrip = Persistence.monitoredTrips.getOneFiltered(soloUserFilter);
         assertNotNull(updatedTrip);
+        // Messed up values should not have been modified. Test additional fields as needed.
+        assertNotEquals(DUMMY_STRING, updatedTrip.tripName);
+        assertNotEquals(DUMMY_STRING, updatedTrip.userId);
+        assertNotEquals(DUMMY_STRING, updatedTrip.otp2QueryParams.fromPlace);
         // The persisted trip should have its existence overwritten with the one simulated above.
         assertNotNull(updatedTrip.itineraryExistence.id);
         assertNotEquals(originalTrip.itineraryExistence.id, updatedTrip.itineraryExistence.id);
