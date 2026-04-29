@@ -8,7 +8,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
@@ -44,7 +45,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -277,25 +280,31 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         });
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void canCreateMonitoredTripUsingPriorExistenceCheck(boolean monitorAllDays) throws Exception {
+    @ParameterizedTest(name = "{3} Itinerary exists: {1}, Should save trip: {2}")
+    @MethodSource("createMonitoredTripUsingPriorExistenceCheckCases")
+    void canCreateMonitoredTripUsingPriorExistenceCheck(
+        TripModifier tripArgs,
+        boolean tripExists,
+        boolean shouldSave,
+        String message // used in test name above
+    ) throws Exception {
         // Create a trip for the solo OTP user without persisting.
         MonitoredTrip trip = createMonitoredTripForUser(soloOtpUser);
-        if (!monitorAllDays) {
-            trip.updateAllDaysOfWeek(false);
-            trip.wednesday = true;
+        if (tripArgs.tripModifier != null) {
+            tripArgs.tripModifier.accept(trip);
         }
 
         // Simulate a prior itinerary existence check for that trip.
-        ItineraryExistence existence = new ItineraryExistence();
-        existence.id = UUID.randomUUID().toString();
-        existence.wednesday = new ItineraryExistence.ItineraryExistenceResult();
-        existence.wednesday.validDates.add(WED_2026_04_22);
         Itinerary verifiedItinerary = makeItinerary(DateTimeUtils.convertToDate(
             LocalDateTime.of(LocalDate.parse(WED_2026_04_22, DateTimeFormatter.ISO_LOCAL_DATE), LocalTime.MIDNIGHT)
         ));
-        existence.wednesday.itineraries = List.of(verifiedItinerary);
+        ItineraryExistence existence = new ItineraryExistence();
+        existence.id = UUID.randomUUID().toString();
+        if (tripExists) {
+            existence.wednesday = new ItineraryExistence.ItineraryExistenceResult();
+            existence.wednesday.validDates.add(WED_2026_04_22);
+            existence.wednesday.itineraries = List.of(verifiedItinerary);
+        }
 
         int checksSize = MonitoredTripController.getChecksSize();
         MonitoredTripController.simulateExistenceCheck(existence);
@@ -313,20 +322,60 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
 
         MonitoredTrip persistedTrip = Persistence.monitoredTrips.getOneFiltered(eq("tripName", trip.tripName));
-        if (monitorAllDays) {
+        if (shouldSave) {
+            assertNotNull(persistedTrip);
+            // If applicable, the persisted trip should have its existence overwritten with the one simulated above.
+            if (tripExists) {
+                assertEquals(existence.id, persistedTrip.itineraryExistence.id);
+                assertEquals(1, persistedTrip.itineraryExistence.wednesday.validDates.size());
+                assertTrue(persistedTrip.itineraryExistence.wednesday.validDates.contains(WED_2026_04_22));
+                assertEquals(verifiedItinerary.startTime, persistedTrip.itinerary.startTime);
+            }
+            // The previous itinerary check should have been removed.
+            assertEquals(checksSize, MonitoredTripController.getChecksSize());
+        } else {
             assertNull(persistedTrip);
             // The previous itinerary check should have been kept.
             assertEquals(checksSize + 1, MonitoredTripController.getChecksSize());
-        } else {
-            assertNotNull(persistedTrip);
-            // The persisted trip should have its existence overwritten with the one simulated above.
-            assertEquals(existence.id, persistedTrip.itineraryExistence.id);
-            assertEquals(1, persistedTrip.itineraryExistence.wednesday.validDates.size());
-            assertTrue(persistedTrip.itineraryExistence.wednesday.validDates.contains(WED_2026_04_22));
-            assertEquals(verifiedItinerary.startTime, persistedTrip.itinerary.startTime);
-            // The previous itinerary check should have been removed.
-            assertEquals(checksSize, MonitoredTripController.getChecksSize());
         }
+    }
+
+    private static Stream<Arguments> createMonitoredTripUsingPriorExistenceCheckCases() {
+        return Stream.of(
+            Arguments.of(
+                new TripModifier(null),
+                false,
+                false,
+                "Recurring trip monitored all days"
+                ),
+            Arguments.of(
+                new TripModifier(trip -> {
+                    trip.updateAllDaysOfWeek(false);
+                    trip.wednesday = true;
+                }),
+                true,
+                true,
+                "Recurring trip monitored one day"
+            ),
+            Arguments.of(
+                new TripModifier(trip -> {
+                    trip.updateAllDaysOfWeek(false);
+                }),
+                true,
+                true,
+                "One-time trip, itinerary exists theoretically or temporarily thanks to favorable real-time conditions."
+            ),
+            // Allow persistence of one-trips where the itinerary existence check fails.
+            // This is to be consistent with the OTP-react-redux UI that converts such trips to one-time.
+            Arguments.of(
+                new TripModifier(trip -> {
+                    trip.updateAllDaysOfWeek(false);
+                }),
+                false,
+                true,
+                "One-time trip"
+            )
+        );
     }
 
     @Test
@@ -476,5 +525,16 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         ids.remove(otherTrip.id);
         Set<String> fetchedIds = fetchedTrips.stream().map(t -> t.id).collect(Collectors.toSet());
         assertTrue(ids.containsAll(fetchedIds));
+    }
+
+    /**
+     * This class is needed to wrap a lambda. Arguments.of(...) does not accept lambdas.
+     */
+    private static class TripModifier {
+        private final Consumer<MonitoredTrip> tripModifier;
+
+        public TripModifier(Consumer<MonitoredTrip> tripModifier) {
+            this.tripModifier = tripModifier;
+        }
     }
 }

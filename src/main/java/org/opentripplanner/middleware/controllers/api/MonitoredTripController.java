@@ -112,14 +112,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         // Ensure user has not reached their limit for number of trips.
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
         preCreateOrUpdateChecks(monitoredTrip, req);
-
-        // FIXME: Pending https://github.com/ibi-group/otp-middleware/pull/219,
-        //   check itinerary existence for recurring trips only for now.
-        //   (Existence should ultimately be checked on all trips.)
-        if (!monitoredTrip.isOneTime()) {
-            checkItineraryExistenceOrReusePriorCheck(monitoredTrip, req);
-        }
-
+        checkItineraryExistenceOrReusePriorCheck(monitoredTrip, req);
         notifyTripCompanionsAndObservers(monitoredTrip, null);
 
         return monitoredTrip;
