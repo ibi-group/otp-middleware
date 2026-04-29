@@ -212,7 +212,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canUpdateMonitoredTripAfterRecheckingExistence() throws Exception {
-        ItineraryExistence.otpResponseProviderOverride = this::fakeOtpResponse;
+        ItineraryExistence.otpResponseProviderOverride = MonitoredTripControllerTest::fakeOtpResponse;
 
         // Create a trip for the solo OTP user.
         persistNewMonitoredTripForUser(soloOtpUser);
@@ -251,7 +251,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canCreateCheckForNewMonitoredTrip() throws Exception {
-        ItineraryExistence.otpResponseProviderOverride = this::fakeOtpResponse;
+        ItineraryExistence.otpResponseProviderOverride = MonitoredTripControllerTest::fakeOtpResponse;
 
         // Create a trip for the solo OTP user without persisting.
         MonitoredTrip trip = createMonitoredTripForUser(soloOtpUser);
@@ -331,7 +331,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canCreateMonitoredTripWithoutPriorExistenceCheck() throws Exception {
-        ItineraryExistence.otpResponseProviderOverride = this::fakeOtpResponse;
+        ItineraryExistence.otpResponseProviderOverride = MonitoredTripControllerTest::fakeOtpResponse;
 
         // Create a trip for the solo OTP user without persisting.
         MonitoredTrip trip = createMonitoredTripForUser(soloOtpUser);
@@ -352,11 +352,10 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     /**
      * Fake OTP response provider whose itineraries always match the original itinerary of the test.
      */
-    private OtpResponse fakeOtpResponse(OtpRequest request) {
-        Itinerary itinerary = makeItinerary(Date.from(request.dateTime.toInstant()));
+    private static OtpResponse fakeOtpResponse(OtpRequest request) {
         OtpResponse response = new OtpResponse();
         response.plan = new TripPlan();
-        response.plan.itineraries = List.of(itinerary);
+        response.plan.itineraries = List.of(makeItinerary(Date.from(request.dateTime.toInstant())));
         return response;
     }
 
