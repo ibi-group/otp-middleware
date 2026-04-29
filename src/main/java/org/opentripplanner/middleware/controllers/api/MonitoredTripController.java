@@ -117,41 +117,45 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         //   check itinerary existence for recurring trips only for now.
         //   (Existence should ultimately be checked on all trips.)
         if (!monitoredTrip.isOneTime()) {
-            String checkId = monitoredTrip.itineraryExistence != null ? monitoredTrip.itineraryExistence.id : null;
-            ItineraryExistence previousExistence = checksPerformed.get(checkId);
-            if (previousExistence != null) {
-                if (previousExistence.allMonitoredDaysAreValid(monitoredTrip)) {
-                    LOG.info("Skipping itinerary check in preCreateHook because we have already checked it exists.");
-                    monitoredTrip.itineraryExistence = previousExistence;
-                    monitoredTrip.updateTripWithVerifiedItinerary();
-
-                    // Consume (remove) the check
-                    checksPerformed.remove(checkId);
-                } else {
-                    logMessageAndHalt(
-                        req,
-                        HttpStatus.BAD_REQUEST_400,
-                        previousExistence.message
-                    );
-                }
-            } else {
-                // Check itinerary existence for all days and replace the provided trip's itinerary with a verified,
-                // non-realtime version of it.
-                LOG.info("Running itinerary check in preCreateHook because it has not been run before.");
-                boolean success = monitoredTrip.checkItineraryExistence(true);
-                if (!success) {
-                    logMessageAndHalt(
-                        req,
-                        HttpStatus.BAD_REQUEST_400,
-                        monitoredTrip.itineraryExistence.message
-                    );
-                }
-            }
+            checkItineraryExistenceOrReusePriorCheck(monitoredTrip, req);
         }
 
         notifyTripCompanionsAndObservers(monitoredTrip, null);
 
         return monitoredTrip;
+    }
+
+    private static void checkItineraryExistenceOrReusePriorCheck(MonitoredTrip monitoredTrip, Request req) {
+        String checkId = monitoredTrip.itineraryExistence != null ? monitoredTrip.itineraryExistence.id : null;
+        ItineraryExistence previousExistence = checksPerformed.get(checkId);
+        if (previousExistence != null) {
+            if (previousExistence.allMonitoredDaysAreValid(monitoredTrip)) {
+                LOG.info("Skipping itinerary check in preCreateHook because we have already checked it exists.");
+                monitoredTrip.itineraryExistence = previousExistence;
+                monitoredTrip.updateTripWithVerifiedItinerary();
+
+                // Consume (remove) the check
+                checksPerformed.remove(checkId);
+            } else {
+                logMessageAndHalt(
+                    req,
+                    HttpStatus.BAD_REQUEST_400,
+                    previousExistence.message
+                );
+            }
+        } else {
+            // Check itinerary existence for all days and replace the provided trip's itinerary with a verified,
+            // non-realtime version of it.
+            LOG.info("Running itinerary check in preCreateHook because it has not been run before.");
+            boolean success = monitoredTrip.checkItineraryExistence(true);
+            if (!success) {
+                logMessageAndHalt(
+                    req,
+                    HttpStatus.BAD_REQUEST_400,
+                    monitoredTrip.itineraryExistence.message
+                );
+            }
+        }
     }
 
     /**
