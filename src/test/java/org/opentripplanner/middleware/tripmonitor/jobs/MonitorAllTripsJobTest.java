@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.bson.conversions.Bson;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -11,10 +12,15 @@ import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
+
+import java.time.ZonedDateTime;
+import java.util.List;
 
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.NO_LONGER_POSSIBLE;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.PAST_TRIP;
 
@@ -32,6 +38,11 @@ class MonitorAllTripsJobTest extends OtpMiddlewareTestEnvironment {
     @AfterAll
     static void tearDown() {
         user.delete(false);
+    }
+
+    @AfterEach
+    void cleanUpTest() {
+        user.deleteOwnTrips();
     }
 
     @Test
@@ -65,6 +76,58 @@ class MonitorAllTripsJobTest extends OtpMiddlewareTestEnvironment {
         assertEquals(activeTrip.id, trips.data.get(0).id);
     }
 
+    @Test
+    void canUnsnoozeTrips() throws Exception {
+        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
+        long nowMillis = now.toInstant().toEpochMilli();
+        ZonedDateTime someTimeYesterday = now.minusDays(1).withHour(3);
+        long yesterdayMillis = someTimeYesterday.toInstant().toEpochMilli();
+
+        MonitoredTrip snoozedTrip = createSnoozedTrip(true, someTimeYesterday);
+        Persistence.monitoredTrips.create(snoozedTrip);
+        Bson userFilter = eq("userId", user.id);
+        MonitoredTrip snoozedTripFetched = Persistence.monitoredTrips.getOneFiltered(userFilter);
+
+        // Default active trip.
+        PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE,
+            true,
+            null
+        );
+
+        MonitoredTrip snoozedInactiveTrip = createSnoozedTrip(false, someTimeYesterday);
+        Persistence.monitoredTrips.create(snoozedInactiveTrip);
+
+        MonitoredTrip justSnoozedTrip = createSnoozedTrip(true, now);
+        Persistence.monitoredTrips.create(justSnoozedTrip);
+
+        // Get active snoozed trips.
+        Bson filter = and(
+            MonitorAllTripsJob.makeActiveSnoozedTripsFilter(),
+            userFilter
+        );
+        var trips = Persistence.monitoredTrips.getResponseList(filter, 0, 100);
+        assertEquals(2, trips.data.size());
+        assertTrue(
+            nowMillis == trips.data.get(0).journeyState.lastCheckedEpochMillis ||
+                nowMillis == trips.data.get(1).journeyState.lastCheckedEpochMillis
+        );
+        assertTrue(
+            yesterdayMillis == trips.data.get(0).journeyState.lastCheckedEpochMillis ||
+                yesterdayMillis == trips.data.get(1).journeyState.lastCheckedEpochMillis
+        );
+
+        List<MonitoredTrip> tripsToUnsnooze = MonitorAllTripsJob.getTripsToUnsnooze(trips.data);
+        assertEquals(1, tripsToUnsnooze.size());
+        MonitoredTrip fetchedTrip = tripsToUnsnooze.get(0);
+        assertEquals(snoozedTripFetched.id, fetchedTrip.id);
+        assertTrue(fetchedTrip.snoozed);
+        assertTrue(fetchedTrip.isActive);
+
+        // Test trip unsnoozing.
+    }
+
     private static MonitoredTrip createOneTimePastTrip() {
         MonitoredTrip trip = new MonitoredTrip();
         trip.userId = user.id;
@@ -88,6 +151,16 @@ class MonitorAllTripsJobTest extends OtpMiddlewareTestEnvironment {
         MonitoredTrip trip = new MonitoredTrip();
         trip.userId = user.id;
         trip.isActive = false;
+        return trip;
+    }
+
+    private static MonitoredTrip createSnoozedTrip(boolean isActive, ZonedDateTime lastChecked) {
+        MonitoredTrip trip = new MonitoredTrip();
+        trip.userId = user.id;
+        trip.isActive = isActive;
+        trip.snoozed = true;
+        trip.journeyState = new JourneyState();
+        trip.journeyState.lastCheckedEpochMillis = lastChecked.toInstant().toEpochMilli();
         return trip;
     }
 }
