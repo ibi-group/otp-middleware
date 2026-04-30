@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.bson.conversions.Bson;
-import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.recurringjobs.RecurringJobScheduler;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
@@ -19,7 +18,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
@@ -147,33 +145,6 @@ public class MonitorAllTripsJob implements Runnable, RecurringJobScheduler {
     }
 
     /**
-     * Filter to get trips that are active and snoozed.
-     */
-    public static Bson makeActiveSnoozedTripsFilter() {
-        return and(
-            eq("isActive", true),
-            eq("snoozed", true)
-        );
-    }
-
-    /**
-     * Extracts trips to be unsnoozed from a list of trips.
-     */
-    public static List<MonitoredTrip> getTripsToUnsnooze(List<MonitoredTrip> trips) {
-        return trips
-            .stream()
-            .filter(t -> shouldUnsnooze(t.journeyState.lastCheckedEpochMillis))
-            .collect(Collectors.toList());
-    }
-
-    public static List<MonitoredTrip> getTripsToUnsnooze() {
-        // Get active snoozed trips.
-        Bson filter = MonitorAllTripsJob.makeActiveSnoozedTripsFilter();
-        var snoozedTrips = Persistence.monitoredTrips.getResponseList(filter, 0, 100);
-        return getTripsToUnsnooze(snoozedTrips.data);
-    }
-
-    /**
      * Whether a trip should be unsnoozed and monitoring should resume.
      * @return true if the current time is on the calendar day (on or after midnight) after the last checked time.
      */
@@ -188,13 +159,6 @@ public class MonitorAllTripsJob implements Runnable, RecurringJobScheduler {
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
         // Include equal or after midnight as true.
         return !now.isBefore(midnightAfterLastChecked);
-    }
-
-    public static void unsnoozeTripsAsNeeded() {
-        getTripsToUnsnooze().stream().forEach(t -> {
-            t.snoozed = false;
-            Persistence.monitoredTrips.replace(t.id, t);
-        });
     }
 
     /**
