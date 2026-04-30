@@ -16,6 +16,7 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
@@ -107,25 +108,33 @@ class MonitorAllTripsJobTest extends OtpMiddlewareTestEnvironment {
             MonitorAllTripsJob.makeActiveSnoozedTripsFilter(),
             userFilter
         );
-        var trips = Persistence.monitoredTrips.getResponseList(filter, 0, 100);
-        assertEquals(2, trips.data.size());
+        var snoozedTrips = Persistence.monitoredTrips.getResponseList(filter, 0, 100);
+        assertEquals(2, snoozedTrips.data.size());
         assertTrue(
-            nowMillis == trips.data.get(0).journeyState.lastCheckedEpochMillis ||
-                nowMillis == trips.data.get(1).journeyState.lastCheckedEpochMillis
+            nowMillis == snoozedTrips.data.get(0).journeyState.lastCheckedEpochMillis ||
+                nowMillis == snoozedTrips.data.get(1).journeyState.lastCheckedEpochMillis
         );
         assertTrue(
-            yesterdayMillis == trips.data.get(0).journeyState.lastCheckedEpochMillis ||
-                yesterdayMillis == trips.data.get(1).journeyState.lastCheckedEpochMillis
+            yesterdayMillis == snoozedTrips.data.get(0).journeyState.lastCheckedEpochMillis ||
+                yesterdayMillis == snoozedTrips.data.get(1).journeyState.lastCheckedEpochMillis
         );
 
-        List<MonitoredTrip> tripsToUnsnooze = MonitorAllTripsJob.getTripsToUnsnooze(trips.data);
+        List<MonitoredTrip> tripsToUnsnooze = MonitorAllTripsJob.getTripsToUnsnooze(snoozedTrips.data);
         assertEquals(1, tripsToUnsnooze.size());
         MonitoredTrip fetchedTrip = tripsToUnsnooze.get(0);
         assertEquals(snoozedTripFetched.id, fetchedTrip.id);
         assertTrue(fetchedTrip.snoozed);
         assertTrue(fetchedTrip.isActive);
 
-        // Test trip unsnoozing.
+        // Test trip unsnoozing (covers the entire chain of logic).
+        MonitorAllTripsJob.unsnoozeTripsAsNeeded();
+        List<MonitoredTrip> tripsToUnsnoozeAfter = MonitorAllTripsJob.getTripsToUnsnooze()
+            .stream()
+            // Only retain trips from this test's user.
+            .filter(t -> user.id.equals(t.userId))
+            .collect(Collectors.toList());
+        assertTrue(tripsToUnsnoozeAfter.isEmpty());
+
     }
 
     private static MonitoredTrip createOneTimePastTrip() {

@@ -166,6 +166,13 @@ public class MonitorAllTripsJob implements Runnable, RecurringJobScheduler {
             .collect(Collectors.toList());
     }
 
+    public static List<MonitoredTrip> getTripsToUnsnooze() {
+        // Get active snoozed trips.
+        Bson filter = MonitorAllTripsJob.makeActiveSnoozedTripsFilter();
+        var snoozedTrips = Persistence.monitoredTrips.getResponseList(filter, 0, 100);
+        return getTripsToUnsnooze(snoozedTrips.data);
+    }
+
     /**
      * Whether a trip should be unsnoozed and monitoring should resume.
      * @return true if the current time is on the calendar day (on or after midnight) after the last checked time.
@@ -181,6 +188,13 @@ public class MonitorAllTripsJob implements Runnable, RecurringJobScheduler {
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
         // Include equal or after midnight as true.
         return !now.isBefore(midnightAfterLastChecked);
+    }
+
+    public static void unsnoozeTripsAsNeeded() {
+        getTripsToUnsnooze().stream().forEach(t -> {
+            t.snoozed = false;
+            Persistence.monitoredTrips.replace(t.id, t);
+        });
     }
 
     /**
