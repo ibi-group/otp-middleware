@@ -193,5 +193,7 @@ public class MonitorAllTripsJob implements Runnable, RecurringJobScheduler {
             1,
             TimeUnit.DAYS
         );
+        // Run UnsnoozeTripsJob immediately, so that applicable trips get monitored without delay.
+        new UnsnoozeTripsJob().run();
     }
 }
