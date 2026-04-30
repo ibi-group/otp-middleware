@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.bson.conversions.Bson;
+import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.recurringjobs.RecurringJobScheduler;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
@@ -149,6 +150,7 @@ public class MonitorAllTripsJob implements Runnable, RecurringJobScheduler {
      * @return true if the current time is on the calendar day (on or after midnight) after the last checked time.
      */
     public static boolean shouldUnsnooze(long millis) {
+        // TODO: remove
         var midnightAfterLastChecked = ZonedDateTime
             .ofInstant(
                 Instant.ofEpochMilli(millis).plus(1, ChronoUnit.DAYS),
@@ -180,6 +182,16 @@ public class MonitorAllTripsJob implements Runnable, RecurringJobScheduler {
             0,
             1,
             TimeUnit.MINUTES
+        );
+        // Schedule trip unsnoozing to run once per day,
+        // typically at 3:00amor some configured time when "nightly" jobs are run.
+        // This is done here instead of its own file to keep these two jobs together
+        // and avoid creating a separate command line parameter for this job.
+        Scheduler.scheduleJob(
+            new UnsnoozeTripsJob(),
+            ConnectedDataManager.getInitialDelayMillis(),
+            1,
+            TimeUnit.DAYS
         );
     }
 }

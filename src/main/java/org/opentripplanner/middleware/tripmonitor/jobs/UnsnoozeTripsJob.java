@@ -1,12 +1,10 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import org.bson.conversions.Bson;
-import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.recurringjobs.RecurringJobScheduler;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
-import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +12,6 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.and;
@@ -89,13 +86,7 @@ public class UnsnoozeTripsJob implements Runnable, RecurringJobScheduler {
 
     @Override
     public void scheduleRecurringJob() {
-        // Schedule this job to run once per day.
-        LOG.info("UnsnoozeTripsJob every day.");
-        Scheduler.scheduleJob(
-            new UnsnoozeTripsJob(),
-            ConnectedDataManager.getInitialDelayMillis(),
-            1,
-            TimeUnit.DAYS
-        );
+        // Already scheduled with MonitorAllTripsJob,
+        // to avoid adding a command-line parameter and because both are not really separable.
     }
 }
