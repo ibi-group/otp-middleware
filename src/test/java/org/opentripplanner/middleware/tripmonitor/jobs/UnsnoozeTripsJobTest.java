@@ -16,11 +16,11 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -45,7 +45,7 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void canUnsnoozeTrips() throws Exception {
+    void canGetTripsToUnsnooze() throws Exception {
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
         long nowMillis = now.toInstant().toEpochMilli();
         ZonedDateTime someTimeYesterday = now.minusDays(1).withHour(3);
@@ -64,11 +64,8 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
             null
         );
 
-        MonitoredTrip snoozedInactiveTrip = createSnoozedTrip(false, someTimeYesterday);
-        Persistence.monitoredTrips.create(snoozedInactiveTrip);
-
-        MonitoredTrip justSnoozedTrip = createSnoozedTrip(true, now);
-        Persistence.monitoredTrips.create(justSnoozedTrip);
+        Persistence.monitoredTrips.create(createSnoozedTrip(false, someTimeYesterday));
+        Persistence.monitoredTrips.create(createSnoozedTrip(true, now));
 
         // Get active snoozed trips.
         Bson filter = and(
@@ -92,15 +89,27 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
         assertEquals(snoozedTripFetched.id, fetchedTrip.id);
         assertTrue(fetchedTrip.snoozed);
         assertTrue(fetchedTrip.isActive);
+    }
 
-        // Test trip unsnoozing (covers the entire chain of logic).
+    @Test
+    void canUnsnoozeTrips() throws Exception {
+        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
+        ZonedDateTime someTimeYesterday = now.minusDays(1).withHour(3);
+
+        // Default active (nit snoozed) trip.
+        PersistenceTestUtils.createMonitoredTrip(
+            user.id,
+            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE,
+            true,
+            null
+        );
+        Persistence.monitoredTrips.create(createSnoozedTrip(true, someTimeYesterday));
+        Persistence.monitoredTrips.create(createSnoozedTrip(false, someTimeYesterday));
+        Persistence.monitoredTrips.create(createSnoozedTrip(true, now));
+
+        assertFalse(UnsnoozeTripsJob.getTripsToUnsnooze(user.id).isEmpty());
         UnsnoozeTripsJob.unsnoozeTripsAsNeeded();
-        List<MonitoredTrip> tripsToUnsnoozeAfter = UnsnoozeTripsJob.getTripsToUnsnooze()
-            .stream()
-            // Only retain trips from this test's user.
-            .filter(t -> user.id.equals(t.userId))
-            .collect(Collectors.toList());
-        assertTrue(tripsToUnsnoozeAfter.isEmpty());
+        assertTrue(UnsnoozeTripsJob.getTripsToUnsnooze(user.id).isEmpty());
     }
 
     private static MonitoredTrip createSnoozedTrip(boolean isActive, ZonedDateTime lastChecked) {

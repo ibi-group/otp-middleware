@@ -61,6 +61,17 @@ public class UnsnoozeTripsJob implements Runnable, RecurringJobScheduler {
     }
 
     /**
+     * Helper method for tests
+     */
+    public static List<MonitoredTrip> getTripsToUnsnooze(String userId) {
+        return UnsnoozeTripsJob.getTripsToUnsnooze()
+            .stream()
+            // Only retain trips from this test's user.
+            .filter(t -> userId.equals(t.userId))
+            .collect(Collectors.toList());
+    }
+
+    /**
      * Whether a trip should be unsnoozed and monitoring should resume.
      * @return true if the current time is on the calendar day (on or after midnight) after the last checked time.
      */
