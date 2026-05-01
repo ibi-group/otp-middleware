@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
+import com.mongodb.BasicDBObject;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -56,8 +58,12 @@ public class UnsnoozeTripsJob implements Runnable, RecurringJobScheduler {
     public static List<MonitoredTrip> getTripsToUnsnooze() {
         // Get active snoozed trips.
         Bson filter = UnsnoozeTripsJob.makeActiveSnoozedTripsFilter();
-        var snoozedTrips = Persistence.monitoredTrips.getResponseList(filter, 0, 100);
-        return getTripsToUnsnooze(snoozedTrips.data);
+        // We don't need the fields from MonitoredTrip except for id and last checked timestamp
+        BasicDBObject lastCheckedProjection = new BasicDBObject()
+            .append("_id", 1)
+            .append("journeyState.lastCheckedEpochMillis", 1);
+        List<MonitoredTrip> snoozedTrips = Persistence.monitoredTrips.getMongoCollection().find(filter).limit(100).projection(lastCheckedProjection).into(new ArrayList<>());
+        return getTripsToUnsnooze(snoozedTrips);
     }
 
     /**
