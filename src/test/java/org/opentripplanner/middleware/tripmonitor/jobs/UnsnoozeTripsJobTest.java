@@ -9,7 +9,6 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
-import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -45,25 +44,17 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void canGetTripsToUnsnooze() throws Exception {
+    void canGetTripsToUnsnooze() {
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
         long nowMillis = now.toInstant().toEpochMilli();
         ZonedDateTime someTimeYesterday = now.minusDays(1).withHour(3);
         long yesterdayMillis = someTimeYesterday.toInstant().toEpochMilli();
 
-        MonitoredTrip snoozedTrip = createSnoozedTrip(true, someTimeYesterday);
-        Persistence.monitoredTrips.create(snoozedTrip);
+        Persistence.monitoredTrips.create(createSnoozedTrip(true, someTimeYesterday));
         Bson userFilter = eq("userId", user.id);
         MonitoredTrip snoozedTripFetched = Persistence.monitoredTrips.getOneFiltered(userFilter);
 
-        // Default active trip.
-        PersistenceTestUtils.createMonitoredTrip(
-            user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE,
-            true,
-            null
-        );
-
+        Persistence.monitoredTrips.create(createActiveNotSnoozedTrip());
         Persistence.monitoredTrips.create(createSnoozedTrip(false, someTimeYesterday));
         Persistence.monitoredTrips.create(createSnoozedTrip(true, now));
 
@@ -92,17 +83,11 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void canUnsnoozeTrips() throws Exception {
+    void canUnsnoozeTrips() {
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
         ZonedDateTime someTimeYesterday = now.minusDays(1).withHour(3);
 
-        // Default active (nit snoozed) trip.
-        PersistenceTestUtils.createMonitoredTrip(
-            user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE,
-            true,
-            null
-        );
+        Persistence.monitoredTrips.create(createActiveNotSnoozedTrip());
         Persistence.monitoredTrips.create(createSnoozedTrip(true, someTimeYesterday));
         Persistence.monitoredTrips.create(createSnoozedTrip(false, someTimeYesterday));
         Persistence.monitoredTrips.create(createSnoozedTrip(true, now));
@@ -112,9 +97,14 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
         assertTrue(UnsnoozeTripsJob.getTripsToUnsnooze(user.id).isEmpty());
     }
 
-    private static MonitoredTrip createSnoozedTrip(boolean isActive, ZonedDateTime lastChecked) {
+    private static MonitoredTrip createActiveNotSnoozedTrip() {
         MonitoredTrip trip = new MonitoredTrip();
         trip.userId = user.id;
+        return trip;
+    }
+
+    private static MonitoredTrip createSnoozedTrip(boolean isActive, ZonedDateTime lastChecked) {
+        MonitoredTrip trip = createActiveNotSnoozedTrip();
         trip.isActive = isActive;
         trip.snoozed = true;
         trip.journeyState = new JourneyState();
