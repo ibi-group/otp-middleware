@@ -14,12 +14,14 @@ import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -27,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser user;
+    private static final List<String> createdTripIds = new ArrayList<>();
 
     @BeforeAll
     static void setup() {
@@ -41,6 +44,7 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
     @AfterEach
     void cleanUpTest() {
         user.deleteOwnTrips();
+        createdTripIds.clear();
     }
 
     @Test
@@ -92,14 +96,16 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
         Persistence.monitoredTrips.create(createSnoozedTrip(false, someTimeYesterday));
         Persistence.monitoredTrips.create(createSnoozedTrip(true, now));
 
-        assertFalse(UnsnoozeTripsJob.getTripsToUnsnooze(user.id).isEmpty());
+        assertTrue(createdTripIds.containsAll(getTripIds(UnsnoozeTripsJob.getTripsToUnsnooze())));
         UnsnoozeTripsJob.unsnoozeTripsAsNeeded();
-        assertTrue(UnsnoozeTripsJob.getTripsToUnsnooze(user.id).isEmpty());
+        assertTrue(UnsnoozeTripsJob.getTripsToUnsnooze().stream().noneMatch(t -> createdTripIds.contains(t.id)));
     }
 
     private static MonitoredTrip createActiveNotSnoozedTrip() {
         MonitoredTrip trip = new MonitoredTrip();
+        trip.id = UUID.randomUUID().toString();
         trip.userId = user.id;
+        createdTripIds.add(trip.id);
         return trip;
     }
 
@@ -110,5 +116,9 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
         trip.journeyState = new JourneyState();
         trip.journeyState.lastCheckedEpochMillis = lastChecked.toInstant().toEpochMilli();
         return trip;
+    }
+
+    private List<String> getTripIds(List<MonitoredTrip> trips) {
+        return trips.stream().map(t -> t.id).collect(Collectors.toList());
     }
 }
