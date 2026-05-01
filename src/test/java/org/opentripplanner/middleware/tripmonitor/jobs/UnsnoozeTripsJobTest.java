@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -63,10 +62,7 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
         Persistence.monitoredTrips.create(createSnoozedTrip(true, now));
 
         // Get active snoozed trips.
-        Bson filter = and(
-            UnsnoozeTripsJob.makeActiveSnoozedTripsFilter(),
-            userFilter
-        );
+        Bson filter = UnsnoozeTripsJob.makeActiveSnoozedTripsFilter();
         var snoozedTrips = Persistence.monitoredTrips.getResponseList(filter, 0, 100);
         assertEquals(2, snoozedTrips.data.size());
         assertTrue(
