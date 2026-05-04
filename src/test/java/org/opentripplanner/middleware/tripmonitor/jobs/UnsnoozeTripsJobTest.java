@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
-import org.bson.conversions.Bson;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -18,10 +17,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.opentripplanner.middleware.tripmonitor.jobs.UnsnoozeTripsJob.getTripIds;
 
 /**
  * This class contains tests for the {@link UnsnoozeTripsJob} class.
@@ -56,15 +55,13 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
         Persistence.monitoredTrips.create(createSnoozedTrip(false, someTimeYesterday));
         Persistence.monitoredTrips.create(createSnoozedTrip(true, now));
 
-        // Get active snoozed trips.
-        Bson filter = UnsnoozeTripsJob.makeActiveSnoozedTripsFilter();
-        List<MonitoredTrip> snoozedTrips = Persistence.monitoredTrips.getFiltered(filter).into(new ArrayList<>());
+        List<UnsnoozeTripsJob.PartialTrip> snoozedTrips = UnsnoozeTripsJob.getSnoozedTrips();
         assertEquals(2, snoozedTrips.size());
         assertEquals(Set.of(createdTripIds.get(0), createdTripIds.get(3)), getTripIds(snoozedTrips));
 
-        List<MonitoredTrip> tripsToUnsnooze = UnsnoozeTripsJob.getTripsToUnsnooze(snoozedTrips);
+        List<UnsnoozeTripsJob.PartialTrip> tripsToUnsnooze = UnsnoozeTripsJob.getTripsToUnsnooze(snoozedTrips);
         assertEquals(1, tripsToUnsnooze.size());
-        MonitoredTrip fetchedTrip = tripsToUnsnooze.get(0);
+        UnsnoozeTripsJob.PartialTrip fetchedTrip = tripsToUnsnooze.get(0);
         assertEquals(createdTripIds.get(0), fetchedTrip.id);
         assertTrue(fetchedTrip.snoozed);
         assertTrue(fetchedTrip.isActive);
@@ -80,9 +77,9 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
         Persistence.monitoredTrips.create(createSnoozedTrip(false, someTimeYesterday));
         Persistence.monitoredTrips.create(createSnoozedTrip(true, now));
 
-        assertTrue(createdTripIds.containsAll(getTripIds(UnsnoozeTripsJob.getTripsToUnsnooze())));
+        assertTrue(createdTripIds.containsAll(UnsnoozeTripsJob.getTripIdsToUnsnooze()));
         UnsnoozeTripsJob.unsnoozeTripsAsNeeded();
-        assertTrue(UnsnoozeTripsJob.getTripsToUnsnooze().stream().noneMatch(t -> createdTripIds.contains(t.id)));
+        assertTrue(UnsnoozeTripsJob.getTripIdsToUnsnooze().stream().noneMatch(createdTripIds::contains));
     }
 
     private static MonitoredTrip createActiveNotSnoozedTrip() {
@@ -100,9 +97,5 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
         trip.journeyState = new JourneyState();
         trip.journeyState.lastCheckedEpochMillis = lastChecked.toInstant().toEpochMilli();
         return trip;
-    }
-
-    private Set<String> getTripIds(List<MonitoredTrip> trips) {
-        return trips.stream().map(t -> t.id).collect(Collectors.toSet());
     }
 }

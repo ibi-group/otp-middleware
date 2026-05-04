@@ -58,9 +58,13 @@ public class TypedPersistence<T extends Model> {
     private final FindOneAndUpdateOptions findOneAndUpdateOptions = new FindOneAndUpdateOptions();
 
     public TypedPersistence(MongoDatabase mongoDatabase, Class<T> clazz) {
+        this(mongoDatabase, clazz, clazz.getSimpleName());
+    }
+
+    public TypedPersistence(MongoDatabase mongoDatabase, Class<T> clazz, String collectionName) {
         this.clazz = clazz;
-        mongoCollection = mongoDatabase.getCollection(clazz.getSimpleName(), clazz);
-        collectionName = clazz.getSimpleName();
+        mongoCollection = mongoDatabase.getCollection(collectionName, clazz);
+        this.collectionName = collectionName;
         try {
             noArgConstructor = clazz.getConstructor(new Class<?>[0]);
         } catch (NoSuchMethodException ex) {
