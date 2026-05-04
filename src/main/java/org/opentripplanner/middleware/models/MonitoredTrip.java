@@ -227,7 +227,7 @@ public class MonitoredTrip extends Model {
      * Replace the itinerary provided with the monitored trip
      * with a non-real-time, verified itinerary from the responses provided.
      */
-    private boolean updateTripWithVerifiedItinerary() {
+    public boolean updateTripWithVerifiedItinerary() {
         String queryDate = otp2QueryParams.date;
         DayOfWeek dayOfWeek = DateTimeUtils.getDateFromQueryDateString(queryDate).getDayOfWeek();
 

@@ -16,9 +16,13 @@ import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.opentripplanner.middleware.utils.SwaggerUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -40,18 +44,44 @@ import static org.opentripplanner.middleware.utils.JsonUtils.logMessageAndHalt;
  * controller connects with Auth0 services using the hooks provided by {@link ApiController}.
  */
 public class MonitoredTripController extends ApiController<MonitoredTrip> {
+    private static final Logger LOG = LoggerFactory.getLogger(MonitoredTripController.class);
+
     private static final int MAXIMUM_PERMITTED_MONITORED_TRIPS
         = getConfigPropertyAsInt("MAXIMUM_PERMITTED_MONITORED_TRIPS", 5);
 
+    public static final String MONITORED_TRIP_PATH = "secure/monitoredtrip";
+
+    public static final String CHECK_ITINERARY_SUBPATH = "/checkitinerary";
+
+    /**
+     * Size of the cached itinerary checks that we should not repeat.
+     */
+    private static final int MAXIMUM_EXISTENCE_CHECKS = 100;
+
+    /**
+     * Caches a number of recent ItineraryExistence with their ids. Implements a
+     * <a href="https://stackoverflow.com/questions/1963806/is-there-a-fixed-sized-queue-which-removes-excessive-elements">
+     *     fixed-sized queue trick
+     * </a>
+     * This approach loses its effect if many calls are made to /checkitinerary beyond MAXIMUM_CHECKS without
+     * a subsequent POST to actually persist the itinerary.
+     */
+    private static final LinkedHashMap<String, ItineraryExistence> checksPerformed = new LinkedHashMap<>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, ItineraryExistence> eldest) {
+            return this.size() > MAXIMUM_EXISTENCE_CHECKS;
+        }
+    };
+
     public MonitoredTripController(String apiPrefix) {
-        super(apiPrefix, Persistence.monitoredTrips, "secure/monitoredtrip");
+        super(apiPrefix, Persistence.monitoredTrips, MONITORED_TRIP_PATH);
     }
 
     @Override
     protected void buildEndpoint(ApiEndpoint baseEndpoint) {
         // Add the api key route BEFORE the regular CRUD methods
         ApiEndpoint modifiedEndpoint = baseEndpoint
-            .post(path("/checkitinerary")
+            .post(path(CHECK_ITINERARY_SUBPATH)
                     .withDescription("Returns the itinerary existence check results for a monitored trip.")
                     .withRequestType(MonitoredTrip.class)
                     .withProduces(JSON_ONLY)
@@ -74,19 +104,42 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
     /**
      * Before creating a {@link MonitoredTrip}, check that the itinerary associated with the trip exists on the selected
      * days of the week. Update the itinerary if everything looks OK, otherwise halt the request.
+     * If a check has already been performed (the caller populates the itineraryExistence field including the id of
+     * such check), and the check shows the itinerary exists, skip the check.
      */
     @Override
     MonitoredTrip preCreateHook(MonitoredTrip monitoredTrip, Request req) {
         // Ensure user has not reached their limit for number of trips.
         verifyBelowMaxNumTrips(monitoredTrip.userId, req);
         preCreateOrUpdateChecks(monitoredTrip, req);
+        checkItineraryExistenceOrReusePriorCheck(monitoredTrip, req);
+        notifyTripCompanionsAndObservers(monitoredTrip, null);
 
-        // FIXME: Pending https://github.com/ibi-group/otp-middleware/pull/219,
-        //   check itinerary existence for recurring trips only for now.
-        //   (Existence should ultimately be checked on all trips.)
-        if (!monitoredTrip.isOneTime()) {
+        return monitoredTrip;
+    }
+
+    private static void checkItineraryExistenceOrReusePriorCheck(MonitoredTrip monitoredTrip, Request req) {
+        String checkId = monitoredTrip.itineraryExistence != null ? monitoredTrip.itineraryExistence.id : null;
+        ItineraryExistence previousExistence = checksPerformed.get(checkId);
+        if (previousExistence != null) {
+            if (previousExistence.allMonitoredDaysAreValid(monitoredTrip)) {
+                LOG.info("Skipping itinerary check in preCreateHook because we have already checked it exists.");
+                monitoredTrip.itineraryExistence = previousExistence;
+                monitoredTrip.updateTripWithVerifiedItinerary();
+
+                // Consume (remove) the check
+                checksPerformed.remove(checkId);
+            } else {
+                logMessageAndHalt(
+                    req,
+                    HttpStatus.BAD_REQUEST_400,
+                    previousExistence.message
+                );
+            }
+        } else {
             // Check itinerary existence for all days and replace the provided trip's itinerary with a verified,
             // non-realtime version of it.
+            LOG.info("Running itinerary check in preCreateHook because it has not been run before.");
             boolean success = monitoredTrip.checkItineraryExistence(true);
             if (!success) {
                 logMessageAndHalt(
@@ -96,10 +149,6 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 );
             }
         }
-
-        notifyTripCompanionsAndObservers(monitoredTrip, null);
-
-        return monitoredTrip;
     }
 
     /**
@@ -196,9 +245,6 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             monitoredTrip.from = preExisting.from;
             monitoredTrip.to = preExisting.to;
 
-            // TODO: Update itinerary existence record when updating a trip?
-            //   (Currently, we let web requests change the monitored days regardless of existence.)
-
             // perform the database update here before releasing the lock to be sure that the record is updated in the
             // database before a CheckMonitoredTripJob analyzes the data
             Persistence.monitoredTrips.replace(monitoredTrip.id, monitoredTrip);
@@ -233,8 +279,16 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             logMessageAndHalt(request, HttpStatus.BAD_REQUEST_400, "Error parsing JSON for MonitoredTrip", e);
             return null;
         }
-        trip.initializeFromItineraryAndQueryParams(trip.otp2QueryParams);
-        trip.checkItineraryExistence(false);
+        MonitoredTrip existingTrip = Persistence.monitoredTrips.getById(trip.id);
+        boolean isNewTrip = existingTrip == null;
+        if (isNewTrip) {
+            trip.initializeFromItineraryAndQueryParams(trip.otp2QueryParams);
+            trip.checkItineraryExistence(false);
+            checksPerformed.put(trip.itineraryExistence.id, trip.itineraryExistence);
+        } else {
+            existingTrip.checkItineraryExistence(false);
+            Persistence.monitoredTrips.replace(trip.id, existingTrip);
+        }
         return trip.itineraryExistence;
     }
 
@@ -270,5 +324,19 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
                 String.format("The trip cannot be monitored: %s", reasonsString)
             );
         }
+    }
+
+    /**
+     * For use in tests only.
+     */
+    static void simulateExistenceCheck(ItineraryExistence existence) {
+        checksPerformed.put(existence.id, existence);
+    }
+
+    /**
+     * For use in tests only.
+     */
+    static int getChecksSize() {
+        return checksPerformed.size();
     }
 }
