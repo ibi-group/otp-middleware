@@ -47,28 +47,28 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void canGetTripsToUnsnooze() {
-        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
-        ZonedDateTime someTimeYesterday = now.minusDays(1).withHour(3);
-
-        Persistence.monitoredTrips.create(createSnoozedTrip(true, someTimeYesterday));
-        Persistence.monitoredTrips.create(createActiveNotSnoozedTrip());
-        Persistence.monitoredTrips.create(createSnoozedTrip(false, someTimeYesterday));
-        Persistence.monitoredTrips.create(createSnoozedTrip(true, now));
-
+        createTestTrips();
         List<UnsnoozeTripsJob.PartialTrip> snoozedTrips = UnsnoozeTripsJob.getSnoozedTrips();
         assertEquals(2, snoozedTrips.size());
-        assertEquals(Set.of(createdTripIds.get(0), createdTripIds.get(3)), getTripIds(snoozedTrips));
+        assertEquals(Set.of(createdTripIds.get(1), createdTripIds.get(3)), getTripIds(snoozedTrips));
 
         List<UnsnoozeTripsJob.PartialTrip> tripsToUnsnooze = UnsnoozeTripsJob.getTripsToUnsnooze(snoozedTrips);
         assertEquals(1, tripsToUnsnooze.size());
         UnsnoozeTripsJob.PartialTrip fetchedTrip = tripsToUnsnooze.get(0);
-        assertEquals(createdTripIds.get(0), fetchedTrip.id);
+        assertEquals(createdTripIds.get(1), fetchedTrip.id);
         assertTrue(fetchedTrip.snoozed);
         assertTrue(fetchedTrip.isActive);
     }
 
     @Test
     void canUnsnoozeTrips() {
+        createTestTrips();
+        assertTrue(createdTripIds.containsAll(UnsnoozeTripsJob.getTripIdsToUnsnooze()));
+        UnsnoozeTripsJob.unsnoozeTripsAsNeeded();
+        assertTrue(UnsnoozeTripsJob.getTripIdsToUnsnooze().stream().noneMatch(createdTripIds::contains));
+    }
+
+    private static void createTestTrips() {
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
         ZonedDateTime someTimeYesterday = now.minusDays(1).withHour(3);
 
@@ -76,10 +76,6 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
         Persistence.monitoredTrips.create(createSnoozedTrip(true, someTimeYesterday));
         Persistence.monitoredTrips.create(createSnoozedTrip(false, someTimeYesterday));
         Persistence.monitoredTrips.create(createSnoozedTrip(true, now));
-
-        assertTrue(createdTripIds.containsAll(UnsnoozeTripsJob.getTripIdsToUnsnooze()));
-        UnsnoozeTripsJob.unsnoozeTripsAsNeeded();
-        assertTrue(UnsnoozeTripsJob.getTripIdsToUnsnooze().stream().noneMatch(createdTripIds::contains));
     }
 
     private static MonitoredTrip createActiveNotSnoozedTrip() {
