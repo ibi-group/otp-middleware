@@ -49,22 +49,23 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
     void canGetTripsToUnsnooze() {
         createTestTrips();
         List<UnsnoozeTripsJob.PartialTrip> snoozedTrips = UnsnoozeTripsJob.getSnoozedTrips();
-        assertEquals(2, snoozedTrips.size());
-        assertEquals(Set.of(createdTripIds.get(1), createdTripIds.get(3)), getTripIds(snoozedTrips));
+        assertEquals(3, snoozedTrips.size());
+        assertEquals(Set.of(createdTripIds.get(1), createdTripIds.get(3), createdTripIds.get(4)), getTripIds(snoozedTrips));
 
         List<UnsnoozeTripsJob.PartialTrip> tripsToUnsnooze = UnsnoozeTripsJob.getTripsToUnsnooze(snoozedTrips);
-        assertEquals(1, tripsToUnsnooze.size());
+        assertEquals(2, tripsToUnsnooze.size());
         UnsnoozeTripsJob.PartialTrip fetchedTrip = tripsToUnsnooze.get(0);
         assertEquals(createdTripIds.get(1), fetchedTrip.id);
         assertTrue(fetchedTrip.snoozed);
         assertTrue(fetchedTrip.isActive);
+        assertEquals(createdTripIds.get(3), tripsToUnsnooze.get(1).id);
     }
 
     @Test
     void canUnsnoozeTrips() {
         createTestTrips();
         assertTrue(createdTripIds.containsAll(UnsnoozeTripsJob.getTripIdsToUnsnooze()));
-        UnsnoozeTripsJob.unsnoozeTripsAsNeeded();
+        new UnsnoozeTripsJob().run();
         assertTrue(UnsnoozeTripsJob.getTripIdsToUnsnooze().stream().noneMatch(createdTripIds::contains));
     }
 
@@ -75,6 +76,7 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
         Persistence.monitoredTrips.create(createActiveNotSnoozedTrip());
         Persistence.monitoredTrips.create(createSnoozedTrip(true, someTimeYesterday));
         Persistence.monitoredTrips.create(createSnoozedTrip(false, someTimeYesterday));
+        Persistence.monitoredTrips.create(createSnoozedTrip(true, now.minusDays(30)));
         Persistence.monitoredTrips.create(createSnoozedTrip(true, now));
     }
 
