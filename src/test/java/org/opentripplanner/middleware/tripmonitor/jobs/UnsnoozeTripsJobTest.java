@@ -17,15 +17,14 @@ import org.opentripplanner.middleware.utils.DateTimeUtils;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.testutils.OtpTestUtils.firstItinerary;
+import static org.opentripplanner.middleware.tripmonitor.jobs.UnsnoozeTripsJob.getTripIds;
 
 /**
  * This class contains tests for the {@link UnsnoozeTripsJob} class.
@@ -53,30 +52,30 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
     @Test
     void canGetTripsToUnsnooze() throws JsonProcessingException {
         createTestTrips();
-        List<MonitoredTrip> snoozedTrips = UnsnoozeTripsJob.getSnoozedTrips();
+        List<UnsnoozeTripsJob.PartialTrip> snoozedTrips = UnsnoozeTripsJob.getSnoozedTrips();
         assertEquals(3, snoozedTrips.size());
         assertEquals(Set.of(createdTripIds.get(1), createdTripIds.get(3), createdTripIds.get(4)), getTripIds(snoozedTrips));
 
-        List<MonitoredTrip> tripsToUnsnooze = UnsnoozeTripsJob.getTripsToUnsnooze(snoozedTrips);
+        List<UnsnoozeTripsJob.PartialTrip> tripsToUnsnooze = UnsnoozeTripsJob.getTripsToUnsnooze(snoozedTrips);
         assertEquals(2, tripsToUnsnooze.size());
-        MonitoredTrip tripToUnsnooze = tripsToUnsnooze.get(0);
-        assertEquals(createdTripIds.get(1), tripToUnsnooze.id);
-        assertTrue(tripToUnsnooze.snoozed);
-        assertTrue(tripToUnsnooze.isActive);
+        UnsnoozeTripsJob.PartialTrip partialTrip = tripsToUnsnooze.get(0);
+        assertEquals(createdTripIds.get(1), partialTrip.id);
         assertEquals(createdTripIds.get(3), tripsToUnsnooze.get(1).id);
+
+        MonitoredTrip fetchedTrip = Persistence.monitoredTrips.getById(partialTrip.id);
+        assertTrue(fetchedTrip.snoozed);
+        assertTrue(fetchedTrip.isActive);
     }
 
     @Test
     void canUnsnoozeTrips() throws JsonProcessingException {
         createTestTrips();
-        Set<String> tripIdsToUnsnooze = getTripIdsToUnsnooze();
+        Set<String> tripIdsToUnsnooze = UnsnoozeTripsJob.getTripIdsToUnsnooze();
         assertTrue(createdTripIds.containsAll(tripIdsToUnsnooze));
         new UnsnoozeTripsJob().run();
-        assertTrue(getTripIdsToUnsnooze().isEmpty());
+        assertTrue(UnsnoozeTripsJob.getTripIdsToUnsnooze().isEmpty());
 
-        Optional<String> tripIdToUnsnooze = tripIdsToUnsnooze.stream().findFirst();
-        assertTrue(tripIdToUnsnooze.isPresent());
-        MonitoredTrip unsnoozedTrip = Persistence.monitoredTrips.getById(tripIdToUnsnooze.get());
+        MonitoredTrip unsnoozedTrip = Persistence.monitoredTrips.getById(tripIdsToUnsnooze.stream().findFirst().get());
         assertFalse(unsnoozedTrip.snoozed);
         assertEquals(
             unsnoozedTrip.computeTargetZonedDateTime(unsnoozedTrip.itinerary).toLocalDate().toString(),
@@ -115,13 +114,5 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
         trip.journeyState = new JourneyState();
         trip.journeyState.lastCheckedEpochMillis = lastChecked.toInstant().toEpochMilli();
         return trip;
-    }
-
-    private static Set<String> getTripIdsToUnsnooze() {
-        return getTripIds(UnsnoozeTripsJob.getTripsToUnsnooze(UnsnoozeTripsJob.getSnoozedTrips()));
-    }
-
-    private static Set<String> getTripIds(List<MonitoredTrip> trips) {
-        return trips.stream().map(t -> t.id).collect(Collectors.toSet());
     }
 }

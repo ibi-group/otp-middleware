@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import com.mongodb.client.model.Filters;
 import org.bson.conversions.Bson;
+import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.recurringjobs.RecurringJobScheduler;
@@ -14,6 +15,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -26,30 +28,36 @@ public class UnsnoozeTripsJob implements Runnable, RecurringJobScheduler {
     public void run() {
         long start = System.currentTimeMillis();
         LOG.info("UnsnoozeTripsJob started");
+        // Unsnooze all trips
         unsnoozeTripsAsNeeded();
+
         LOG.info("UnsnoozeTripsJob completed in {} sec", (System.currentTimeMillis() - start) / 1000);
     }
 
     /**
      * Extracts trips to be unsnoozed from a list of trips.
      */
-    public static List<MonitoredTrip> getTripsToUnsnooze(List<MonitoredTrip> trips) {
+    public static List<PartialTrip> getTripsToUnsnooze(List<PartialTrip> trips) {
         return trips
             .stream()
             .filter(t -> shouldUnsnooze(t.journeyState.lastCheckedEpochMillis))
             .collect(Collectors.toList());
     }
 
+    public static Set<String> getTripIdsToUnsnooze() {
+        return getTripIds(getTripsToUnsnooze(getSnoozedTrips()));
+    }
+
     /**
-     * Get snoozed trips. This will populate only select fields into PartialTrip to limit save on bandwidth.
+     * Get snoozed trips. This will populate only select fields to save on computation and bandwidth.
      */
-    public static List<MonitoredTrip> getSnoozedTrips() {
+    public static List<PartialTrip> getSnoozedTrips() {
         // Get active snoozed trips.
         Bson filter = Filters.and(
             Filters.eq("isActive", true),
             Filters.eq("snoozed", true)
         );
-        return Persistence.monitoredTrips.getFiltered(filter).into(new ArrayList<>());
+        return Persistence.tripsByLastChecked.getFiltered(filter).into(new ArrayList<>());
     }
 
     /**
@@ -69,8 +77,9 @@ public class UnsnoozeTripsJob implements Runnable, RecurringJobScheduler {
         return !now.isBefore(midnightAfterLastChecked);
     }
 
-    private static void unsnoozeTripsAsNeeded() {
-        for (MonitoredTrip trip : getTripsToUnsnooze(getSnoozedTrips())) {
+    public static void unsnoozeTripsAsNeeded() {
+        Bson tripFilter = Filters.in("_id", getTripIdsToUnsnooze());
+        for (MonitoredTrip trip : Persistence.monitoredTrips.getFiltered(tripFilter)) {
             try {
                 trip.recomputeTargetDateAndAdjustMatchingItinerary();
                 trip.snoozed = false;
@@ -81,9 +90,27 @@ public class UnsnoozeTripsJob implements Runnable, RecurringJobScheduler {
         }
     }
 
+    public static Set<String> getTripIds(List<PartialTrip> trips) {
+        return trips.stream().map(t -> t.id).collect(Collectors.toSet());
+    }
+
     @Override
     public void scheduleRecurringJob() {
         // Already scheduled with MonitorAllTripsJob,
         // to avoid adding a command-line parameter and because both are not really separable.
+    }
+
+    /**
+     * Helper class with a subset of {@link org.opentripplanner.middleware.tripmonitor.JourneyState} fields.
+     */
+    public static class PartialJourneyState {
+        public long lastCheckedEpochMillis;
+    }
+
+    /**
+     * Helper class with a subset of {@link MonitoredTrip} fields.
+     */
+    public static class PartialTrip extends Model {
+        public PartialJourneyState journeyState;
     }
 }
