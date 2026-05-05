@@ -81,11 +81,7 @@ public class UnsnoozeTripsJob implements Runnable, RecurringJobScheduler {
         Bson tripFilter = Filters.in("_id", getTripIdsToUnsnooze());
         for (MonitoredTrip trip : Persistence.monitoredTrips.getFiltered(tripFilter)) {
             try {
-                // Reset previous matching itineraries and start afresh.
-                trip.journeyState.matchingItinerary = trip.itinerary.clone();
-                ZonedDateTime targetZonedDateTime = trip.computeTargetZonedDateTime(trip.itinerary);
-                trip.journeyState.targetDate = targetZonedDateTime.toLocalDate().toString();
-                trip.journeyState.matchingItinerary.offsetTimes(targetZonedDateTime);
+                trip.recomputeTargetDateAndAdjustMatchingItinerary();
                 trip.snoozed = false;
                 Persistence.monitoredTrips.replace(trip.id, trip);
             } catch (CloneNotSupportedException e) {
