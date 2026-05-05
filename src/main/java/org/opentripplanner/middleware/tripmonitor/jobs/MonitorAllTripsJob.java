@@ -121,6 +121,8 @@ public class MonitorAllTripsJob implements Runnable, RecurringJobScheduler {
         return and(
             // Trips must be active.
             eq("isActive", true),
+            // Trip must not be snoozed.
+            eq("snoozed", false),
             // If trip is no longer possible, no further checking is needed.
             ne("journeyState.tripStatus", TripStatus.NO_LONGER_POSSIBLE.name()),
             // Exclude one-time trips in the past

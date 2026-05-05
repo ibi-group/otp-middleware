@@ -13,6 +13,10 @@ import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,6 +28,7 @@ import static org.opentripplanner.middleware.tripmonitor.TripStatus.PAST_TRIP;
  */
 class MonitorAllTripsJobTest extends OtpMiddlewareTestEnvironment {
     private static OtpUser user;
+    private static final List<String> createdTripIds = new ArrayList<>();
 
     @BeforeAll
     static void setup() {
@@ -38,6 +43,7 @@ class MonitorAllTripsJobTest extends OtpMiddlewareTestEnvironment {
     @AfterEach
     void cleanUpTest() {
         user.deleteOwnTrips();
+        createdTripIds.clear();
     }
 
     @Test
@@ -60,6 +66,9 @@ class MonitorAllTripsJobTest extends OtpMiddlewareTestEnvironment {
 
         MonitoredTrip oneTimePastTrip = createOneTimePastTrip();
         Persistence.monitoredTrips.create(oneTimePastTrip);
+
+        MonitoredTrip snoozedTrip = createSnoozedTrip();
+        Persistence.monitoredTrips.create(snoozedTrip);
 
         Bson filter = and(
             MonitorAllTripsJob.makeTripFilter(),
@@ -94,6 +103,20 @@ class MonitorAllTripsJobTest extends OtpMiddlewareTestEnvironment {
         MonitoredTrip trip = new MonitoredTrip();
         trip.userId = user.id;
         trip.isActive = false;
+        return trip;
+    }
+
+    private static MonitoredTrip createActiveNotSnoozedTrip() {
+        MonitoredTrip trip = new MonitoredTrip();
+        trip.id = UUID.randomUUID().toString();
+        trip.userId = user.id;
+        createdTripIds.add(trip.id);
+        return trip;
+    }
+
+    private static MonitoredTrip createSnoozedTrip() {
+        MonitoredTrip trip = createActiveNotSnoozedTrip();
+        trip.snoozed = true;
         return trip;
     }
 }
