@@ -22,7 +22,6 @@ import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.stats.DailyStats;
-import org.opentripplanner.middleware.tripmonitor.jobs.UnsnoozeTripsJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +56,6 @@ public class Persistence {
     public static TypedPersistence<TripRequest> tripRequests;
     public static TypedPersistence<TripSummary> tripSummaries;
     public static TypedPersistence<MonitoredTrip> monitoredTrips;
-    public static TypedPersistence<UnsnoozeTripsJob.PartialTrip> tripsByLastChecked;
 
     // admin and system reliability collections
     public static TypedPersistence<BugsnagEventRequest> bugsnagEventRequests;
@@ -109,7 +107,6 @@ public class Persistence {
         tripRequests = new TypedPersistence(mongoDatabase, TripRequest.class);
         tripSummaries = new TypedPersistence(mongoDatabase, TripSummary.class);
         monitoredTrips = new TypedPersistence(mongoDatabase, MonitoredTrip.class);
-        tripsByLastChecked = new TypedPersistence(mongoDatabase, UnsnoozeTripsJob.PartialTrip.class, MonitoredTrip.class.getSimpleName());
 
         // admin and system reliability items
         bugsnagEventRequests = new TypedPersistence(mongoDatabase, BugsnagEventRequest.class);
