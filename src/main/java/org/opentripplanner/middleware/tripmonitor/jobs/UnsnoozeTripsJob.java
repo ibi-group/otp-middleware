@@ -112,8 +112,5 @@ public class UnsnoozeTripsJob implements Runnable, RecurringJobScheduler {
      */
     public static class PartialTrip extends Model {
         public PartialJourneyState journeyState;
-        // fetched and isActive are control fields for tests.
-        public boolean snoozed;
-        public boolean isActive;
     }
 }

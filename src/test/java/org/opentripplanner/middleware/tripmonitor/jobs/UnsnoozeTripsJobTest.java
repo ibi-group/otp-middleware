@@ -58,11 +58,13 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
 
         List<UnsnoozeTripsJob.PartialTrip> tripsToUnsnooze = UnsnoozeTripsJob.getTripsToUnsnooze(snoozedTrips);
         assertEquals(2, tripsToUnsnooze.size());
-        UnsnoozeTripsJob.PartialTrip fetchedTrip = tripsToUnsnooze.get(0);
-        assertEquals(createdTripIds.get(1), fetchedTrip.id);
+        UnsnoozeTripsJob.PartialTrip partialTrip = tripsToUnsnooze.get(0);
+        assertEquals(createdTripIds.get(1), partialTrip.id);
+        assertEquals(createdTripIds.get(3), tripsToUnsnooze.get(1).id);
+
+        MonitoredTrip fetchedTrip = Persistence.monitoredTrips.getById(partialTrip.id);
         assertTrue(fetchedTrip.snoozed);
         assertTrue(fetchedTrip.isActive);
-        assertEquals(createdTripIds.get(3), tripsToUnsnooze.get(1).id);
     }
 
     @Test
