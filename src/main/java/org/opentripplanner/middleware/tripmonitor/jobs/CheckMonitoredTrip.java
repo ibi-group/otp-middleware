@@ -795,7 +795,6 @@ public class CheckMonitoredTrip implements Runnable {
             return true;
         }
 
-        // For trips that are snoozed, see if they should be unsnoozed first.
         if (trip.snoozed) {
             LOG.info("Skipping: Trip is snoozed.");
             return true;
