@@ -28,9 +28,7 @@ public class UnsnoozeTripsJob implements Runnable, RecurringJobScheduler {
     public void run() {
         long start = System.currentTimeMillis();
         LOG.info("UnsnoozeTripsJob started");
-        // Unsnooze all trips
         unsnoozeTripsAsNeeded();
-
         LOG.info("UnsnoozeTripsJob completed in {} sec", (System.currentTimeMillis() - start) / 1000);
     }
 
@@ -49,10 +47,9 @@ public class UnsnoozeTripsJob implements Runnable, RecurringJobScheduler {
     }
 
     /**
-     * Get snoozed trips. This will populate only select fields to save on computation and bandwidth.
+     * Get snoozed trips. This will populate only select fields into {@link PartialTrip} to save bandwidth.
      */
     public static List<PartialTrip> getSnoozedTrips() {
-        // Get active snoozed trips.
         Bson filter = Filters.and(
             Filters.eq("isActive", true),
             Filters.eq("snoozed", true)
