@@ -1234,7 +1234,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Fail on first attempt.
         assertCheckMonitoredTrip(monitoredTrip, unexpectedResponse, false, 0, NEXT_TRIP_NOT_POSSIBLE);
 
-        // Unsnooze trip (this resets its status according to prev. matching itinerary, in this case TRIP_ACTIVE).
+        // Unsnooze trip (the call to CheckMonitoredTrip.run() will recalculate trip status, in this case TRIP_ACTIVE).
         monitoredTrip.snoozed = false;
         Persistence.monitoredTrips.replace(monitoredTrip.id, monitoredTrip);
 
