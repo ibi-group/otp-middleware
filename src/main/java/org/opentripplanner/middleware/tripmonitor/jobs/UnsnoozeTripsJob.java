@@ -1,7 +1,6 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
 import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.Updates;
 import org.bson.conversions.Bson;
 import org.opentripplanner.middleware.models.Model;
 import org.opentripplanner.middleware.models.MonitoredTrip;
@@ -80,8 +79,19 @@ public class UnsnoozeTripsJob implements Runnable, RecurringJobScheduler {
 
     public static void unsnoozeTripsAsNeeded() {
         Bson tripFilter = Filters.in("_id", getTripIdsToUnsnooze());
-        Bson updatedFields = Updates.set("snoozed", false);
-        Persistence.monitoredTrips.getMongoCollection().updateMany(tripFilter, updatedFields);
+        for (MonitoredTrip trip : Persistence.monitoredTrips.getFiltered(tripFilter)) {
+            try {
+                // Reset previous matching itineraries and start afresh.
+                trip.journeyState.matchingItinerary = trip.itinerary.clone();
+                ZonedDateTime targetZonedDateTime = trip.computeTargetZonedDateTime(trip.itinerary);
+                trip.journeyState.targetDate = targetZonedDateTime.toLocalDate().toString();
+                trip.journeyState.matchingItinerary.offsetTimes(targetZonedDateTime);
+                trip.snoozed = false;
+                Persistence.monitoredTrips.replace(trip.id, trip);
+            } catch (CloneNotSupportedException e) {
+                LOG.warn("Error unsnoozing trip {}", trip.id);
+            }
+        }
     }
 
     public static Set<String> getTripIds(List<PartialTrip> trips) {

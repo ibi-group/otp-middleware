@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.tripmonitor.jobs;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -8,6 +9,7 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
+import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -19,7 +21,9 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.opentripplanner.middleware.testutils.OtpTestUtils.firstItinerary;
 import static org.opentripplanner.middleware.tripmonitor.jobs.UnsnoozeTripsJob.getTripIds;
 
 /**
@@ -46,7 +50,7 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void canGetTripsToUnsnooze() {
+    void canGetTripsToUnsnooze() throws JsonProcessingException {
         createTestTrips();
         List<UnsnoozeTripsJob.PartialTrip> snoozedTrips = UnsnoozeTripsJob.getSnoozedTrips();
         assertEquals(3, snoozedTrips.size());
@@ -62,14 +66,26 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void canUnsnoozeTrips() {
+    void canUnsnoozeTrips() throws JsonProcessingException {
         createTestTrips();
-        assertTrue(createdTripIds.containsAll(UnsnoozeTripsJob.getTripIdsToUnsnooze()));
+        Set<String> tripIdsToUnsnooze = UnsnoozeTripsJob.getTripIdsToUnsnooze();
+        assertTrue(createdTripIds.containsAll(tripIdsToUnsnooze));
         new UnsnoozeTripsJob().run();
-        assertTrue(UnsnoozeTripsJob.getTripIdsToUnsnooze().stream().noneMatch(createdTripIds::contains));
+        assertTrue(UnsnoozeTripsJob.getTripIdsToUnsnooze().isEmpty());
+
+        MonitoredTrip unsnoozedTrip = Persistence.monitoredTrips.getById(tripIdsToUnsnooze.stream().findFirst().get());
+        assertFalse(unsnoozedTrip.snoozed);
+        assertEquals(
+            unsnoozedTrip.computeTargetZonedDateTime(unsnoozedTrip.itinerary).toLocalDate().toString(),
+            unsnoozedTrip.journeyState.targetDate
+        );
+        assertEquals(
+            unsnoozedTrip.journeyState.targetDate,
+            DateTimeUtils.makeOtpZonedDateTime(unsnoozedTrip.journeyState.matchingItinerary.startTime).toLocalDate().toString()
+        );
     }
 
-    private static void createTestTrips() {
+    private static void createTestTrips() throws JsonProcessingException {
         ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
         ZonedDateTime someTimeYesterday = now.minusDays(1).withHour(3);
 
@@ -80,15 +96,16 @@ class UnsnoozeTripsJobTest extends OtpMiddlewareTestEnvironment {
         Persistence.monitoredTrips.create(createSnoozedTrip(true, now));
     }
 
-    private static MonitoredTrip createActiveNotSnoozedTrip() {
+    private static MonitoredTrip createActiveNotSnoozedTrip() throws JsonProcessingException {
         MonitoredTrip trip = new MonitoredTrip();
         trip.id = UUID.randomUUID().toString();
         trip.userId = user.id;
+        trip.itinerary = firstItinerary(OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE_TRIP_QUERIED_AT_MIDNIGHT.getResponse());
         createdTripIds.add(trip.id);
         return trip;
     }
 
-    private static MonitoredTrip createSnoozedTrip(boolean isActive, ZonedDateTime lastChecked) {
+    private static MonitoredTrip createSnoozedTrip(boolean isActive, ZonedDateTime lastChecked) throws JsonProcessingException {
         MonitoredTrip trip = createActiveNotSnoozedTrip();
         trip.isActive = isActive;
         trip.snoozed = true;
