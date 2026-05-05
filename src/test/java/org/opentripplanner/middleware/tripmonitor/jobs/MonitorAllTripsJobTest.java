@@ -9,7 +9,6 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
-import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
 
@@ -18,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.in;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.NO_LONGER_POSSIBLE;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.PAST_TRIP;
@@ -47,43 +46,26 @@ class MonitorAllTripsJobTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void canFilterOutTrips() throws Exception {
-        // Default active trip.
-        PersistenceTestUtils.createMonitoredTrip(
-            user.id,
-            OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE,
-            true,
-            null
-        );
-        Bson userFilter = eq("userId", user.id);
-        MonitoredTrip activeTrip = Persistence.monitoredTrips.getOneFiltered(userFilter);
-
-        MonitoredTrip inactiveTrip = createInactiveTrip();
-        Persistence.monitoredTrips.create(inactiveTrip);
-
-        MonitoredTrip obsoleteTrip = createObsoleteTrip();
-        Persistence.monitoredTrips.create(obsoleteTrip);
-
-        MonitoredTrip oneTimePastTrip = createOneTimePastTrip();
-        Persistence.monitoredTrips.create(oneTimePastTrip);
-
-        MonitoredTrip snoozedTrip = createSnoozedTrip();
-        Persistence.monitoredTrips.create(snoozedTrip);
+    void canFilterOutTrips() {
+        MonitoredTrip activeTrip = createActiveTrip();
+        Persistence.monitoredTrips.create(activeTrip);
+        Persistence.monitoredTrips.create(createInactiveTrip());
+        Persistence.monitoredTrips.create(createObsoleteTrip());
+        Persistence.monitoredTrips.create(createOneTimePastTrip());
+        Persistence.monitoredTrips.create(createSnoozedTrip());
 
         Bson filter = and(
             MonitorAllTripsJob.makeTripFilter(),
-            userFilter
+            in("_id", createdTripIds)
         );
 
-        var trips = Persistence.monitoredTrips.getResponseList(filter, 0, 100);
-        assertEquals(1, trips.data.size());
-        assertEquals(activeTrip.id, trips.data.get(0).id);
+        var trips = Persistence.monitoredTrips.getFiltered(filter).into(new ArrayList<>());
+        assertEquals(1, trips.size());
+        assertEquals(activeTrip.id, trips.get(0).id);
     }
 
     private static MonitoredTrip createOneTimePastTrip() {
-        MonitoredTrip trip = new MonitoredTrip();
-        trip.userId = user.id;
-        trip.isActive = true;
+        MonitoredTrip trip = createActiveTrip();
         trip.journeyState = new JourneyState();
         trip.journeyState.tripStatus = PAST_TRIP;
         trip.updateAllDaysOfWeek(false);
@@ -91,22 +73,19 @@ class MonitorAllTripsJobTest extends OtpMiddlewareTestEnvironment {
     }
 
     private static MonitoredTrip createObsoleteTrip() {
-        MonitoredTrip trip = new MonitoredTrip();
-        trip.userId = user.id;
-        trip.isActive = true;
+        MonitoredTrip trip = createActiveTrip();
         trip.journeyState = new JourneyState();
         trip.journeyState.tripStatus = NO_LONGER_POSSIBLE;
         return trip;
     }
 
     private static MonitoredTrip createInactiveTrip() {
-        MonitoredTrip trip = new MonitoredTrip();
-        trip.userId = user.id;
+        MonitoredTrip trip = createActiveTrip();
         trip.isActive = false;
         return trip;
     }
 
-    private static MonitoredTrip createActiveNotSnoozedTrip() {
+    private static MonitoredTrip createActiveTrip() {
         MonitoredTrip trip = new MonitoredTrip();
         trip.id = UUID.randomUUID().toString();
         trip.userId = user.id;
@@ -115,7 +94,7 @@ class MonitorAllTripsJobTest extends OtpMiddlewareTestEnvironment {
     }
 
     private static MonitoredTrip createSnoozedTrip() {
-        MonitoredTrip trip = createActiveNotSnoozedTrip();
+        MonitoredTrip trip = createActiveTrip();
         trip.snoozed = true;
         return trip;
     }
