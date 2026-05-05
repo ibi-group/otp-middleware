@@ -5,14 +5,10 @@ import org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.recurringjobs.RecurringJobScheduler;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
-import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -146,24 +142,6 @@ public class MonitorAllTripsJob implements Runnable, RecurringJobScheduler {
     }
 
     /**
-     * Whether a trip should be unsnoozed and monitoring should resume.
-     * @return true if the current time is on the calendar day (on or after midnight) after the last checked time.
-     */
-    public static boolean shouldUnsnooze(long millis) {
-        // TODO: remove
-        var midnightAfterLastChecked = ZonedDateTime
-            .ofInstant(
-                Instant.ofEpochMilli(millis).plus(1, ChronoUnit.DAYS),
-                DateTimeUtils.getOtpZoneId()
-            )
-            .truncatedTo(ChronoUnit.DAYS);
-
-        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
-        // Include equal or after midnight as true.
-        return !now.isBefore(midnightAfterLastChecked);
-    }
-
-    /**
      * Checks each analyzer idle status and returns false if any are not idle.
      */
     private boolean allAnalyzersAreIdle(List<AtomicBoolean> analyzerStatuses) {
@@ -184,9 +162,9 @@ public class MonitorAllTripsJob implements Runnable, RecurringJobScheduler {
             TimeUnit.MINUTES
         );
         // Schedule trip unsnoozing to run once per day,
-        // typically at 3:00amor some configured time when "nightly" jobs are run.
+        // typically at 3:00am or some configured time when "nightly" jobs are run.
         // This is done here instead of its own file to keep these two jobs together
-        // and avoid creating a separate command line parameter for this job.
+        // and avoid creating a separate command line parameter for the unsnooze job.
         Scheduler.scheduleJob(
             new UnsnoozeTripsJob(),
             ConnectedDataManager.getInitialDelayMillis(),
