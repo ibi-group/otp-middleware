@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -796,21 +795,9 @@ public class CheckMonitoredTrip implements Runnable {
             return true;
         }
 
-        // For trips that are snoozed, see if they should be unsnoozed first.
         if (trip.snoozed) {
-            if (shouldUnsnoozeTrip()) {
-                // Reset previous matching itineraries and start afresh.
-                previousMatchingItinerary = matchingItinerary = trip.itinerary.clone();
-
-                computeTargetZonedDateTime();
-                matchingItinerary.offsetTimes(targetZonedDateTime);
-
-                // Unsnooze trip now, for cases where the next itinerary isn't calculated.
-                trip.snoozed = false;
-            } else {
-                LOG.info("Skipping: Trip is snoozed.");
-                return true;
-            }
+            LOG.info("Skipping: Trip is snoozed.");
+            return true;
         }
 
         // initialize the trip's journey state and matching itinerary to the latest journeyState's matching
@@ -1007,27 +994,6 @@ public class CheckMonitoredTrip implements Runnable {
      */
     private Locale getOtpUserLocale() {
         return I18nUtils.getOtpUserLocale(getOtpUser());
-    }
-
-    /**
-     * Whether a trip should be unsnoozed and monitoring should resume.
-     * @return true if the current time is after the calendar day (on or after midnight)
-     * after the matching trip start day, false otherwise.
-     */
-    public boolean shouldUnsnoozeTrip() {
-        ZoneId otpZoneId = DateTimeUtils.getOtpZoneId();
-        var midnightAfterLastChecked = ZonedDateTime
-            .ofInstant(
-                Instant.ofEpochMilli(previousJourneyState.lastCheckedEpochMillis).plus(1, ChronoUnit.DAYS),
-                otpZoneId
-            )
-            .withHour(0)
-            .withMinute(0)
-            .withSecond(0);
-
-        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
-        // Include equal or after midnight as true.
-        return !now.isBefore(midnightAfterLastChecked);
     }
 
     /**

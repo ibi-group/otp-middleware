@@ -141,13 +141,7 @@ public class OtpUser extends AbstractUser {
         }
 
         // Delete monitored trips.
-        for (MonitoredTrip trip : MonitoredTrip.tripsForUser(this.id)) {
-            boolean success = trip.delete();
-            if (!success) {
-                LOG.error("Error deleting user's ({}) monitored trip {}", this.id, trip.id);
-                return false;
-            }
-        }
+        if (!deleteOwnTrips()) return false;
 
         // Delete monitored trips where the user is the primary traveler.
         for (MonitoredTrip trip : MonitoredTrip.tripsForPrimaryTraveler(id)) {
@@ -252,5 +246,20 @@ public class OtpUser extends AbstractUser {
     public Optional<TripSurveyNotification> findNotification(String id) {
         if (tripSurveyNotifications == null || Strings.isBlank(id)) return Optional.empty();
         return tripSurveyNotifications.stream().filter(n -> id.equals(n.id)).findFirst();
+    }
+
+    /**
+     * Helper method to delete trips where userId is this user's id.
+     * @return true if all trips were successfully deleted, false otherwise.
+     */
+    public boolean deleteOwnTrips() {
+        for (MonitoredTrip trip : MonitoredTrip.tripsForUser(this.id)) {
+            boolean success = trip.delete();
+            if (!success) {
+                LOG.error("Error deleting user's ({}) monitored trip {}", this.id, trip.id);
+                return false;
+            }
+        }
+        return true;
     }
 }

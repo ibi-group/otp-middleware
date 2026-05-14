@@ -187,6 +187,16 @@ public class MonitoredTrip extends Model {
     }
 
     /**
+     * Recomputes the target date and adjusts the matching itinerary to that date.
+     */
+    public void recomputeTargetDateAndAdjustMatchingItinerary() throws CloneNotSupportedException {
+        journeyState.matchingItinerary = itinerary.clone();
+        ZonedDateTime targetZonedDateTime = computeTargetZonedDateTime(itinerary);
+        journeyState.targetDate = targetZonedDateTime.toLocalDate().toString();
+        journeyState.matchingItinerary.offsetTimes(targetZonedDateTime);
+    }
+
+    /**
      * Checks that, for each query provided, an itinerary exists.
      * @return a summary of the itinerary existence results for each day of the week
      */
