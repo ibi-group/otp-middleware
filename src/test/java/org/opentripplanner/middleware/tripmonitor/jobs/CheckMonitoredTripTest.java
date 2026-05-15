@@ -81,7 +81,6 @@ import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip
  */
 public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
     private static final Logger LOG = LoggerFactory.getLogger(CheckMonitoredTripTest.class);
-    public static final int ONE_DAY_IN_MILLIS = 24 * 3600000;
     private static OtpUser user;
 
     // this is initialized in the setup method after the OTP_TIMEZONE config value is known.
@@ -1152,7 +1151,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         // Build fake OTP response, using an existing one as template.
         // Set the start time of that itinerary to "tomorrow" because "today"'s trip is over.
         Itinerary adjustedItinerary = trip.itinerary.clone();
-        adjustedItinerary.offsetTimes(ONE_DAY_IN_MILLIS);
+        adjustedItinerary.offsetTimes(TimeUnit.DAYS.toMillis(1));
 
         CheckMonitoredTrip check = new CheckMonitoredTrip(
             trip,

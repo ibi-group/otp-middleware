@@ -21,6 +21,7 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * This class contains tests for {@link CheckMonitoredTrip} that don't require database or OTP queries.
  */
 public class CheckMonitoredTripBasicTest {
-    private static final int ONE_DAY_IN_SECONDS = 3600 * 24;
+    private static final int ONE_DAY_IN_SECONDS = (int) TimeUnit.DAYS.toSeconds(1);
 
     @ParameterizedTest
     @MethodSource("createSkipMonitoringCases")
