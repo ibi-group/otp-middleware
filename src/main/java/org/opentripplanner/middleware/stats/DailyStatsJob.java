@@ -27,7 +27,6 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToDate;
 public class DailyStatsJob implements RecurringJobScheduler, Runnable {
 
     private static final Logger LOG = LoggerFactory.getLogger(DailyStatsJob.class);
-    private static final int ONE_DAY_IN_MINUTES = 60 * 24;
     private static final String DATE_CREATED_FIELD = "dateCreated";
     static final String DATE_FIELD = "date";
 
@@ -44,7 +43,7 @@ public class DailyStatsJob implements RecurringJobScheduler, Runnable {
         Scheduler.scheduleJob(
             new DailyStatsJob(),
             ConnectedDataManager.getInitialDelayMillis(),
-            ONE_DAY_IN_MINUTES * 60000L, // milliseconds
+            TimeUnit.DAYS.toMillis(1),
             TimeUnit.MILLISECONDS);
 
         // Run the job immediately, so that the previous day is captured as soon as possible, if not already.
