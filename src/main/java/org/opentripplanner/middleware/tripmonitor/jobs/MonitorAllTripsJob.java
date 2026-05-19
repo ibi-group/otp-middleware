@@ -20,6 +20,7 @@ import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Filters.ne;
 import static com.mongodb.client.model.Filters.nor;
+import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME;
 import static org.opentripplanner.middleware.controllers.api.ApiController.ID_FIELD_NAME;
 
 /**
@@ -167,11 +168,12 @@ public class MonitorAllTripsJob implements Runnable, RecurringJobScheduler {
         // typically at 3:00am or some configured time when "nightly" jobs are run.
         // This is done here instead of its own file to keep these two jobs together
         // and avoid creating a separate command line parameter for the unsnooze job.
+        LOG.info("Scheduling UnsnoozeTripsJob daily starting at {}.", CONNECTED_DATA_PLATFORM_TRIP_HISTORY_UPLOAD_START_TIME);
         Scheduler.scheduleJob(
             new UnsnoozeTripsJob(),
             ConnectedDataManager.getInitialDelayMillis(),
-            1,
-            TimeUnit.DAYS
+            TimeUnit.DAYS.toMillis(1),
+            TimeUnit.MILLISECONDS
         );
         // Run UnsnoozeTripsJob immediately, so that applicable trips get monitored without delay.
         new UnsnoozeTripsJob().run();
