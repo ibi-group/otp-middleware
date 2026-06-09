@@ -59,6 +59,17 @@
             <pattern>${FILE_LOG_PATTERN}</pattern>
         </encoder>
     </appender>
+    <appender name="DEFAULT_LOG_FILE" class="RollingFileAppender">
+        <file>logs/otp-middleware.log</file>
+        <rollingPolicy class="TimeBasedRollingPolicy">
+            <fileNamePattern>${ARCHIVED_LOG_FOLDER}/otp-middleware.log</fileNamePattern>
+            <maxHistory>${LOG_RETENTION_DAYS}</maxHistory>
+            <totalSizeCap>4GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
     <logger name="org.opentripplanner.middleware.utils.NotificationUtils">
         <appender-ref ref="NOTIFICATION-FILE"/>
     </logger>
@@ -75,6 +86,7 @@
         <appender-ref ref="GMAP-TRACKING-DEBUG-FILE"/>
     </logger>
     <root level="info">
+        <appender-ref ref="DEFAULT_LOG_FILE" />
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>
