@@ -56,8 +56,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.text.MatchesPattern.matchesPattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -75,6 +73,7 @@ import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_UPCOMING;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.setRecurringTodayAndTomorrow;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.usTime;
 
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job.
@@ -318,7 +317,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         } else {
             assertNotNull(notification);
             assertEquals(notificationType, notification.type);
-            assertThat(message, notification.body, matchesPattern(expectedNotificationPattern));
+            assertEquals(expectedNotificationPattern, notification.body, message);
         }
     }
 
@@ -370,7 +369,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 0,
                 NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
                 STOPWATCH_ICON +
-                " Your trip is now predicted to depart 20 minutes late at 8:49[\\u202f ]AM \\(Now arriving at 9:18[\\u202f ]AM\\)\\.",
+                usTime(8, 49, " Your trip is now predicted to depart 20 minutes late at %s ") +
+                usTime(9, 18, "(Now arriving at %s)."),
                 "20m-late trip previously on-time => show dep/arr delay notifications"
             ),
             Arguments.of(
@@ -378,7 +378,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 0,
                 NotificationType.DEPARTURE_DELAY,
                 STOPWATCH_ICON +
-                " Your trip is now predicted to depart 20 minutes late \\(at 8:49[\\u202f ]AM\\)\\.",
+                usTime(8, 49, " Your trip is now predicted to depart 20 minutes late (at %s)."),
                 "20m-late departure previously on-time, but still arriving on-time => show departure-only delay notifications"
             ),
             Arguments.of(
@@ -386,7 +386,7 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 0,
                 NotificationType.ARRIVAL_DELAY,
                 STOPWATCH_ICON +
-                " Your trip is now predicted to arrive 20 minutes late \\(at 9:18[\\u202f ]AM\\)\\.",
+                usTime(9, 18, " Your trip is now predicted to arrive 20 minutes late (at %s)."),
                 "20m-late arrival previously on-time, but still departing on-time => show arrival-only delay notifications"
             ),
             Arguments.of(
@@ -394,7 +394,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 0,
                 NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
                 STOPWATCH_ICON +
-                " Your trip is now predicted to depart 18 minutes early at 8:11[\\u202f ]AM \\(Now arriving at 8:40[\\u202f ]AM\\)\\.",
+                usTime(8, 11, " Your trip is now predicted to depart 18 minutes early at %s ") +
+                usTime(8, 40, "(Now arriving at %s)."),
                 "18m-early trip previously on-time => show delay (early) notifications"
             ),
             Arguments.of(
@@ -409,7 +410,8 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
                 15,
                 NotificationType.DEPARTURE_AND_ARRIVAL_DELAY,
                 STOPWATCH_ICON +
-                " Your trip is now predicted to depart about on time at 8:29[\\u202f ]AM \\(Now arriving at 8:58[\\u202f ]AM\\)\\.",
+                usTime(8, 29, " Your trip is now predicted to depart about on time at %s ") +
+                usTime(8, 58, "(Now arriving at %s)."),
                 "On-time trip previously late => show on-time notifications"
             )
         );
@@ -801,16 +803,15 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         ZonedDateTime afterTripEnds = DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.endTime).plusMinutes(3);
 
         List<DelayCase> cases = List.of(
-            // TODO: fix time separator char
             // Add some delays for the trip.
-            new DelayCase(300, 420, true, beforeTripStart, 1, "⏱ Your trip is now predicted to depart 5 minutes late (at 8:34 AM)."),
+            new DelayCase(300, 420, true, beforeTripStart, 1, usTime(8, 34, STOPWATCH_ICON + " Your trip is now predicted to depart 5 minutes late (at %s).")),
             // Decrease real-time delays (subtract delays) from the OTP response.
-            new DelayCase(-100, -60, true, beforeTripStart, 1, "⏱ Your trip is now predicted to arrive 6 minutes late (at 9:04 AM)."),
+            new DelayCase(-100, -60, true, beforeTripStart, 1, usTime(9, 4, STOPWATCH_ICON + " Your trip is now predicted to arrive 6 minutes late (at %s).")),
             // Drop real-time updates (subtract delays) from the OTP response.
-            new DelayCase(-200, -360, false, beforeTripStart, 1, "⏱ Real-time updates for your trip were lost. Monitoring will be based on your originally saved trip."),
+            new DelayCase(-200, -360, false, beforeTripStart, 1, STOPWATCH_ICON + " Real-time updates for your trip were lost. Monitoring will be based on your originally saved trip."),
 
             // Add back delays for the trip.
-            new DelayCase(300, 420, true, beforeTripStart, 1, "⏱ Your trip is now predicted to depart 5 minutes late (at 8:34 AM)."),
+            new DelayCase(300, 420, true, beforeTripStart, 1, usTime(8, 34, STOPWATCH_ICON + " Your trip is now predicted to depart 5 minutes late (at %s).")),
             // OTP drops real-time updates at/after the end of the transit leg.
             // No notifications should be sent when the transit leg is over.
             new DelayCase(
