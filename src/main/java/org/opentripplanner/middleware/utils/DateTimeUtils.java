@@ -396,9 +396,9 @@ public class DateTimeUtils {
     }
 
     /**
-     * Mostly used in tests. Shorthand to produce strings such as "5:40 PM" with the correct spacing character.
+     * Used in tests. Inserts strings such as "5:40 PM" within other text with the correct spacing character.
      */
-    public String usTime(int hour, int minute) {
-        return LocalTime.of(hour, minute).format(US_TIME_FORMATTER);
+    public static String usTime(int hour, int minute, String message) {
+        return String.format(message, LocalTime.of(hour, minute).format(US_TIME_FORMATTER));
     }
 }

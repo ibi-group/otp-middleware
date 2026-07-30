@@ -75,6 +75,7 @@ import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_UPCOMING;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.setRecurringTodayAndTomorrow;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.usTime;
 
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job.
@@ -801,16 +802,15 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
         ZonedDateTime afterTripEnds = DateTimeUtils.makeOtpZonedDateTime(monitoredTrip.itinerary.endTime).plusMinutes(3);
 
         List<DelayCase> cases = List.of(
-            // TODO: fix time separator char
             // Add some delays for the trip.
-            new DelayCase(300, 420, true, beforeTripStart, 1, "⏱ Your trip is now predicted to depart 5 minutes late (at 8:34 AM)."),
+            new DelayCase(300, 420, true, beforeTripStart, 1, usTime(8, 34, "⏱ Your trip is now predicted to depart 5 minutes late (at %s).")),
             // Decrease real-time delays (subtract delays) from the OTP response.
-            new DelayCase(-100, -60, true, beforeTripStart, 1, "⏱ Your trip is now predicted to arrive 6 minutes late (at 9:04 AM)."),
+            new DelayCase(-100, -60, true, beforeTripStart, 1, usTime(9, 4, "⏱ Your trip is now predicted to arrive 6 minutes late (at %s).")),
             // Drop real-time updates (subtract delays) from the OTP response.
             new DelayCase(-200, -360, false, beforeTripStart, 1, "⏱ Real-time updates for your trip were lost. Monitoring will be based on your originally saved trip."),
 
             // Add back delays for the trip.
-            new DelayCase(300, 420, true, beforeTripStart, 1, "⏱ Your trip is now predicted to depart 5 minutes late (at 8:34 AM)."),
+            new DelayCase(300, 420, true, beforeTripStart, 1, usTime(8, 34, "⏱ Your trip is now predicted to depart 5 minutes late (at %s).")),
             // OTP drops real-time updates at/after the end of the transit leg.
             // No notifications should be sent when the transit leg is over.
             new DelayCase(
