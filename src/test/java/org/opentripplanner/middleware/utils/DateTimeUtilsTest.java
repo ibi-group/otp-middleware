@@ -109,7 +109,10 @@ class DateTimeUtilsTest {
         var date = Date.from(Instant.ofEpochMilli(1785416763965L)); // 9:06 AM 30-JUL-2026 EDT
         var formattedDate = DateTimeUtils.formatShortTime(date, Locale.US);
 
-        assertEquals(LocalTime.of(9, 6).format(US_TIME_FORMATTER.withZone(getOtpZoneId())), formattedDate);
+        assertEquals(
+            DateTimeUtils.makeOtpZonedDateTime(date).toLocalTime().format(US_TIME_FORMATTER.withZone(getOtpZoneId())),
+            formattedDate
+        );
         // Before JDK 20: a regular space precedes AM/PM.
         // JDK 20+: A narrow non-breaking space (NNBSP) is used instead.
         assertThat(formattedDate, matchesPattern("\\d:06[\\u202f ]AM"));
