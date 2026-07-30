@@ -46,6 +46,10 @@ public class DateTimeUtils {
         DEFAULT_DATE_FORMAT_PATTERN
     );
 
+    public static final DateTimeFormatter US_TIME_FORMATTER = DateTimeFormatter
+        .ofLocalizedTime(FormatStyle.SHORT)
+        .withLocale(Locale.US);
+
     /**
      * These are internal variables that can be used to mock dates and times in tests
      */
@@ -392,11 +396,9 @@ public class DateTimeUtils {
     }
 
     /**
-     * Mostly used in tests.
+     * Mostly used in tests. Shorthand to produce strings such as "5:40 PM" with the correct spacing character.
      */
-    public static DateTimeFormatter usTimeFormatter() {
-        return DateTimeFormatter
-            .ofLocalizedTime(FormatStyle.SHORT)
-            .withLocale(Locale.US);
+    public String usTime(int hour, int minute) {
+        return LocalTime.of(hour, minute).format(US_TIME_FORMATTER);
     }
 }
