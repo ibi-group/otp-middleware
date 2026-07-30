@@ -9,8 +9,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -24,6 +22,7 @@ import static org.opentripplanner.middleware.utils.DateTimeUtils.getDaysBetween;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getHoursBetween;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getPreviousDayFrom;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getPreviousWholeHourFrom;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.usTimeFormatter;
 
 class DateTimeUtilsTest {
     @ParameterizedTest
@@ -109,11 +108,7 @@ class DateTimeUtilsTest {
         var date = Date.from(Instant.ofEpochMilli(1785416763965L)); // 9:06 AM 30-JUL-2026 EDT
         var formattedDate = DateTimeUtils.formatShortTime(date, Locale.US);
 
-        var formatter = DateTimeFormatter
-            .ofLocalizedTime(FormatStyle.SHORT)
-            .withLocale(Locale.US);
-
-        assertEquals(LocalTime.of(9, 6).format(formatter), formattedDate);
+        assertEquals(LocalTime.of(9, 6).format(usTimeFormatter()), formattedDate);
         // Before JDK 20: a regular space precedes AM/PM.
         // JDK 20+: A narrow non-breaking space (NNBSP) is used instead.
         assertThat(formattedDate, matchesPattern("9:06[\\u202f ]AM"));

@@ -390,4 +390,13 @@ public class DateTimeUtils {
     public static Date dateAsSeconds() {
         return new Date(Instant.now().getEpochSecond());
     }
+
+    /**
+     * Mostly used in tests.
+     */
+    public static DateTimeFormatter usTimeFormatter() {
+        return DateTimeFormatter
+            .ofLocalizedTime(FormatStyle.SHORT)
+            .withLocale(Locale.US);
+    }
 }
