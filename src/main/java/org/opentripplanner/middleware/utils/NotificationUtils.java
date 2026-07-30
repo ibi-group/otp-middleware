@@ -126,7 +126,7 @@ public class NotificationUtils {
         }
 
         Locale locale = I18nUtils.getOtpUserLocale(otpUser);
-        String tripTime = DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale);
+        String tripTime = DateTimeUtils.formatShortTime(trip.itinerary.startTime, locale);
         String body = String.format(TRIP_SURVEY_NOTIFICATION.get(locale), tripTime);
         return sendPush(otpUser, body, trip.tripName, trip.id, TRIP_SURVEY_ID, TRIP_SURVEY_SUBDOMAIN, notificationId);
     }

@@ -101,7 +101,7 @@ public class DateTimeUtils {
     /**
      * Helper to format a date in short format (e.g. "5:40 PM" - no seconds) in the specified locale.
      */
-    public static String formatShortDate(Date date, Locale locale) {
+    public static String formatShortTime(Date date, Locale locale) {
         return DateTimeFormatter
             .ofLocalizedTime(FormatStyle.SHORT)
             .withLocale(locale)

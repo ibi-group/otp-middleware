@@ -5,9 +5,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -28,7 +31,7 @@ class DateTimeUtilsTest {
     void supportsDateFormatsInSeveralLocales(String localeTag, String pattern) {
         ZonedDateTime zonedTime = ZonedDateTime.of(2023, 2, 12, 17, 44, 0, 0, DateTimeUtils.getOtpZoneId());
         assertThat(
-            DateTimeUtils.formatShortDate(Date.from(zonedTime.toInstant()), Locale.forLanguageTag(localeTag)),
+            DateTimeUtils.formatShortTime(Date.from(zonedTime.toInstant()), Locale.forLanguageTag(localeTag)),
             matchesPattern(pattern)
         );
     }
@@ -99,5 +102,20 @@ class DateTimeUtilsTest {
             LocalDateTime.of(2024, 8, 11, 2, 0, 0)
         );
         assertEquals(expectedHours, getHoursBetween(date1, date2));
+    }
+
+    @Test
+    void canFormatShortTime() {
+        var date = Date.from(Instant.ofEpochMilli(1785416763965L)); // 9:06 AM 30-JUL-2026 EDT
+        var formattedDate = DateTimeUtils.formatShortTime(date, Locale.US);
+
+        var formatter = DateTimeFormatter
+            .ofLocalizedTime(FormatStyle.SHORT)
+            .withLocale(Locale.US);
+
+        assertEquals(LocalTime.of(9, 6).format(formatter), formattedDate);
+        // Before JDK 20: a regular space precedes AM/PM.
+        // JDK 20+: A narrow non-breaking space (NNBSP) is used instead.
+        assertThat(formattedDate, matchesPattern("9:06[\\u202f ]AM"));
     }
 }

@@ -76,8 +76,8 @@ public class TripMonitorNotification extends Model {
                     STOPWATCH_ICON,
                     TRIP_DELAY_DEPART.get(locale),
                     delayHumanTime,
-                    DateTimeUtils.formatShortDate(startTime, locale),
-                    DateTimeUtils.formatShortDate(arrivalTime, locale)
+                    DateTimeUtils.formatShortTime(startTime, locale),
+                    DateTimeUtils.formatShortTime(arrivalTime, locale)
                 )
             );
         }
@@ -90,7 +90,7 @@ public class TripMonitorNotification extends Model {
                 STOPWATCH_ICON,
                 (isArrivalDelay ? TRIP_DELAY_ARRIVE : TRIP_DELAY_DEPART).get(locale),
                 delayHumanTime,
-                DateTimeUtils.formatShortDate(isArrivalDelay ? arrivalTime : startTime, locale)
+                DateTimeUtils.formatShortTime(isArrivalDelay ? arrivalTime : startTime, locale)
             )
         );
     }
@@ -150,7 +150,7 @@ public class TripMonitorNotification extends Model {
             NotificationType.INITIAL_REMINDER,
             String.format(Message.TRIP_REMINDER_NOTIFICATION.get(locale),
                 trip.tripName,
-                DateTimeUtils.formatShortDate(trip.itinerary.startTime, locale)
+                DateTimeUtils.formatShortTime(trip.itinerary.startTime, locale)
             )
         );
     }
