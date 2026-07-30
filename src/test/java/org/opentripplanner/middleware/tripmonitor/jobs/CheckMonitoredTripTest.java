@@ -804,14 +804,14 @@ public class CheckMonitoredTripTest extends OtpMiddlewareTestEnvironment {
 
         List<DelayCase> cases = List.of(
             // Add some delays for the trip.
-            new DelayCase(300, 420, true, beforeTripStart, 1, usTime(8, 34, "⏱ Your trip is now predicted to depart 5 minutes late (at %s).")),
+            new DelayCase(300, 420, true, beforeTripStart, 1, usTime(8, 34, STOPWATCH_ICON + " Your trip is now predicted to depart 5 minutes late (at %s).")),
             // Decrease real-time delays (subtract delays) from the OTP response.
-            new DelayCase(-100, -60, true, beforeTripStart, 1, usTime(9, 4, "⏱ Your trip is now predicted to arrive 6 minutes late (at %s).")),
+            new DelayCase(-100, -60, true, beforeTripStart, 1, usTime(9, 4, STOPWATCH_ICON + " Your trip is now predicted to arrive 6 minutes late (at %s).")),
             // Drop real-time updates (subtract delays) from the OTP response.
-            new DelayCase(-200, -360, false, beforeTripStart, 1, "⏱ Real-time updates for your trip were lost. Monitoring will be based on your originally saved trip."),
+            new DelayCase(-200, -360, false, beforeTripStart, 1, STOPWATCH_ICON + " Real-time updates for your trip were lost. Monitoring will be based on your originally saved trip."),
 
             // Add back delays for the trip.
-            new DelayCase(300, 420, true, beforeTripStart, 1, usTime(8, 34, "⏱ Your trip is now predicted to depart 5 minutes late (at %s).")),
+            new DelayCase(300, 420, true, beforeTripStart, 1, usTime(8, 34, STOPWATCH_ICON + " Your trip is now predicted to depart 5 minutes late (at %s).")),
             // OTP drops real-time updates at/after the end of the transit leg.
             // No notifications should be sent when the transit leg is over.
             new DelayCase(
