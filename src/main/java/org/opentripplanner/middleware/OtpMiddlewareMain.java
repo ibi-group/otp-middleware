@@ -175,7 +175,7 @@ public class OtpMiddlewareMain {
 
         // Security checks for admin and /secure/ endpoints. Excluding /authenticate so that API users can obtain a
         // bearer token to authenticate against all other /secure/ endpoints.
-        spark.before(API_PREFIX + "/secure/*", ((request, response) -> {
+        spark.before(API_PREFIX + "secure/*", ((request, response) -> {
             if (
                 !request.requestMethod().equals("OPTIONS") &&
                 !request.pathInfo().endsWith(API_USER_PATH + AUTHENTICATE_PATH) &&
