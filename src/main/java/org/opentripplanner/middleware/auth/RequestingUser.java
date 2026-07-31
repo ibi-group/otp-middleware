@@ -44,6 +44,7 @@ public class RequestingUser {
     public RequestingUser(DecodedJWT jwt) {
         this.auth0UserId = jwt.getClaim("sub").asString();
         String scope = jwt.getClaim("scope").asString();
+        LOG.info("Decoded user: {}, scope: {}", this.auth0UserId, scope);
         defineUserFromScope(scope, false);
     }
 

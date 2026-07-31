@@ -62,6 +62,7 @@ public class Auth0Connection {
         }
         // Admin and OTP users authenticated by Bearer token
         String token = getTokenFromRequest(req);
+        LOG.info("Token: {}", token);
         // Handle getting the verifier outside of the below verification try/catch, which is intended to catch issues
         // with the client request. (getVerifier has its own exception/halt handling).
         verifier = getVerifier(req, token);
