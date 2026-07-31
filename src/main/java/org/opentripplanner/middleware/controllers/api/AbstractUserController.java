@@ -146,7 +146,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         logMessageAndHalt(
             req,
             HttpStatus.NOT_FOUND_404,
-            String.format(NO_USER_WITH_AUTH0_ID_MESSAGE, id),
+            String.format(NO_USER_WITH_AUTH0_ID_MESSAGE + " " + reason, id),
             null
         );
     }
