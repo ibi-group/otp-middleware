@@ -87,7 +87,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
     private U getUserFromRequest(Request req, Response res) {
         RequestingUser profile = Auth0Connection.getUserFromRequest(req);
         if (profile == null) {
-            logUserNotFoundAndHalt(req, null);
+            logUserNotFoundAndHalt(req, null, "Profile not found in request");
         }
         U user = getUserProfile(profile);
 
@@ -96,7 +96,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         // but have not completed the account setup form yet.
         // For those users, the user profile would be 404 not found (as opposed to 403 forbidden).
         if (user == null) {
-            logUserNotFoundAndHalt(req, profile.auth0UserId);
+            logUserNotFoundAndHalt(req, profile.auth0UserId, "Could not extract user from profile");
         }
         return user;
     }
@@ -108,7 +108,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
     private boolean deleteUserFromRequest(Request req, Response res) {
         RequestingUser profile = Auth0Connection.getUserFromRequest(req);
         if (profile == null) {
-            logUserNotFoundAndHalt(req, null);
+            logUserNotFoundAndHalt(req, null, "Profile not found in delete request");
             return false;
         }
         U user = getUserProfile(profile);
@@ -142,7 +142,7 @@ public abstract class AbstractUserController<U extends AbstractUser> extends Api
         }
     }
 
-    private void logUserNotFoundAndHalt(Request req, String id) {
+    private void logUserNotFoundAndHalt(Request req, String id, String reason) {
         logMessageAndHalt(
             req,
             HttpStatus.NOT_FOUND_404,
