@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM maven:3.9.15-eclipse-temurin-25
+FROM amazoncorretto:11
 WORKDIR /middleware
 
 # Grab latest dev build
