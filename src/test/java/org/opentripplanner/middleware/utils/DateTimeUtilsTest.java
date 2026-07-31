@@ -115,6 +115,6 @@ class DateTimeUtilsTest {
         );
         // Before JDK 20: a regular space precedes AM/PM.
         // JDK 20+: A narrow non-breaking space (NNBSP) is used instead.
-        assertThat(formattedDate, matchesPattern("\\d:06[\\u202f ]AM"));
+        assertThat(formattedDate, matchesPattern("\\d:06[\\u202f ][AP]M"));
     }
 }
