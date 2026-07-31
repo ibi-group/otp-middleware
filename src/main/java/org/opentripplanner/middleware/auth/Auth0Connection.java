@@ -83,6 +83,7 @@ public class Auth0Connection {
             }
             // The user attribute is used on the server side to check user permissions and does not have all of the
             // fields that the raw Auth0 profile string does.
+            LOG.info("Adding valid user to request: {}", JsonUtils.toJson(profile));
             addUserToRequest(req, profile);
         } catch (JWTVerificationException e) {
             // Invalid signature/claims
