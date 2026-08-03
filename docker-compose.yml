@@ -1,8 +1,7 @@
 services:
   otp-middleware:
     # image: public.ecr.aws/s2a5w2n9/otp-middleware:latest
-    build:
-      context: .
+    build: .
     ports:
       - "4567:4567"
     volumes:
