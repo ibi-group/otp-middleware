@@ -106,9 +106,9 @@ jobs:
           aws s3 sync ./deploy s3://otp-middleware-builds --acl public-read
       # Build and Publish Docker image
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v4
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v4
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
@@ -118,7 +118,7 @@ jobs:
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
       - name: Build and push
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v7
         with:
           build-args: JAR_VERSION=${{ steps.vars.outputs.sha_short }}
           context: .
@@ -126,7 +126,7 @@ jobs:
           push: true
           tags: public.ecr.aws/s2a5w2n9/otp-middleware:${{ github.sha }}
       - name: Build and push with different tag
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v7
         with:
           build-args: JAR_VERSION=${{ steps.vars.outputs.sha_short }}
           context: .
