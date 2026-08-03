@@ -1,11 +1,8 @@
-version: '3.8'
 services:
   otp-middleware:
     # image: public.ecr.aws/s2a5w2n9/otp-middleware:latest
     build:
       context: .
-      args:
-        JAR_VERSION: 1.0-SNAPSHOT
     ports:
       - "4567:4567"
     volumes:
