@@ -9,9 +9,10 @@ ARG JAR_VERSION=1.0-SNAPSHOT
 COPY target/otp-middleware.jar ./otp-middleware-$JAR_VERSION.jar
 
 # Generate launch script
-RUN echo "java -jar otp-middleware-$JAR_VERSION.jar /config/env.yml --endpoints" >> ./start-middleware.sh
+RUN echo "java -jar otp-middleware-$JAR_VERSION.jar /config/env.yml \$@" >> ./start-middleware.sh
 RUN chmod +x ./start-middleware.sh
 
 # Launch server (relies on env.yml being placed in volume!)
-CMD ["./start-middleware.sh"]
+ENTRYPOINT ["sh", "./start-middleware.sh"]
+CMD ["--endpoints", "yes"]
 EXPOSE 4567
