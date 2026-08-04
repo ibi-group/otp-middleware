@@ -93,7 +93,9 @@ jobs:
           TWILIO_VERIFICATION_SERVICE_SID: ${{ secrets.TWILIO_VERIFICATION_SERVICE_SID }}
           RUN_E2E: true
 
-      # if this point it reached, the CI build has succeeded
+      # If this point it reached, the CI build has succeeded.
+      # The condition on the JDK version is so that artifacts (jar, docker image)
+      # are uploaded only once (for now, we keep the JDK 11 versions).
 
       # only prepare deploy files on push events to avoid duplicate pushes to s3 when a commit is
       # pushed to a branch with an open pull request
