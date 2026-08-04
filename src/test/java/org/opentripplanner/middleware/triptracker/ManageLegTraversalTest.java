@@ -48,7 +48,7 @@ import static org.opentripplanner.middleware.triptracker.TravelerLocator.isWithi
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.ConfigUtils.DEFAULT_ENV;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.usTime;
+import static org.opentripplanner.middleware.testutils.CommonTestUtils.usTime;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 

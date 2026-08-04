@@ -73,7 +73,7 @@ import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_ACTIVE;
 import static org.opentripplanner.middleware.tripmonitor.TripStatus.TRIP_UPCOMING;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.makeMonitoredTripFromNow;
 import static org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTripBasicTest.setRecurringTodayAndTomorrow;
-import static org.opentripplanner.middleware.utils.DateTimeUtils.usTime;
+import static org.opentripplanner.middleware.testutils.CommonTestUtils.usTime;
 
 /**
  * This class contains tests for the {@link CheckMonitoredTrip} job.
