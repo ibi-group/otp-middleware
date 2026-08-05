@@ -394,11 +394,4 @@ public class DateTimeUtils {
     public static Date dateAsSeconds() {
         return new Date(Instant.now().getEpochSecond());
     }
-
-    /**
-     * Used in tests. Inserts strings such as "5:40 PM" within other text with the correct spacing character.
-     */
-    public static String usTime(int hour, int minute, String message) {
-        return String.format(message, LocalTime.of(hour, minute).format(US_TIME_FORMATTER));
-    }
 }
