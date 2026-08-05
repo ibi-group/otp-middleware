@@ -36,7 +36,7 @@ public class WaitForTransitInstruction extends TransitLegInstruction {
             "Wait%s for your bus, route %s, scheduled at %s (%s)",
             getReadableMinutes(waitInMinutes),
             routeShortName,
-            DateTimeUtils.formatShortDate(Date.from(transitLeg.getScheduledStartTime().toInstant()), locale),
+            DateTimeUtils.formatShortTime(Date.from(transitLeg.getScheduledStartTime().toInstant()), locale),
             status
         );
     }

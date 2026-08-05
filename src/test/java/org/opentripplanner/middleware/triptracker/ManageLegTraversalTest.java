@@ -48,6 +48,7 @@ import static org.opentripplanner.middleware.triptracker.TravelerLocator.isWithi
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.NO_INSTRUCTION;
 import static org.opentripplanner.middleware.triptracker.instruction.TripInstruction.TRIP_INSTRUCTION_UPCOMING_RADIUS;
 import static org.opentripplanner.middleware.utils.ConfigUtils.DEFAULT_ENV;
+import static org.opentripplanner.middleware.testutils.CommonTestUtils.usTime;
 import static org.opentripplanner.middleware.utils.GeometryUtils.calculateBearing;
 import static org.opentripplanner.middleware.utils.GeometryUtils.createPoint;
 
@@ -531,7 +532,9 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     .withPosition(busStopCoords)
                     .withTripStatus(TripStatus.BEHIND_SCHEDULE)
                     .withInstant(Instant.now())
-                    .withExpectedInstruction("Wait for your bus, route 20, scheduled at 7:58 AM (That time has passed)")
+                    .withExpectedInstruction(
+                        usTime(7, 58, "Wait for your bus, route 20, scheduled at %s (That time has passed)")
+                    )
             ),
             Arguments.of(
                 "Arrive at bus stop well after the bus departure (indicates past departure).",
@@ -541,7 +544,9 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     .withPosition(walkToBusTransition.legs.get(0).to.toCoordinates())
                     .withTripStatus(TripStatus.BEHIND_SCHEDULE)
                     .withInstant(Instant.now())
-                    .withExpectedInstruction("Wait for your bus, route 40, scheduled at 6:41 AM (That time has passed)")
+                    .withExpectedInstruction(
+                        usTime(6, 41, "Wait for your bus, route 40, scheduled at %s (That time has passed)")
+                    )
             ),
             Arguments.of(
                 "Arrive at bus stop well in advance.",
@@ -551,7 +556,9 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                     .withPosition(walkToBusTransition.legs.get(0).to.toCoordinates())
                     .withTripStatus(TripStatus.AHEAD_OF_SCHEDULE)
                     .withInstant(walkToBusTransition.legs.get(1).startTime.toInstant().minus(40, ChronoUnit.MINUTES))
-                    .withExpectedInstruction("Wait 40 minutes for your bus, route 40, scheduled at 6:41 AM (On time)")
+                    .withExpectedInstruction(
+                        usTime(6, 41,"Wait 40 minutes for your bus, route 40, scheduled at %s (On time)")
+                    )
             ),
             Arguments.of(
                 "Arrive at bus stop where the walk geometry is so the stop is farther than the last walk shape. Should produce a bus-stop-in-vicinity instruction, not 'destination in vicinity'.",
@@ -614,7 +621,9 @@ public class ManageLegTraversalTest extends OtpMiddlewareTestEnvironment {
                 "If present at the transit stop after the trip departure, instruct to wait (indicate past departure).",
                 new TraceData()
                     .withPosition(originCoords)
-                    .withExpectedInstruction("Wait for your bus, route 27, scheduled at 9:18 AM (That time has passed)")
+                    .withExpectedInstruction(
+                        usTime(9, 18, "Wait for your bus, route 27, scheduled at %s (That time has passed)")
+                    )
                     .withTripStatus(TripStatus.BEHIND_SCHEDULE)
                     .withInstant(Instant.now())
             ),

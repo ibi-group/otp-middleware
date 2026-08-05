@@ -46,6 +46,10 @@ public class DateTimeUtils {
         DEFAULT_DATE_FORMAT_PATTERN
     );
 
+    public static final DateTimeFormatter US_TIME_FORMATTER = DateTimeFormatter
+        .ofLocalizedTime(FormatStyle.SHORT)
+        .withLocale(Locale.US);
+
     /**
      * These are internal variables that can be used to mock dates and times in tests
      */
@@ -101,7 +105,7 @@ public class DateTimeUtils {
     /**
      * Helper to format a date in short format (e.g. "5:40 PM" - no seconds) in the specified locale.
      */
-    public static String formatShortDate(Date date, Locale locale) {
+    public static String formatShortTime(Date date, Locale locale) {
         return DateTimeFormatter
             .ofLocalizedTime(FormatStyle.SHORT)
             .withLocale(locale)

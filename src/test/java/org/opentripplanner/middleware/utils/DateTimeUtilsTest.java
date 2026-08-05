@@ -5,6 +5,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
@@ -19,8 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getDaysBetween;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getHoursBetween;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.getOtpZoneId;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getPreviousDayFrom;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getPreviousWholeHourFrom;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.US_TIME_FORMATTER;
 
 class DateTimeUtilsTest {
     @ParameterizedTest
@@ -28,7 +31,7 @@ class DateTimeUtilsTest {
     void supportsDateFormatsInSeveralLocales(String localeTag, String pattern) {
         ZonedDateTime zonedTime = ZonedDateTime.of(2023, 2, 12, 17, 44, 0, 0, DateTimeUtils.getOtpZoneId());
         assertThat(
-            DateTimeUtils.formatShortDate(Date.from(zonedTime.toInstant()), Locale.forLanguageTag(localeTag)),
+            DateTimeUtils.formatShortTime(Date.from(zonedTime.toInstant()), Locale.forLanguageTag(localeTag)),
             matchesPattern(pattern)
         );
     }
@@ -99,5 +102,19 @@ class DateTimeUtilsTest {
             LocalDateTime.of(2024, 8, 11, 2, 0, 0)
         );
         assertEquals(expectedHours, getHoursBetween(date1, date2));
+    }
+
+    @Test
+    void canFormatShortTime() {
+        var date = Date.from(Instant.ofEpochMilli(1785416763965L)); // 9:06 AM 30-JUL-2026 EDT
+        var formattedDate = DateTimeUtils.formatShortTime(date, Locale.US);
+
+        assertEquals(
+            DateTimeUtils.makeOtpZonedDateTime(date).toLocalTime().format(US_TIME_FORMATTER.withZone(getOtpZoneId())),
+            formattedDate
+        );
+        // Before JDK 20: a regular space precedes AM/PM.
+        // JDK 20+: A narrow non-breaking space (NNBSP) is used instead.
+        assertThat(formattedDate, matchesPattern("\\d:06[\\u202f ][AP]M"));
     }
 }

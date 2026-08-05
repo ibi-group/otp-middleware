@@ -1,8 +1,10 @@
 package org.opentripplanner.middleware.testutils;
 
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.FileUtils;
 
 import java.io.IOException;
+import java.time.LocalTime;
 
 public class CommonTestUtils {
 
@@ -22,4 +24,10 @@ public class CommonTestUtils {
         return FileUtils.getFileContents(OtpMiddlewareTestEnvironment.TEST_RESOURCE_PATH + resourcePathName);
     }
 
+    /**
+     * Inserts strings such as "5:40 PM" within other text with the correct spacing character.
+     */
+    public static String usTime(int hour, int minute, String message) {
+        return String.format(message, LocalTime.of(hour, minute).format(DateTimeUtils.US_TIME_FORMATTER));
+    }
 }
