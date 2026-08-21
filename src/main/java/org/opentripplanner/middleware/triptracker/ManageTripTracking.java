@@ -90,7 +90,7 @@ public class ManageTripTracking {
         try {
             TrackedJourney trackedJourney;
             if (create) {
-                trackedJourney = new TrackedJourney(tripData.trip.id, tripData.locations.get(0));
+                trackedJourney = new TrackedJourney(tripData.trip.id, tripData.trip.userId, tripData.locations.get(0));
             } else {
                 trackedJourney = tripData.journey;
                 trackedJourney.update(tripData.locations);
