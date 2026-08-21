@@ -173,6 +173,9 @@ public class MonitoredTrip extends Model {
     /** Serves as a temporary reference for itinerary matching during rerouting, null otherwise. */
     public Itinerary reroutedItinerary;
 
+    /** Flag for soft-delete behavior, to keep the trip in Mongo for reporting purposes instead of deleting it. */
+    public boolean softDeleted;
+
     public MonitoredTrip() {
     }
 
