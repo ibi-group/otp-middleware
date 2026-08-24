@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
@@ -135,22 +134,18 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     /**
      * Create trips for two different Otp users and attempt to get both trips with Otp user that has 'enhanced' admin
-     * credentials. In one case, we also add soft-deleted trips that should be excluded.
+     * credentials. We also add soft-deleted trips that should be excluded from query results.
      */
-    @ParameterizedTest
-    @ValueSource(booleans = {false, true})
-    void canGetOwnMonitoredTrips(boolean useSoftDeletedTrips) throws Exception {
+    @Test
+    void canGetOwnMonitoredTrips() throws Exception {
         // Create a trip for the solo and the multi OTP user.
         persistNewMonitoredTripForUser(soloOtpUser);
         persistNewMonitoredTripForUser(multiOtpUser);
 
-        if (useSoftDeletedTrips) {
-            // If the test requires it, create a soft-deleted trip for the solo and the multi OTP user.
-            // The soft-deleted trips should not appear in query results at all,
-            // regardless of the setting for MONITORED_TRIP_SOFT_DELETE.
-            persistSoftDeletedTripForUser(soloOtpUser);
-            persistSoftDeletedTripForUser(multiOtpUser);
-        }
+        // Create a soft-deleted trip for the solo and the multi OTP user.
+        // The soft-deleted trips should not appear in query results at all, no matter how they got to that state.
+        persistSoftDeletedTripForUser(soloOtpUser);
+        persistSoftDeletedTripForUser(multiOtpUser);
 
         // Get trips for solo Otp user.
         ResponseList<MonitoredTrip> soloTrips = getMonitoredTripsForUser(MONITORED_TRIP_PATH, soloOtpUser);
