@@ -93,11 +93,16 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     @Override
     protected Bson getEntityFilter(OtpUser user) {
-        return Filters.or(
-            Filters.eq(USER_ID_PARAM, user.id),
-            Filters.eq("primary.userId", user.id),
-            Filters.eq("companion.email", user.email),
-            Filters.eq("observers.email", user.email)
+        return Filters.and(
+            Filters.not(
+                Filters.eq("softDeleted", true)
+            ),
+            Filters.or(
+                Filters.eq(USER_ID_PARAM, user.id),
+                Filters.eq("primary.userId", user.id),
+                Filters.eq("companion.email", user.email),
+                Filters.eq("observers.email", user.email)
+            )
         );
     }
 

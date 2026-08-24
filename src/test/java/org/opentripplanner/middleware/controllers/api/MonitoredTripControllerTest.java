@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
@@ -143,13 +144,22 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
 
     /**
      * Create trips for two different Otp users and attempt to get both trips with Otp user that has 'enhanced' admin
-     * credentials.
+     * credentials. In one case, we also add soft-deleted trips that should be excluded.
      */
-    @Test
-    void canGetOwnMonitoredTrips() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void canGetOwnMonitoredTrips(boolean useSoftDeletedTrips) throws Exception {
         // Create a trip for the solo and the multi OTP user.
         persistNewMonitoredTripForUser(soloOtpUser);
         persistNewMonitoredTripForUser(multiOtpUser);
+
+        if (useSoftDeletedTrips) {
+            // If the test requires it, create a soft-deleted trip for the solo and the multi OTP user.
+            // The soft-deleted trips should not appear in query results at all,
+            // regardless of the setting for MONITORED_TRIP_SOFT_DELETE.
+            persistSoftDeletedTripForUser(soloOtpUser);
+            persistSoftDeletedTripForUser(multiOtpUser);
+        }
 
         // Get trips for solo Otp user.
         ResponseList<MonitoredTrip> soloTrips = getMonitoredTripsForUser(MONITORED_TRIP_PATH, soloOtpUser);
@@ -433,6 +443,15 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
      */
     private static void persistNewMonitoredTripForUser(OtpUser otpUser) {
         MonitoredTrip monitoredTrip = createMonitoredTripForUser(otpUser);
+        Persistence.monitoredTrips.create(monitoredTrip);
+    }
+
+    /**
+     * Creates a soft-deleted {@link MonitoredTrip} for the specified user.
+     */
+    private static void persistSoftDeletedTripForUser(OtpUser otpUser) {
+        MonitoredTrip monitoredTrip = createMonitoredTripForUser(otpUser);
+        monitoredTrip.softDeleted = true;
         Persistence.monitoredTrips.create(monitoredTrip);
     }
 
