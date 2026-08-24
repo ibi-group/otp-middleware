@@ -106,6 +106,15 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         );
     }
 
+    @Override
+    protected MonitoredTrip getEntityForId(Request req, Response res) {
+        MonitoredTrip monitoredTrip = super.getEntityForId(req, res);
+        if (monitoredTrip != null && monitoredTrip.softDeleted) {
+            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "Item does not exist.");
+        }
+        return monitoredTrip;
+    }
+
     /**
      * Before creating a {@link MonitoredTrip}, check that the itinerary associated with the trip exists on the selected
      * days of the week. Update the itinerary if everything looks OK, otherwise halt the request.

@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.controllers.api;
 import com.auth0.json.mgmt.users.User;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -133,7 +134,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     /**
-     * Create trips for two different Otp users and attempt to get both trips with Otp user that has 'enhanced' admin
+     * Create trips for two different {@link OtpUser} and attempt to get both trips using a user with 'enhanced' admin
      * credentials. We also add soft-deleted trips that should be excluded from query results.
      */
     @Test
@@ -144,8 +145,8 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         // Create a soft-deleted trip for the solo and the multi OTP user.
         // The soft-deleted trips should not appear in query results at all, no matter how they got to that state.
-        persistSoftDeletedTripForUser(soloOtpUser);
-        persistSoftDeletedTripForUser(multiOtpUser);
+        MonitoredTrip softDeletedTrip1 = persistSoftDeletedTripForUser(soloOtpUser);
+        MonitoredTrip softDeletedTrip2 = persistSoftDeletedTripForUser(multiOtpUser);
 
         // Get trips for solo Otp user.
         ResponseList<MonitoredTrip> soloTrips = getMonitoredTripsForUser(MONITORED_TRIP_PATH, soloOtpUser);
@@ -165,6 +166,10 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
         // Just the trip for Otp user 2 will be returned.
         assertEquals(1, tripsFiltered.data.size());
+
+        // Soft-deleted trips queried by id should not be found.
+        assertEquals(HttpStatus.NOT_FOUND_404, requestMonitoredTripForUser(softDeletedTrip1.id, soloOtpUser).status);
+        assertEquals(HttpStatus.NOT_FOUND_404, requestMonitoredTripForUser(softDeletedTrip2.id, multiOtpUser).status);
     }
 
     @Test
@@ -425,6 +430,13 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     /**
+     * Helper method to get a single trip for a user.
+     */
+    private HttpResponseValues requestMonitoredTripForUser(String tripId, OtpUser otpUser) throws Exception {
+         return mockAuthenticatedGet(MONITORED_TRIP_PATH + "/" + tripId, otpUser);
+    }
+
+    /**
      * Creates a {@link MonitoredTrip} for the specified user.
      */
     private static void persistNewMonitoredTripForUser(OtpUser otpUser) {
@@ -435,10 +447,12 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     /**
      * Creates a soft-deleted {@link MonitoredTrip} for the specified user.
      */
-    private static void persistSoftDeletedTripForUser(OtpUser otpUser) {
+    private static MonitoredTrip persistSoftDeletedTripForUser(OtpUser otpUser) {
         MonitoredTrip monitoredTrip = createMonitoredTripForUser(otpUser);
+        monitoredTrip.id = UUID.randomUUID().toString();
         monitoredTrip.softDeleted = true;
         Persistence.monitoredTrips.create(monitoredTrip);
+        return monitoredTrip;
     }
 
     private static MonitoredTrip createMonitoredTripForUser(OtpUser otpUser) {
