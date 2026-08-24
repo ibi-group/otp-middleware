@@ -68,20 +68,11 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenti
 import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteOtpUser;
 
 /**
- * Tests to simulate getting trips as an Otp user with enhanced admin credentials. The following config parameters must
- * be set in configurations/default/env.yml for these end-to-end tests to run:
- *
- * AUTH0_DOMAIN set to a valid Auth0 domain.
- *
- * AUTH0_API_CLIENT set to a valid Auth0 application client id.
- *
- * AUTH0_API_SECRET set to a valid Auth0 application client secret.
- *
- * OTP_API_ROOT set to a live OTP instance (e.g. http://otp-server.example.com/otp).
- *
- * The following environment variable must be set for these tests to run: - RUN_E2E=true.
- *
- * Auth0 must be correctly configured as described here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow
+ * Tests to simulate getting trips as an OTP user with regular or enhanced admin credentials.
+ * The following config parameters must be set in configurations/default/env.yml for these end-to-end tests to run:
+ * - AUTH0_DOMAIN, AUTH0_API_CLIENT, AUTH0_API_SECRET set to valid values per <a href="https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow">...</a>.
+ * The following environment variable must be set for these tests to run:
+ * - RUN_E2E=true.
  */
 class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static AdminUser multiAdminUser;
