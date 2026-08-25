@@ -160,6 +160,25 @@ public class ConfigUtils {
     }
 
     /**
+     * For tests, allows to override individual configuration items.
+     */
+    public static void setConfigProperty(String name, String value) {
+        if (!getBooleanEnvVar("RUN_E2E")) return;
+
+        String[] parts = name.split("\\.");
+        JsonNode node = envConfig;
+        for (String part : parts) {
+            if (node == null) {
+                return;
+            }
+            else if (name.equals(part)) {
+                ((ObjectNode) node).put(name, value);
+            }
+            node = node.get(part);
+        }
+    }
+
+    /**
      * Convenience function to check existence of a config property (nested fields defined by dot notation
      * "data.use_s3_storage") in env.yml.
      */
