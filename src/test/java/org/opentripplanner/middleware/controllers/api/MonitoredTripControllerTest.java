@@ -499,6 +499,7 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     public static MonitoredTrip persistSoftDeletedTripForUser(OtpUser otpUser) {
         MonitoredTrip monitoredTrip = createMonitoredTripForUser(otpUser);
         monitoredTrip.id = UUID.randomUUID().toString();
+        monitoredTrip.isDeleted = true;
         Persistence.deletedMonitoredTrips.create(monitoredTrip);
         return monitoredTrip;
     }
