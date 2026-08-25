@@ -173,6 +173,9 @@ public class MonitoredTrip extends Model {
     /** Serves as a temporary reference for itinerary matching during rerouting, null otherwise. */
     public Itinerary reroutedItinerary;
 
+    /** Flag for soft-deleted entries (for reporting purposes only) */
+    public boolean isDeleted;
+
     public MonitoredTrip() {
     }
 

@@ -269,6 +269,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         boolean softDelete = softDeleteNode != null && softDeleteNode.asBoolean();
 
         if (softDelete) {
+            monitoredTrip.isDeleted = true;
             return Persistence.deletedMonitoredTrips.create(monitoredTrip);
         }
 

@@ -54,6 +54,7 @@ import java.util.stream.Stream;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -192,6 +193,9 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         MonitoredTrip trip1 = persistNewMonitoredTripForUser(soloOtpUser);
         MonitoredTrip trip2 = persistNewMonitoredTripForUser(multiOtpUser);
 
+        assertFalse(trip1.isDeleted);
+        assertFalse(trip2.isDeleted);
+
         // Attempt to delete trip for each user.
         HttpResponseValues soloDeleteTripResponse = mockAuthenticatedDelete(MONITORED_TRIP_PATH + "/" + trip1.id, soloOtpUser);
         assertEquals(200, soloDeleteTripResponse.status);
@@ -202,12 +206,16 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertNull(Persistence.monitoredTrips.getById(trip1.id));
         assertNull(Persistence.monitoredTrips.getById(trip2.id));
 
+        MonitoredTrip deletedTrip1 = Persistence.deletedMonitoredTrips.getById(trip1.id);
+        MonitoredTrip deletedTrip2 = Persistence.deletedMonitoredTrips.getById(trip2.id);
         if (isSoftDelete) {
-            assertNotNull(Persistence.deletedMonitoredTrips.getById(trip1.id));
-            assertNotNull(Persistence.deletedMonitoredTrips.getById(trip2.id));
+            assertNotNull(deletedTrip1);
+            assertNotNull(deletedTrip2);
+            assertTrue(deletedTrip1.isDeleted);
+            assertTrue(deletedTrip2.isDeleted);
         } else {
-            assertNull(Persistence.deletedMonitoredTrips.getById(trip1.id));
-            assertNull(Persistence.deletedMonitoredTrips.getById(trip2.id));
+            assertNull(deletedTrip1);
+            assertNull(deletedTrip2);
         }
     }
 
