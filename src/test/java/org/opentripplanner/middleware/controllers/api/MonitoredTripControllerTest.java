@@ -136,6 +136,8 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     void tearDownAfterTest() {
         Persistence.monitoredTrips.removeFiltered(soloUserFilter);
         Persistence.monitoredTrips.removeFiltered(filterByUserId(multiOtpUser.id));
+        Persistence.deletedMonitoredTrips.removeFiltered(soloUserFilter);
+        Persistence.deletedMonitoredTrips.removeFiltered(filterByUserId(multiOtpUser.id));
         ItineraryExistence.otpResponseProviderOverride = null;
         ConfigUtils.setConfigProperty(MONITORED_TRIP_SOFT_DELETE_CONFIG, Boolean.toString(DEFAULT_TRIP_DELETE_MODE));
     }
