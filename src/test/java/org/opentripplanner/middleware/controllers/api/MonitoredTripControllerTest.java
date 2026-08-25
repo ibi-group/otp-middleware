@@ -87,8 +87,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String DUMMY_STRING = "ABCDxyz";
     private static final String WED_2026_04_22 = "2026-04-22";
     public static final String MONITORED_TRIP_SOFT_DELETE_CONFIG = "MONITORED_TRIP_SOFT_DELETE";
-    private static final boolean DEFAULT_TRIP_DELETE_MODE = "true".equalsIgnoreCase(ConfigUtils.getConfigPropertyAsText(
-        MONITORED_TRIP_SOFT_DELETE_CONFIG));
+    private static final boolean DEFAULT_TRIP_DELETE_MODE = MonitoredTripController.isSoftDelete();
 
     /**
      * Create Otp and Admin user accounts. Create Auth0 account for just the Otp users. If

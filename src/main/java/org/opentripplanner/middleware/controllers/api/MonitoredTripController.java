@@ -50,7 +50,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     private static final int MAXIMUM_PERMITTED_MONITORED_TRIPS
         = getConfigPropertyAsInt("MAXIMUM_PERMITTED_MONITORED_TRIPS", 5);
-
+    
     public static final String MONITORED_TRIP_PATH = "secure/monitoredtrip";
 
     public static final String CHECK_ITINERARY_SUBPATH = "/checkitinerary";
@@ -265,15 +265,17 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     @Override
     boolean preDeleteHook(MonitoredTrip monitoredTrip, Request req) {
-        JsonNode softDeleteNode = ConfigUtils.getConfigProperty("MONITORED_TRIP_SOFT_DELETE");
-        boolean softDelete = softDeleteNode != null && softDeleteNode.asBoolean();
-
-        if (softDelete) {
+        if (isSoftDelete()) {
             monitoredTrip.isDeleted = true;
             return Persistence.deletedMonitoredTrips.create(monitoredTrip);
         }
 
         return true;
+    }
+
+    static boolean isSoftDelete() {
+        JsonNode softDeleteNode = ConfigUtils.getConfigProperty("MONITORED_TRIP_SOFT_DELETE");
+        return softDeleteNode != null && softDeleteNode.asBoolean();
     }
 
     /**
