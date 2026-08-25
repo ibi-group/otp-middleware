@@ -3,7 +3,6 @@ package org.opentripplanner.middleware.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.mongodb.client.FindIterable;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.auth.Permission;
@@ -17,7 +16,6 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
-import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
 import spark.Request;
@@ -174,9 +172,6 @@ public class MonitoredTrip extends Model {
 
     /** Serves as a temporary reference for itinerary matching during rerouting, null otherwise. */
     public Itinerary reroutedItinerary;
-
-    /** Flag for soft-delete behavior, to keep the trip in Mongo for reporting purposes instead of deleting it. */
-    public boolean softDeleted;
 
     public MonitoredTrip() {
     }
@@ -409,14 +404,8 @@ public class MonitoredTrip extends Model {
 
     @Override
     public boolean delete() {
-        JsonNode softDeleteNode = ConfigUtils.getConfigProperty("MONITORED_TRIP_SOFT_DELETE");
-        boolean softDelete = softDeleteNode != null && softDeleteNode.asBoolean();
-        if (softDelete) {
-            Persistence.monitoredTrips.updateField(this.id, "softDeleted", true);
-            return true;
-        } else {
-            return Persistence.monitoredTrips.removeById(this.id);
-        }
+        // TODO: Add journey state deletion.
+        return Persistence.monitoredTrips.removeById(this.id);
     }
 
     /**

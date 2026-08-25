@@ -199,18 +199,15 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         HttpResponseValues multiDeleteTripResponse = mockAuthenticatedDelete(MONITORED_TRIP_PATH + "/" + trip2.id, multiOtpUser);
         assertEquals(200, multiDeleteTripResponse.status);
 
-        // Attempt to get the deleted trips from Mongo
-        MonitoredTrip updatedTrip1 = Persistence.monitoredTrips.getById(trip1.id);
-        MonitoredTrip updatedTrip2 = Persistence.monitoredTrips.getById(trip2.id);
+        assertNull(Persistence.monitoredTrips.getById(trip1.id));
+        assertNull(Persistence.monitoredTrips.getById(trip2.id));
 
         if (isSoftDelete) {
-            assertNotNull(updatedTrip1);
-            assertNotNull(updatedTrip2);
-            assertTrue(updatedTrip1.softDeleted);
-            assertTrue(updatedTrip2.softDeleted);
+            assertNotNull(Persistence.deletedMonitoredTrips.getById(trip1.id));
+            assertNotNull(Persistence.deletedMonitoredTrips.getById(trip2.id));
         } else {
-            assertNull(updatedTrip1);
-            assertNull(updatedTrip2);
+            assertNull(Persistence.deletedMonitoredTrips.getById(trip1.id));
+            assertNull(Persistence.deletedMonitoredTrips.getById(trip2.id));
         }
     }
 
@@ -493,8 +490,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static MonitoredTrip persistSoftDeletedTripForUser(OtpUser otpUser) {
         MonitoredTrip monitoredTrip = createMonitoredTripForUser(otpUser);
         monitoredTrip.id = UUID.randomUUID().toString();
-        monitoredTrip.softDeleted = true;
-        Persistence.monitoredTrips.create(monitoredTrip);
+        Persistence.deletedMonitoredTrips.create(monitoredTrip);
         return monitoredTrip;
     }
 

@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.github.manusant.ss.ApiEndpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
@@ -12,6 +13,7 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitoredTripLocks;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
@@ -93,26 +95,12 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     @Override
     protected Bson getEntityFilter(OtpUser user) {
-        return Filters.and(
-            Filters.not(
-                Filters.eq("softDeleted", true)
-            ),
-            Filters.or(
-                Filters.eq(USER_ID_PARAM, user.id),
-                Filters.eq("primary.userId", user.id),
-                Filters.eq("companion.email", user.email),
-                Filters.eq("observers.email", user.email)
-            )
+        return Filters.or(
+            Filters.eq(USER_ID_PARAM, user.id),
+            Filters.eq("primary.userId", user.id),
+            Filters.eq("companion.email", user.email),
+            Filters.eq("observers.email", user.email)
         );
-    }
-
-    @Override
-    protected MonitoredTrip getEntityForId(Request req, Response res) {
-        MonitoredTrip monitoredTrip = super.getEntityForId(req, res);
-        if (monitoredTrip != null && monitoredTrip.softDeleted) {
-            logMessageAndHalt(req, HttpStatus.NOT_FOUND_404, "Item does not exist.");
-        }
-        return monitoredTrip;
     }
 
     /**
@@ -277,7 +265,13 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     @Override
     boolean preDeleteHook(MonitoredTrip monitoredTrip, Request req) {
-        // Authorization checks are done prior to this hook
+        JsonNode softDeleteNode = ConfigUtils.getConfigProperty("MONITORED_TRIP_SOFT_DELETE");
+        boolean softDelete = softDeleteNode != null && softDeleteNode.asBoolean();
+
+        if (softDelete) {
+            return Persistence.deletedMonitoredTrips.create(monitoredTrip);
+        }
+
         return true;
     }
 
