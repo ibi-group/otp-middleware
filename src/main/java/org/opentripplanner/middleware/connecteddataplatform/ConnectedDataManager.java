@@ -424,7 +424,7 @@ public class ConnectedDataManager implements RecurringJobScheduler {
             String reportingMode = entry.getValue();
 
             // Not null because ReportedEntities only contains entries that correspond to persistenceMap.
-            TypedPersistence<?> typedPersistence = ReportedEntities.persistenceMap.get(entityName);
+            List<TypedPersistence<?>> persistenceList = ReportedEntities.persistenceMap.get(entityName);
             String coreFileName = entityName;
             boolean anonymize = isAnonymizedInterval(reportingMode);
             boolean isTripRequest = "TripRequest".equals(entityName);
@@ -455,9 +455,16 @@ public class ConnectedDataManager implements RecurringJobScheduler {
                     // Anonymized trip requests already include TripSummary itineraries, so don't create a new file.
                     LOG.info("Skipping TripSummary because they are already included in anonymized trip requests.");
                 } else if ("all".equals(reportingMode)) {
-                    recordsWritten = streamFullCollectionToFile(typedPersistence, tempDataFile);
+                    recordsWritten = 0;
+                    for (TypedPersistence<?> typedPersistence : persistenceList) {
+                        recordsWritten += streamFullCollectionToFile(typedPersistence, tempDataFile);
+                    }
                 } else if ("interval".equals(reportingMode)) {
-                    recordsWritten = streamPartialCollectionToFile(typedPersistence, tempDataFile, periodStart, reportingInterval);
+                    recordsWritten = 0;
+                    for (TypedPersistence<?> typedPersistence : persistenceList) {
+                        recordsWritten += streamPartialCollectionToFile(
+                            typedPersistence, tempDataFile, periodStart, reportingInterval);
+                    }
                 } else {
                     LOG.error("Report mode '{}' is not implemented for {}.", reportingMode, entityName);
                 }

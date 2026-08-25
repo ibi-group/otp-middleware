@@ -6,6 +6,7 @@ import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.ConfigUtils;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -13,12 +14,12 @@ import java.util.Map;
  * Note: Fields are PascalCased to reflect the casing of respective class names.
  */
 public class ReportedEntities {
-    public static final Map<String, TypedPersistence<?>> persistenceMap = Map.of(
-    "MonitoredTrip", Persistence.monitoredTrips,
-    "OtpUser", Persistence.otpUsers,
-    "TrackedJourney", Persistence.trackedJourneys,
-    "TripRequest", Persistence.tripRequests,
-    "TripSummary", Persistence.tripSummaries
+    public static final Map<String, List<TypedPersistence<?>>> persistenceMap = Map.of(
+    "MonitoredTrip", List.of(Persistence.monitoredTrips, Persistence.deletedMonitoredTrips),
+    "OtpUser", List.of(Persistence.otpUsers),
+    "TrackedJourney", List.of(Persistence.trackedJourneys),
+    "TripRequest", List.of(Persistence.tripRequests),
+    "TripSummary", List.of(Persistence.tripSummaries)
     );
 
     public static final Map<String, String> entityMap = Map.copyOf(
