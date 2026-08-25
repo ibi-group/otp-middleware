@@ -78,7 +78,7 @@ import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.dele
  * The following environment variable must be set for these tests to run:
  * - RUN_E2E=true.
  */
-class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
+public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static AdminUser multiAdminUser;
     private static OtpUser soloOtpUser;
     private static OtpUser multiOtpUser;
@@ -487,7 +487,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     /**
      * Creates a {@link MonitoredTrip} for the specified user.
      */
-    private static MonitoredTrip persistNewMonitoredTripForUser(OtpUser otpUser) {
+    public static MonitoredTrip persistNewMonitoredTripForUser(OtpUser otpUser) {
         MonitoredTrip monitoredTrip = createMonitoredTripForUser(otpUser);
         Persistence.monitoredTrips.create(monitoredTrip);
         return monitoredTrip;
@@ -496,7 +496,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     /**
      * Creates a soft-deleted {@link MonitoredTrip} for the specified user.
      */
-    private static MonitoredTrip persistSoftDeletedTripForUser(OtpUser otpUser) {
+    public static MonitoredTrip persistSoftDeletedTripForUser(OtpUser otpUser) {
         MonitoredTrip monitoredTrip = createMonitoredTripForUser(otpUser);
         monitoredTrip.id = UUID.randomUUID().toString();
         Persistence.deletedMonitoredTrips.create(monitoredTrip);

@@ -220,7 +220,8 @@ public class ConnectedDataManager implements RecurringJobScheduler {
 
         int numTripRequestsWrittenToFile = 0;
         int pos = 0;
-        FileUtils.writeToFile(pathAndFileName, false, "[");
+
+        beginStreamingCollection(pathAndFileName);
         for (String uniqueBatchId : uniqueBatchIds) {
             pos++;
 
@@ -238,12 +239,12 @@ public class ConnectedDataManager implements RecurringJobScheduler {
                 if (pos < numberOfUniqueBatchIds) {
                     // Add a comma to separate each trip request. This is not required for the last trip request to
                     // prevent JSON formatting errors.
-                    FileUtils.writeToFile(pathAndFileName, true, ",");
+                    addComma(pathAndFileName);
                 }
                 numTripRequestsWrittenToFile++;
             }
         }
-        FileUtils.writeToFile(pathAndFileName, true, "]");
+        endStreamingCollection(pathAndFileName);
         return numTripRequestsWrittenToFile;
     }
 
@@ -263,34 +264,56 @@ public class ConnectedDataManager implements RecurringJobScheduler {
     }
 
     /**
-     * Stream the full Mongo collection to file.
+     * Stream full Mongo collections to the specified file.
      */
-    private static int streamFullCollectionToFile(
-        TypedPersistence<?> persistenceType,
+    private static int streamFullCollectionsToFile(
+        List<TypedPersistence<?>> persistenceList,
         String pathAndFileName
     ) throws IOException {
-        return streamCollectionToFile(
-            pathAndFileName,
-            persistenceType.getAll(),
-            persistenceType.getCount()
-        );
+        int recordsWritten = 0;
+
+        beginStreamingCollection(pathAndFileName);
+        for (TypedPersistence<?> persistenceType : persistenceList) {
+            if (recordsWritten > 0) {
+                addComma(pathAndFileName);
+            }
+            recordsWritten += streamCollectionToFile(
+                pathAndFileName,
+                persistenceType.getAll(),
+                persistenceType.getCount()
+            );
+        }
+        endStreamingCollection(pathAndFileName);
+
+        return recordsWritten;
     }
 
     /**
      * Stream the records in a given time interval to a file.
      */
-    private static int streamPartialCollectionToFile(
-        TypedPersistence<?> persistenceType,
+    private static int streamPartialCollectionsToFile(
+        List<TypedPersistence<?>> persistenceList,
         String pathAndFileName,
         LocalDateTime periodStart,
         ReportingInterval reportingInterval
     ) throws IOException {
+        int recordsWritten = 0;
         Bson dateFilter = getDateFilter(periodStart, reportingInterval);
-        return streamCollectionToFile(
-            pathAndFileName,
-            persistenceType.getFiltered(dateFilter),
-            persistenceType.getCountFiltered(dateFilter)
-        );
+
+        beginStreamingCollection(pathAndFileName);
+        for (TypedPersistence<?> persistenceType : persistenceList) {
+            if (recordsWritten > 0) {
+                addComma(pathAndFileName);
+            }
+            recordsWritten += streamCollectionToFile(
+                pathAndFileName,
+                persistenceType.getFiltered(dateFilter),
+                persistenceType.getCountFiltered(dateFilter)
+            );
+        }
+        endStreamingCollection(pathAndFileName);
+
+        return recordsWritten;
     }
 
     private static Bson getDateFilter(LocalDateTime periodStart, ReportingInterval reportingInterval) {
@@ -319,10 +342,8 @@ public class ConnectedDataManager implements RecurringJobScheduler {
         FindIterable<?> findIterable,
         long count
     ) throws IOException {
-
         int numTripRequestsWrittenToFile = 0;
         int pos = 0;
-        FileUtils.writeToFile(pathAndFileName, false, "[");
         for (var item : findIterable) {
             pos++;
             // Append content to file.
@@ -330,12 +351,29 @@ public class ConnectedDataManager implements RecurringJobScheduler {
             if (pos < count) {
                 // Add a comma to separate each trip request, except for the last item in the stream
                 // prevent JSON formatting errors.
-                FileUtils.writeToFile(pathAndFileName, true, ",");
+                addComma(pathAndFileName);
             }
             numTripRequestsWrittenToFile++;
         }
-        FileUtils.writeToFile(pathAndFileName, true, "]");
         return numTripRequestsWrittenToFile;
+    }
+
+    private static void addComma(String pathAndFileName) throws IOException {
+        FileUtils.writeToFile(pathAndFileName, true, ",");
+    }
+
+    /**
+     * Create a file and place the opening markers.
+     */
+    private static void beginStreamingCollection(String pathAndFileName) throws IOException {
+        FileUtils.writeToFile(pathAndFileName, false, "[");
+    }
+
+    /**
+     * Place the closing markers in a collection file.
+     */
+    private static void endStreamingCollection(String pathAndFileName) throws IOException {
+        FileUtils.writeToFile(pathAndFileName, true, "]");
     }
 
     public static boolean isReportingDaily() {
@@ -455,16 +493,9 @@ public class ConnectedDataManager implements RecurringJobScheduler {
                     // Anonymized trip requests already include TripSummary itineraries, so don't create a new file.
                     LOG.info("Skipping TripSummary because they are already included in anonymized trip requests.");
                 } else if ("all".equals(reportingMode)) {
-                    recordsWritten = 0;
-                    for (TypedPersistence<?> typedPersistence : persistenceList) {
-                        recordsWritten += streamFullCollectionToFile(typedPersistence, tempDataFile);
-                    }
+                    recordsWritten = streamFullCollectionsToFile(persistenceList, tempDataFile);
                 } else if ("interval".equals(reportingMode)) {
-                    recordsWritten = 0;
-                    for (TypedPersistence<?> typedPersistence : persistenceList) {
-                        recordsWritten += streamPartialCollectionToFile(
-                            typedPersistence, tempDataFile, periodStart, reportingInterval);
-                    }
+                    recordsWritten = streamPartialCollectionsToFile(persistenceList, tempDataFile, periodStart, reportingInterval);
                 } else {
                     LOG.error("Report mode '{}' is not implemented for {}.", reportingMode, entityName);
                 }

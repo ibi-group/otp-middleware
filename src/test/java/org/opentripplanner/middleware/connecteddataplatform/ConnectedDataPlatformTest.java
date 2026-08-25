@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.connecteddataplatform;
 
 import com.mongodb.client.model.Filters;
+import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpMethod;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterAll;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
@@ -48,6 +50,9 @@ import static org.opentripplanner.middleware.auth.Auth0Connection.setAuthDisable
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.JSON_FILE_EXTENSION;
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.ZIP_FILE_EXTENSION;
 import static org.opentripplanner.middleware.connecteddataplatform.ConnectedDataManager.getHourlyFileName;
+import static org.opentripplanner.middleware.controllers.api.MonitoredTripControllerTest.persistNewMonitoredTripForUser;
+import static org.opentripplanner.middleware.controllers.api.MonitoredTripControllerTest.persistSoftDeletedTripForUser;
+import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserId;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.convertToDate;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.getPreviousDayFrom;
@@ -67,6 +72,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     private String summaryTempFile;
     private String summaryZipFileName;
     private static OtpUser otpUser;
+    private static Bson otpUserFilter;
     private static final String OTP_USER_PATH = "api/secure/user";
     private static final LocalDateTime PREVIOUS_WHOLE_HOUR_FROM_NOW = getPreviousWholeHourFrom(LocalDateTime.now());
     private static final LocalDateTime PREVIOUS_DAY = getPreviousDayFrom(LocalDateTime.now());
@@ -79,6 +85,8 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
     public static void setUp() {
         setAuthDisabled(true);
         OtpTestUtils.mockOtpServer();
+        otpUser = PersistenceTestUtils.createUser("test@example.com");
+        otpUserFilter = filterByUserId(otpUser.id);
     }
 
     @AfterEach
@@ -120,6 +128,9 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         tripRequests.clear();
         tripSummaries.forEach(tripSummary1 -> Persistence.tripSummaries.removeById(tripSummary1.id));
         tripSummaries.clear();
+
+        Persistence.monitoredTrips.removeFiltered(otpUserFilter);
+        Persistence.deletedMonitoredTrips.removeFiltered(otpUserFilter);
     }
 
     @AfterAll
@@ -368,8 +379,7 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
             IntervalUploadStatus.COMPLETED
         );
 
-        // Create OTP user and trip data.
-        otpUser = PersistenceTestUtils.createUser("test@example.com");
+        // Create trip data.
         tripRequestRemovedByTest = PersistenceTestUtils.createTripRequest(otpUser.id, PREVIOUS_WHOLE_HOUR_FROM_NOW);
         tripSummaryRemovedByTest = PersistenceTestUtils.createTripSummary(tripRequestRemovedByTest.id, PREVIOUS_WHOLE_HOUR_FROM_NOW);
 
@@ -510,6 +520,42 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         // Exactly all trip summaries created above should be in the file,
         List<TripSummary> tripSummariesFromFile = JsonUtils.getPOJOFromJSONAsList(summaryContents, TripSummary.class);
         assertEquals(tripSummaries.size(), tripSummariesFromFile.size());
+    }
+
+    /**
+     * Confirm that all monitored trips included those soft-deleted are written to file.
+     */
+    @Test
+    void canStreamTheCorrectNumberOfTrips() throws Exception {
+        assumeTrue(IS_END_TO_END);
+
+        // Set up monitored trips, both current and deleted.
+        persistNewMonitoredTripForUser(otpUser);
+        persistNewMonitoredTripForUser(otpUser);
+        persistSoftDeletedTripForUser(otpUser);
+
+        // Set backstop. This allows dates after this to trigger an upload.
+        createTripHistoryUpload(
+            LocalDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(2),
+            IntervalUploadStatus.COMPLETED
+        );
+        // Create trip history upload for required date.
+        createTripHistoryUpload(PREVIOUS_DAY, IntervalUploadStatus.PENDING);
+
+        TripHistoryUploadJob job = new TripHistoryUploadJob(
+            ReportingInterval.DAILY,
+            Map.of("MonitoredTrip", "all")
+        );
+        job.runInnerLogic();
+
+        String tripFileName = ConnectedDataManager.getDailyFileName(PREVIOUS_DAY, "MonitoredTrip");
+        zipFileName = String.join(".", tripFileName, ZIP_FILE_EXTENSION);
+        tempFile = String.join("/", FileUtils.getTempDirectory().getAbsolutePath(), zipFileName);
+
+        String tripContents = getContentsOfFileInZip(tempFile, String.join(".", tripFileName, JSON_FILE_EXTENSION));
+        // Exactly all monitored trips created above should be in the file,
+        List<MonitoredTrip> tripSummariesFromFile = JsonUtils.getPOJOFromJSONAsList(tripContents, MonitoredTrip.class);
+        assertEquals(3, tripSummariesFromFile.size());
     }
 
     /** Create trip history upload for required date. */
