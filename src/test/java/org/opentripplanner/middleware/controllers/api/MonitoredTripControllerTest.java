@@ -194,8 +194,8 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         MonitoredTrip trip1 = persistNewMonitoredTripForUser(soloOtpUser);
         MonitoredTrip trip2 = persistNewMonitoredTripForUser(multiOtpUser);
 
-        assertFalse(trip1.isDeleted);
-        assertFalse(trip2.isDeleted);
+        assertNull(trip1.isDeleted);
+        assertNull(trip2.isDeleted);
 
         // Attempt to delete trip for each user.
         HttpResponseValues soloDeleteTripResponse = mockAuthenticatedDelete(MONITORED_TRIP_PATH + "/" + trip1.id, soloOtpUser);
