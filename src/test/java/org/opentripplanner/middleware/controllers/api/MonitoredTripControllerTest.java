@@ -54,7 +54,6 @@ import java.util.stream.Stream;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -218,6 +217,25 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
             assertNull(deletedTrip1);
             assertNull(deletedTrip2);
         }
+    }
+
+    /**
+     * Ensures that when a user deletes their account, trips including soft-deleted trips are removed.
+     */
+    @Test
+    void userDeleteShouldDeleteOwnMonitoredTrips() {
+        OtpUser otpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-otpuser"));
+        Bson userFilter = filterByUserId(otpUser.id);
+
+        // Create current trips and a soft-deleted trip for this OTP user.
+        persistNewMonitoredTripForUser(otpUser);
+        persistNewMonitoredTripForUser(otpUser);
+        persistSoftDeletedTripForUser(otpUser);
+
+        // There should be no trips on MonitoredTrip or DeletedMonitoredTrip after user deletion.
+        otpUser.delete(false);
+        assertEquals(0, Persistence.monitoredTrips.getCountFiltered(userFilter));
+        assertEquals(0, Persistence.deletedMonitoredTrips.getCountFiltered(userFilter));
     }
 
     @Test

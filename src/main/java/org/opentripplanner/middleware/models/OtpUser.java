@@ -9,6 +9,7 @@ import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
 import org.opentripplanner.middleware.persistence.Persistence;
+import org.opentripplanner.middleware.persistence.TypedPersistence;
 import org.opentripplanner.middleware.utils.NotificationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,6 +152,9 @@ public class OtpUser extends AbstractUser {
                 return false;
             }
         }
+
+        // Delete soft-deleted trips
+        Persistence.deletedMonitoredTrips.removeFiltered(TypedPersistence.filterByUserId(this.id));
 
         // Delete push devices
         NotificationUtils.deletePushDevices(email);
