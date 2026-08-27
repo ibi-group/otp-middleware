@@ -75,6 +75,24 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         }
     };
 
+    private static boolean isSoftDelete;
+
+    static {
+        JsonNode softDeleteNode = ConfigUtils.getConfigProperty("MONITORED_TRIP_SOFT_DELETE");
+        isSoftDelete = softDeleteNode != null && softDeleteNode.asBoolean();
+    }
+
+    static boolean isSoftDelete() {
+        return isSoftDelete;
+    }
+
+    static void setSoftDelete(boolean softDelete) {
+        if (!ConfigUtils.getBooleanEnvVar("RUN_E2E")) {
+            throw new IllegalStateException("This action is only available during tests.");
+        }
+        isSoftDelete = softDelete;
+    }
+
     public MonitoredTripController(String apiPrefix) {
         super(apiPrefix, Persistence.monitoredTrips, MONITORED_TRIP_PATH);
     }
@@ -271,11 +289,6 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
         }
 
         return true;
-    }
-
-    static boolean isSoftDelete() {
-        JsonNode softDeleteNode = ConfigUtils.getConfigProperty("MONITORED_TRIP_SOFT_DELETE");
-        return softDeleteNode != null && softDeleteNode.asBoolean();
     }
 
     /**
