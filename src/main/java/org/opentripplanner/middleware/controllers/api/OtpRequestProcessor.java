@@ -150,6 +150,8 @@ public class OtpRequestProcessor implements Endpoint {
         // Get request path intended for OTP API by removing the proxy endpoint (/otp).
         String otpRequestPath = request.uri().replaceFirst(basePath, "");
 
+        LOG.info("About to send query {} by user: {}", otpRequestPath, otpUser != null ? otpUser.id : "null");
+
         var headers = new HashMap<String, String>();
         request.headers().forEach(h -> {
             if(!HEADERS_NOT_TO_FORWARD.contains(h.toLowerCase())) {
@@ -169,6 +171,7 @@ public class OtpRequestProcessor implements Endpoint {
 
         // If the request path ends with the graphQL endpoint (e.g., '/graphql'), process response.
         if (otpRequestPath.endsWith(OtpDispatcher.OTP_GRAPHQL_ENDPOINT) && otpUser != null) {
+            LOG.info("Query {} by user: {}", otpRequestPath, otpUser.id);
             try {
                 /*
                 * Inserting the from and to place directly into the graphQL request is *not* supported.
@@ -270,6 +273,7 @@ public class OtpRequestProcessor implements Endpoint {
                 result = false;
             }
 
+            LOG.info("Handling Plan response {} for user: {}", otpResponse != null ? "OK" : "null", otpUser.id);
             if (otpResponse != null) {
                 TripRequest tripRequest = new TripRequest(otpUser.id, batchId, queryVariables);
                 // only save trip summary if the trip request was saved
