@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.controllers.api;
 import com.auth0.json.mgmt.users.User;
 import org.bson.conversions.Bson;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.controllers.response.ResponseList;
 import org.opentripplanner.middleware.models.AdminUser;
@@ -62,27 +64,19 @@ import static org.opentripplanner.middleware.controllers.api.MonitoredTripContro
 import static org.opentripplanner.middleware.persistence.TypedPersistence.filterByUserId;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.TEMP_AUTH0_USER_PASSWORD;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.createAndAssignAuth0User;
+import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedDelete;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedGet;
 import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenticatedRequest;
 import static org.opentripplanner.middleware.testutils.PersistenceTestUtils.deleteOtpUser;
 
 /**
- * Tests to simulate getting trips as an Otp user with enhanced admin credentials. The following config parameters must
- * be set in configurations/default/env.yml for these end-to-end tests to run:
- *
- * AUTH0_DOMAIN set to a valid Auth0 domain.
- *
- * AUTH0_API_CLIENT set to a valid Auth0 application client id.
- *
- * AUTH0_API_SECRET set to a valid Auth0 application client secret.
- *
- * OTP_API_ROOT set to a live OTP instance (e.g. http://otp-server.example.com/otp).
- *
- * The following environment variable must be set for these tests to run: - RUN_E2E=true.
- *
- * Auth0 must be correctly configured as described here: https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow
+ * Tests to simulate getting trips as an OTP user with regular or enhanced admin credentials.
+ * The following config parameters must be set in configurations/default/env.yml for these end-to-end tests to run:
+ * - AUTH0_DOMAIN, AUTH0_API_CLIENT, AUTH0_API_SECRET set to valid values per <a href="https://auth0.com/docs/flows/call-your-api-using-resource-owner-password-flow">...</a>.
+ * The following environment variable must be set for these tests to run:
+ * - RUN_E2E=true.
  */
-class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
+public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static AdminUser multiAdminUser;
     private static OtpUser soloOtpUser;
     private static OtpUser multiOtpUser;
@@ -90,6 +84,7 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String MONITORED_TRIP_PATH = String.join("/", "api", MonitoredTripController.MONITORED_TRIP_PATH);
     private static final String DUMMY_STRING = "ABCDxyz";
     private static final String WED_2026_04_22 = "2026-04-22";
+    private static final boolean DEFAULT_TRIP_DELETE_MODE = MonitoredTripController.isSoftDelete();
 
     /**
      * Create Otp and Admin user accounts. Create Auth0 account for just the Otp users. If
@@ -138,18 +133,26 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     void tearDownAfterTest() {
         Persistence.monitoredTrips.removeFiltered(soloUserFilter);
         Persistence.monitoredTrips.removeFiltered(filterByUserId(multiOtpUser.id));
+        Persistence.deletedMonitoredTrips.removeFiltered(soloUserFilter);
+        Persistence.deletedMonitoredTrips.removeFiltered(filterByUserId(multiOtpUser.id));
         ItineraryExistence.otpResponseProviderOverride = null;
+        MonitoredTripController.setSoftDelete(DEFAULT_TRIP_DELETE_MODE);
     }
 
     /**
-     * Create trips for two different Otp users and attempt to get both trips with Otp user that has 'enhanced' admin
-     * credentials.
+     * Create trips for two different {@link OtpUser} and attempt to get both trips using a user with 'enhanced' admin
+     * credentials. We also add soft-deleted trips that should be excluded from query results.
      */
     @Test
     void canGetOwnMonitoredTrips() throws Exception {
         // Create a trip for the solo and the multi OTP user.
         persistNewMonitoredTripForUser(soloOtpUser);
         persistNewMonitoredTripForUser(multiOtpUser);
+
+        // Create a soft-deleted trip for the solo and the multi OTP user.
+        // The soft-deleted trips should not appear in query results at all, no matter how they got to that state.
+        MonitoredTrip softDeletedTrip1 = persistSoftDeletedTripForUser(soloOtpUser);
+        MonitoredTrip softDeletedTrip2 = persistSoftDeletedTripForUser(multiOtpUser);
 
         // Get trips for solo Otp user.
         ResponseList<MonitoredTrip> soloTrips = getMonitoredTripsForUser(MONITORED_TRIP_PATH, soloOtpUser);
@@ -169,6 +172,68 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         );
         // Just the trip for Otp user 2 will be returned.
         assertEquals(1, tripsFiltered.data.size());
+
+        // Soft-deleted trips queried by id should not be found.
+        assertEquals(HttpStatus.NOT_FOUND_404, requestMonitoredTripForUser(softDeletedTrip1.id, soloOtpUser).status);
+        assertEquals(HttpStatus.NOT_FOUND_404, requestMonitoredTripForUser(softDeletedTrip2.id, multiOtpUser).status);
+    }
+
+    /**
+     * Create trips for two different {@link OtpUser} and attempt to hard- or soft-delete them.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void canDeleteOwnMonitoredTrips(boolean isSoftDelete) throws Exception {
+        // Override config for soft/hard delete
+        MonitoredTripController.setSoftDelete(isSoftDelete);
+
+        // Create a trip for the solo and the multi OTP user.
+        MonitoredTrip trip1 = persistNewMonitoredTripForUser(soloOtpUser);
+        MonitoredTrip trip2 = persistNewMonitoredTripForUser(multiOtpUser);
+
+        assertNull(trip1.isDeleted);
+        assertNull(trip2.isDeleted);
+
+        // Attempt to delete trip for each user.
+        HttpResponseValues soloDeleteTripResponse = mockAuthenticatedDelete(MONITORED_TRIP_PATH + "/" + trip1.id, soloOtpUser);
+        assertEquals(200, soloDeleteTripResponse.status);
+
+        HttpResponseValues multiDeleteTripResponse = mockAuthenticatedDelete(MONITORED_TRIP_PATH + "/" + trip2.id, multiOtpUser);
+        assertEquals(200, multiDeleteTripResponse.status);
+
+        assertNull(Persistence.monitoredTrips.getById(trip1.id));
+        assertNull(Persistence.monitoredTrips.getById(trip2.id));
+
+        MonitoredTrip deletedTrip1 = Persistence.deletedMonitoredTrips.getById(trip1.id);
+        MonitoredTrip deletedTrip2 = Persistence.deletedMonitoredTrips.getById(trip2.id);
+        if (isSoftDelete) {
+            assertNotNull(deletedTrip1);
+            assertNotNull(deletedTrip2);
+            assertTrue(deletedTrip1.isDeleted);
+            assertTrue(deletedTrip2.isDeleted);
+        } else {
+            assertNull(deletedTrip1);
+            assertNull(deletedTrip2);
+        }
+    }
+
+    /**
+     * Ensures that when a user deletes their account, trips including soft-deleted trips are removed.
+     */
+    @Test
+    void userDeleteShouldDeleteOwnMonitoredTrips() {
+        OtpUser otpUser = PersistenceTestUtils.createUser(ApiTestUtils.generateEmailAddress("test-otpuser"));
+        Bson userFilter = filterByUserId(otpUser.id);
+
+        // Create current trips and a soft-deleted trip for this OTP user.
+        persistNewMonitoredTripForUser(otpUser);
+        persistNewMonitoredTripForUser(otpUser);
+        persistSoftDeletedTripForUser(otpUser);
+
+        // There should be no trips on MonitoredTrip or DeletedMonitoredTrip after user deletion.
+        otpUser.delete(false);
+        assertEquals(0, Persistence.monitoredTrips.getCountFiltered(userFilter));
+        assertEquals(0, Persistence.deletedMonitoredTrips.getCountFiltered(userFilter));
     }
 
     @Test
@@ -429,11 +494,30 @@ class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     }
 
     /**
+     * Helper method to get a single trip for a user.
+     */
+    private HttpResponseValues requestMonitoredTripForUser(String tripId, OtpUser otpUser) throws Exception {
+         return mockAuthenticatedGet(MONITORED_TRIP_PATH + "/" + tripId, otpUser);
+    }
+
+    /**
      * Creates a {@link MonitoredTrip} for the specified user.
      */
-    private static void persistNewMonitoredTripForUser(OtpUser otpUser) {
+    public static MonitoredTrip persistNewMonitoredTripForUser(OtpUser otpUser) {
         MonitoredTrip monitoredTrip = createMonitoredTripForUser(otpUser);
         Persistence.monitoredTrips.create(monitoredTrip);
+        return monitoredTrip;
+    }
+
+    /**
+     * Creates a soft-deleted {@link MonitoredTrip} for the specified user.
+     */
+    public static MonitoredTrip persistSoftDeletedTripForUser(OtpUser otpUser) {
+        MonitoredTrip monitoredTrip = createMonitoredTripForUser(otpUser);
+        monitoredTrip.id = UUID.randomUUID().toString();
+        monitoredTrip.isDeleted = true;
+        Persistence.deletedMonitoredTrips.create(monitoredTrip);
+        return monitoredTrip;
     }
 
     private static MonitoredTrip createMonitoredTripForUser(OtpUser otpUser) {

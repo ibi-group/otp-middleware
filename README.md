@@ -303,6 +303,7 @@ Below is an example policy template for the docker container permissions:
 | BUGSNAG_PROJECT_NOTIFIER_API_KEY | string | Optional | 123e4567e89b12d3a4564266 | A valid Bugsnag project API key. |
 | BUGSNAG_REPORTING_WINDOW_IN_DAYS | integer | Optional | 14 | Specifies how far in the past events should be retrieved. |
 | BUGSNAG_WEBHOOK_PERMITTED_IPS | string | Optional | 104.196.245.109, 104.196.254.247 | Bugsnag IP addresses which webhook requests are expected to come from. |
+| CONNECTED_DATA_PLATFORM_ENABLED | boolean | Optional | true | Whether to enable periodic reporting features of Connected Data Platform. Defaults to false. |
 | CONNECTED_DATA_PLATFORM_REPORTING_INTERVAL | string | Optional | daily, hourly | Specifies how often to aggregate and upload usage data. Defaults to hourly. |
 | CONNECTED_DATA_PLATFORM_FOLDER_GROUPING | string | Optional | none, weekly-monday-sunday | Specifies how to organize uploaded files. 'none' puts all uploaded files to the same folder CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME. 'weekly-monday-sunday' creates a folder of the form `<CONNECTED_DATA_PLATFORM_S3_FOLDER_NAME>_<YYYY-MM-DD>_<YYYY-MM-DD>` where the start date is a Monday and the end date is the following Sunday. Defaults to none. |
 | CONNECTED_DATA_PLATFORM_S3_BUCKET_NAME | string | Optional | bucket-name | Specifies the S3 bucket name for the CDP trip history push. |
@@ -321,6 +322,7 @@ Below is an example policy template for the docker container permissions:
 | MONGO_PROTOCOL | string | Optional | mongodb | Mongo DB protocol |
 | MONGO_USER | string | Optional | username | Mongo DB user name |
 | MONITORED_COMPONENTS | array | Optional | n/a | An array of monitored components. |
+| MONITORED_TRIP_SOFT_DELETE | boolean | Optional | true | If true, when a user deletes a MonitoredTrip, the entry will be kept in Mongo and flagged instead of the entry being removed from Mongo. Defaults to false. |
 | NOTIFICATION_FROM_EMAIL | string | Optional | noreply@email.com | The from email address used in notification emails |
 | NOTIFICATION_FROM_PHONE | string | Optional | +15551234 | The from phone number used in notification SMSs. The phone number must be surrounded with quotes to be correctly parsed as a String. |
 | OTP_ADMIN_DASHBOARD_FROM_EMAIL | string | Optional | OTP Admin Dashboard <no-reply@email.com> | Config setting for linking to the OTP Admin Dashboard. |
