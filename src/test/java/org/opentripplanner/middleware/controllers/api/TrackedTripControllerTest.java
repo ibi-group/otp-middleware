@@ -216,6 +216,9 @@ class TrackedTripControllerTest extends OtpMiddlewareTestEnvironment {
         assertNotNull(deviationMeters);
         assertNotEquals(0, deviationMeters);
 
+        // Check that the last location recorded contains the expected tracking status
+        assertEquals(traceData.tripStatus, trackedJourney.lastLocation().tripStatus);
+
         // Second request to update a journey
         var trackResponse2 = context.track(monitoredTrip.id, traceData.position, traceData.speed, instant, HttpStatus.OK_200);
         assertNotEquals(0, trackResponse2.frequencySeconds);
