@@ -239,7 +239,7 @@ public class ConnectedDataManager implements RecurringJobScheduler {
                 if (pos < numberOfUniqueBatchIds) {
                     // Add a comma to separate each trip request. This is not required for the last trip request to
                     // prevent JSON formatting errors.
-                    addComma(pathAndFileName);
+                    addCommaToFile(pathAndFileName);
                 }
                 numTripRequestsWrittenToFile++;
             }
@@ -275,7 +275,7 @@ public class ConnectedDataManager implements RecurringJobScheduler {
         beginStreamingCollection(pathAndFileName);
         for (TypedPersistence<?> persistenceType : persistenceList) {
             if (recordsWritten > 0) {
-                addComma(pathAndFileName);
+                addCommaToFile(pathAndFileName);
             }
             recordsWritten += streamCollectionToFile(
                 pathAndFileName,
@@ -303,7 +303,7 @@ public class ConnectedDataManager implements RecurringJobScheduler {
         beginStreamingCollection(pathAndFileName);
         for (TypedPersistence<?> persistenceType : persistenceList) {
             if (recordsWritten > 0) {
-                addComma(pathAndFileName);
+                addCommaToFile(pathAndFileName);
             }
             recordsWritten += streamCollectionToFile(
                 pathAndFileName,
@@ -351,14 +351,14 @@ public class ConnectedDataManager implements RecurringJobScheduler {
             if (pos < count) {
                 // Add a comma to separate each trip request, except for the last item in the stream
                 // prevent JSON formatting errors.
-                addComma(pathAndFileName);
+                addCommaToFile(pathAndFileName);
             }
             numTripRequestsWrittenToFile++;
         }
         return numTripRequestsWrittenToFile;
     }
 
-    private static void addComma(String pathAndFileName) throws IOException {
+    private static void addCommaToFile(String pathAndFileName) throws IOException {
         FileUtils.writeToFile(pathAndFileName, true, ",");
     }
 
