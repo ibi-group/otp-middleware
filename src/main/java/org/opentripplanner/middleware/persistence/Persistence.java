@@ -57,6 +57,7 @@ public class Persistence {
     public static TypedPersistence<TripRequest> tripRequests;
     public static TypedPersistence<TripSummary> tripSummaries;
     public static TypedPersistence<MonitoredTrip> monitoredTrips;
+    public static TypedPersistence<MonitoredTrip> deletedMonitoredTrips;
     public static TypedPersistence<UnsnoozeTripsJob.PartialTrip> tripsByLastChecked;
 
     // admin and system reliability collections
@@ -109,6 +110,7 @@ public class Persistence {
         tripRequests = new TypedPersistence(mongoDatabase, TripRequest.class);
         tripSummaries = new TypedPersistence(mongoDatabase, TripSummary.class);
         monitoredTrips = new TypedPersistence(mongoDatabase, MonitoredTrip.class);
+        deletedMonitoredTrips = new TypedPersistence(mongoDatabase, MonitoredTrip.class, "DeletedMonitoredTrip");
         tripsByLastChecked = new TypedPersistence(mongoDatabase, UnsnoozeTripsJob.PartialTrip.class, MonitoredTrip.class.getSimpleName());
 
         // admin and system reliability items

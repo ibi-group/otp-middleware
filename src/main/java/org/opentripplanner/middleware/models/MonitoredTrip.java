@@ -2,6 +2,7 @@ package org.opentripplanner.middleware.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.FindIterable;
 import org.bson.codecs.pojo.annotations.BsonIgnore;
@@ -172,6 +173,10 @@ public class MonitoredTrip extends Model {
 
     /** Serves as a temporary reference for itinerary matching during rerouting, null otherwise. */
     public Itinerary reroutedItinerary;
+
+    /** Flag for soft-deleted entries (for reporting purposes only), should be omitted in Mongo unless true. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public Boolean isDeleted;
 
     public MonitoredTrip() {
     }
