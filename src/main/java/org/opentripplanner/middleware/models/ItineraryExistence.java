@@ -319,7 +319,7 @@ public class ItineraryExistence extends Model {
             return null;
         }
         OtpResponse response = otpResponseProvider.apply(otpRequest);
-        if (response == null || response.plan == null || response.plan.itineraries == null) {
+        if (response == null || response.planConnection == null || response.planConnection.itineraries == null) {
             LOG.warn("Itinerary existence check failed for trip {} - OTP response was null.", tripId);
             return null;
         }
@@ -342,7 +342,7 @@ public class ItineraryExistence extends Model {
         boolean tripIsArriveBy,
         String tripId
     ) {
-        for (Itinerary candidateItinerary : response.plan.itineraries) {
+        for (Itinerary candidateItinerary : response.planConnection.itineraries) {
             if (
                 (dateTime == null || ItineraryUtils.occursOnSameServiceDay(candidateItinerary, dateTime, tripIsArriveBy))
                 && new ItineraryMatcher(referenceItinerary, candidateItinerary).match()

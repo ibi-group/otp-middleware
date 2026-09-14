@@ -88,10 +88,6 @@ public class ItineraryUtils {
             .map(leg -> {
                 OtpGraphQLTransportMode graphQLMode = new OtpGraphQLTransportMode();
                 graphQLMode.mode = leg.mode;
-                if ("BICYCLE".equals(leg.mode) || "SCOOTER".equals(leg.mode)) {
-                    // Field 'rentedbike' includes rented bikes and rented scooters.
-                    if (leg.rentedBike) graphQLMode.qualifier = "RENT";
-                }
                 return graphQLMode;
             })
             .collect(Collectors.toSet());
@@ -105,23 +101,6 @@ public class ItineraryUtils {
             modes.removeIf(m -> "WALK".equals(m.mode));
         }
 
-        // Replace the "CAR" in the set of modes with the correct CAR query mode (CAR_PARK, CAR_RENT, CAR_HAIL)
-        // (assuming there is only one car leg in an itinerary).
-        Optional<Leg> firstCarLeg = itinerary.legs.stream().filter(leg -> "CAR".equals(leg.mode)).findFirst();
-        boolean hasCarAndTransit = firstCarLeg.isPresent() && itinerary.hasTransit();
-        if (hasCarAndTransit) {
-            Leg carLeg = firstCarLeg.get();
-            String carQualifier;
-
-            if (Boolean.TRUE.equals(carLeg.rentedBike)) {
-                carQualifier = "RENT";
-            } else if (carLeg.rideHailingEstimate != null) {
-                carQualifier = "HAIL";
-            } else {
-                carQualifier = "PARK";
-            }
-            modes.stream().filter(m -> "CAR".equals(m.mode)).forEach(m -> m.qualifier = carQualifier);
-        }
         return modes;
     }
 

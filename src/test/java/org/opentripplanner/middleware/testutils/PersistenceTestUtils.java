@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.testutils;
 
+import org.opentripplanner.middleware.otp.graphql.PlanDateTimeInput;
 import org.opentripplanner.middleware.otp.graphql.TransportMode;
 import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -110,12 +111,12 @@ public class PersistenceTestUtils {
         QueryVariables queryVariables = new QueryVariables();
         queryVariables.fromPlace = fromPlace;
         queryVariables.toPlace = toPlace;
-        queryVariables.date = "2021-09-22";
-        queryVariables.time = "15:54";
+        queryVariables.dateTime = new PlanDateTimeInput();
+        queryVariables.dateTime.earliestDeparture = "2021-09-22T15:54:00-00:00";
         queryVariables.walkSpeed = 1.34F;
         if (provideMode) {
             String[] modes = (mode != null ? mode : "WALK,BUS,RAIL").split(",");
-            queryVariables.modes = Arrays.stream(modes)
+            queryVariables.modesList = Arrays.stream(modes)
                 .map(TransportMode::new)
                 .collect(Collectors.toList());
         }

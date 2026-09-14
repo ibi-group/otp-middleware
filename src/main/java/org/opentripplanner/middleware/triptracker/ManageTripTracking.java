@@ -11,6 +11,7 @@ import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.graphql.PlanLabeledLocationInput;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
@@ -391,7 +392,7 @@ public class ManageTripTracking {
             rerouteVariables = setOtpGraphQLVariables(
                 trackedJourney.trip.otp2QueryParams, new Coordinates(trackedJourney.lastLocation())
             );
-            TripPlan plan = otpResponseProvider.get().plan;
+            TripPlan plan = otpResponseProvider.get().planConnection;
             return plan == null ? null : getShortestDuration(plan.itineraries);
         } catch (Exception e) {
             return null;
@@ -403,7 +404,8 @@ public class ManageTripTracking {
      */
     public static OtpGraphQLVariables setOtpGraphQLVariables(OtpGraphQLVariables originalTripVariables, Coordinates from) {
         OtpGraphQLVariables query = originalTripVariables.clone();
-        query.fromPlace = from.getCoordinates();
+        query.origin = new PlanLabeledLocationInput();
+        query.origin.convertFromFromPlace("label".concat(from.getCoordinates()));
         query.time = getTimeNowAsString();
         return query;
     }

@@ -36,7 +36,7 @@ class MonitoredTripTest {
 
         OtpGraphQLVariables variables = new OtpGraphQLVariables();
         variables.time = "14:53";
-        variables.modes = List.copyOf(originalModes);
+        variables.modesList = List.copyOf(originalModes);
 
         Itinerary itinerary = new Itinerary();
         Leg leg = new Leg();

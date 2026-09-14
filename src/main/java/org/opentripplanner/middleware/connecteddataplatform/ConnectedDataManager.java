@@ -13,6 +13,7 @@ import org.opentripplanner.middleware.models.IntervalUpload;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.otp.graphql.PlanModesInput;
 import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.graphql.TransportMode;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -428,14 +429,14 @@ public class ConnectedDataManager implements RecurringJobScheduler {
                 request = tripRequest;
             }
             QueryVariables queryVariables = tripRequest.otp2QueryParams;
-            List<TransportMode> modes = queryVariables != null ? queryVariables.modes : null;
-            if (modes != null && !modes.isEmpty()) {
+            PlanModesInput modes = queryVariables != null ? queryVariables.modes : null;
+            if (modes != null) {
                 allUniqueModes.addAll(AnonymizedTripRequest.getModes(modes));
             }
         }
         if (request != null && request.otp2QueryParams != null) {
             // Replace the mode parameter in the first request with all unique modes from across the batch.
-            request.otp2QueryParams.modes = allUniqueModes.stream()
+            request.otp2QueryParams.modesList = allUniqueModes.stream()
                 .map(TransportMode::new)
                 .collect(Collectors.toList());
         }

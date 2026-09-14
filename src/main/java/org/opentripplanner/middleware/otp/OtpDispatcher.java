@@ -1,11 +1,10 @@
 package org.opentripplanner.middleware.otp;
 
-import java.util.Map;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.eclipse.jetty.http.HttpMethod;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.GraphQLUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.HttpUtils;
@@ -15,6 +14,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.time.ZonedDateTime;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -34,7 +35,7 @@ public class OtpDispatcher {
     /**
      * Location of the OTP GraphQL endpoint (e.g. /routers/default/index/graphql).
      */
-    public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/routers/default/index/graphql");
+    public static final String OTP_GRAPHQL_ENDPOINT = getConfigPropertyAsText("OTP_GRAPHQL_ENDPOINT", "/gtfs/v1");
 
     /**
      * Match the OTP GraphQL request timeout defined at
@@ -74,6 +75,17 @@ public class OtpDispatcher {
         OtpGraphQLQuery<OtpGraphQLVariables> query = new OtpGraphQLQuery<>();
         query.query = GraphQLUtils.getPlanQueryTemplate();
         query.variables = params;
+        ZonedDateTime parsedDate = DateTimeUtils.makeOtpPlanConnectionZonedDateTime(params.date, params.time);
+
+        if (params.arriveBy) {
+            query.variables.dateTime.earliestDeparture = null;
+            query.variables.dateTime.latestArrival = DateTimeUtils.getStringFromDate(parsedDate.toOffsetDateTime(), DateTimeUtils.OTP_DATETIME_FORMAT_PATTERN);
+        }
+        if (!params.arriveBy) {
+            query.variables.dateTime.latestArrival = null;
+            query.variables.dateTime.earliestDeparture = DateTimeUtils.getStringFromDate(parsedDate.toOffsetDateTime(), DateTimeUtils.OTP_DATETIME_FORMAT_PATTERN);
+        }
+
         return sendOtpPostRequest(
             version,
             "",
