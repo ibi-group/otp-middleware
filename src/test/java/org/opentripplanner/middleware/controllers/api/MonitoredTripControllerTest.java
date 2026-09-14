@@ -31,7 +31,6 @@ import org.opentripplanner.middleware.testutils.ApiTestUtils;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import org.opentripplanner.middleware.testutils.OtpTestUtils;
 import org.opentripplanner.middleware.testutils.PersistenceTestUtils;
-import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 import org.opentripplanner.middleware.utils.HttpResponseValues;
 import org.opentripplanner.middleware.utils.ItineraryUtils;
@@ -85,7 +84,6 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static final String MONITORED_TRIP_PATH = String.join("/", "api", MonitoredTripController.MONITORED_TRIP_PATH);
     private static final String DUMMY_STRING = "ABCDxyz";
     private static final String WED_2026_04_22 = "2026-04-22";
-    public static final String MONITORED_TRIP_SOFT_DELETE_CONFIG = "MONITORED_TRIP_SOFT_DELETE";
     private static final boolean DEFAULT_TRIP_DELETE_MODE = MonitoredTripController.isSoftDelete();
 
     /**
@@ -138,7 +136,7 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         Persistence.deletedMonitoredTrips.removeFiltered(soloUserFilter);
         Persistence.deletedMonitoredTrips.removeFiltered(filterByUserId(multiOtpUser.id));
         ItineraryExistence.otpResponseProviderOverride = null;
-        ConfigUtils.setConfigProperty(MONITORED_TRIP_SOFT_DELETE_CONFIG, Boolean.toString(DEFAULT_TRIP_DELETE_MODE));
+        MonitoredTripController.setSoftDelete(DEFAULT_TRIP_DELETE_MODE);
     }
 
     /**
@@ -187,7 +185,7 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     @ValueSource(booleans = {true, false})
     void canDeleteOwnMonitoredTrips(boolean isSoftDelete) throws Exception {
         // Override config for soft/hard delete
-        ConfigUtils.setConfigProperty(MONITORED_TRIP_SOFT_DELETE_CONFIG, Boolean.toString(isSoftDelete));
+        MonitoredTripController.setSoftDelete(isSoftDelete);
 
         // Create a trip for the solo and the multi OTP user.
         MonitoredTrip trip1 = persistNewMonitoredTripForUser(soloOtpUser);
