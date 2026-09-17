@@ -2782,6 +2782,8 @@ definitions:
         format: "int32"
       reroutedItinerary:
         $ref: "#/definitions/Itinerary"
+      isDeleted:
+        type: "boolean"
   Trip:
     type: "object"
     properties:

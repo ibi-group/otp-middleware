@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.github.manusant.ss.ApiEndpoint;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mongodb.client.model.Filters;
@@ -12,6 +13,7 @@ import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.tripmonitor.jobs.MonitoredTripLocks;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.opentripplanner.middleware.utils.InvalidItineraryReason;
 import org.opentripplanner.middleware.utils.JsonUtils;
 import org.opentripplanner.middleware.utils.NotificationUtils;
@@ -48,7 +50,7 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     private static final int MAXIMUM_PERMITTED_MONITORED_TRIPS
         = getConfigPropertyAsInt("MAXIMUM_PERMITTED_MONITORED_TRIPS", 5);
-
+    
     public static final String MONITORED_TRIP_PATH = "secure/monitoredtrip";
 
     public static final String CHECK_ITINERARY_SUBPATH = "/checkitinerary";
@@ -72,6 +74,24 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
             return this.size() > MAXIMUM_EXISTENCE_CHECKS;
         }
     };
+
+    private static boolean isSoftDelete;
+
+    static {
+        JsonNode softDeleteNode = ConfigUtils.getConfigProperty("MONITORED_TRIP_SOFT_DELETE");
+        isSoftDelete = softDeleteNode != null && softDeleteNode.asBoolean();
+    }
+
+    static boolean isSoftDelete() {
+        return isSoftDelete;
+    }
+
+    static void setSoftDelete(boolean softDelete) {
+        if (!ConfigUtils.getBooleanEnvVar("RUN_E2E")) {
+            throw new IllegalStateException("This action is only available during tests.");
+        }
+        isSoftDelete = softDelete;
+    }
 
     public MonitoredTripController(String apiPrefix) {
         super(apiPrefix, Persistence.monitoredTrips, MONITORED_TRIP_PATH);
@@ -263,7 +283,11 @@ public class MonitoredTripController extends ApiController<MonitoredTrip> {
 
     @Override
     boolean preDeleteHook(MonitoredTrip monitoredTrip, Request req) {
-        // Authorization checks are done prior to this hook
+        if (isSoftDelete()) {
+            monitoredTrip.isDeleted = true;
+            return Persistence.deletedMonitoredTrips.create(monitoredTrip);
+        }
+
         return true;
     }
 

@@ -90,7 +90,7 @@ public class ManageTripTracking {
         try {
             TrackedJourney trackedJourney;
             if (create) {
-                trackedJourney = new TrackedJourney(tripData.trip.id, tripData.locations.get(0));
+                trackedJourney = new TrackedJourney(tripData.trip.id, tripData.trip.userId, tripData.locations.get(0));
             } else {
                 trackedJourney = tripData.journey;
                 trackedJourney.update(tripData.locations);
@@ -110,19 +110,9 @@ public class ManageTripTracking {
                 tripStatus = TripStatus.getTripStatus(travelerPosition);
                 trackedJourney.lastLocation().deviationMeters = travelerPosition.getDeviationMeters();
             }
-            trackedJourney.lastLocation().tripStatus = tripStatus;
-
-            if (create) {
-                Persistence.trackedJourneys.create(trackedJourney);
-            } else {
-                Persistence.trackedJourneys.updateField(
-                    trackedJourney.id,
-                    TrackedJourney.LOCATIONS_FIELD_NAME,
-                    trackedJourney.locations
-                );
-            }
 
             if (!isValidItinerary) {
+                persistJourney(trackedJourney, tripStatus, create);
                 return new TrackingResponse(
                     TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
                     "Unable to monitor trip.",
@@ -168,6 +158,7 @@ public class ManageTripTracking {
                 );
             }
 
+            persistJourney(trackedJourney, tripStatus, create);
             return new TrackingResponse(
                 TRIP_TRACKING_UPDATE_FREQUENCY_SECONDS,
                 instruction != null ? instruction.build() : NO_INSTRUCTION,
@@ -201,6 +192,20 @@ public class ManageTripTracking {
     private static boolean isDeviatedWithOnTrackInstruction(TripStatus tripStatus, TripInstruction instruction) {
         return tripStatus == TripStatus.DEVIATED &&
             (instruction instanceof WaitForTransitInstruction || instruction instanceof OnTrackInstruction);
+    }
+
+    private static void persistJourney(TrackedJourney trackedJourney, TripStatus tripStatus, boolean create) {
+        trackedJourney.lastLocation().tripStatus = tripStatus;
+
+        if (create) {
+            Persistence.trackedJourneys.create(trackedJourney);
+        } else {
+            Persistence.trackedJourneys.updateField(
+                trackedJourney.id,
+                TrackedJourney.LOCATIONS_FIELD_NAME,
+                trackedJourney.locations
+            );
+        }
     }
 
     /**

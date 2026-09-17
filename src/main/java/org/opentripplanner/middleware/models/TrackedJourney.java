@@ -16,6 +16,8 @@ import java.util.Optional;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TrackedJourney extends Model {
 
+    public String userId;
+
     public String tripId;
 
     public String endCondition;
@@ -53,10 +55,11 @@ public class TrackedJourney extends Model {
     public TrackedJourney() {
     }
 
-    public TrackedJourney(String tripId, TrackingLocation location) {
+    public TrackedJourney(String tripId, String userId, TrackingLocation location) {
         startTime = new Date();
         locations.add(location);
         this.tripId = tripId;
+        this.userId = userId;
     }
 
     /**
