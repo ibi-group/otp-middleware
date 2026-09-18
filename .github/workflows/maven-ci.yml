@@ -94,18 +94,7 @@ jobs:
           RUN_E2E: true
 
       # If this point it reached, the CI build has succeeded.
-      # The condition on the JDK version is so that artifacts (jar, docker image)
-      # are uploaded only once (for now, we keep the JDK 11 versions).
 
-      # only prepare deploy files on push events to avoid duplicate pushes to s3 when a commit is
-      # pushed to a branch with an open pull request
-      - name: Prepare files for deployment to s3
-        if: github.event_name == 'push'
-        run: ./scripts/prep-for-deploy-from-github-actions.sh
-      - name: Copy deployment files to the otp-middleware-builds bucket
-        if: github.event_name == 'push'
-        run: |
-          aws s3 sync ./deploy s3://otp-middleware-builds --acl public-read
       # Build and Publish Docker image
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
