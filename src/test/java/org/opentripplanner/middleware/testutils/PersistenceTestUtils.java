@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.testutils;
 
 import org.opentripplanner.middleware.otp.graphql.PlanDateTimeInput;
+import org.opentripplanner.middleware.otp.graphql.PlanLabeledLocationInput;
 import org.opentripplanner.middleware.otp.graphql.TransportMode;
 import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.response.Itinerary;
@@ -109,8 +110,10 @@ public class PersistenceTestUtils {
         String toPlace = "177 Gibson Street SE, Atlanta, GA, USA :: 33.748893261983575,-84.35611735540574";
 
         QueryVariables queryVariables = new QueryVariables();
-        queryVariables.fromPlace = fromPlace;
-        queryVariables.toPlace = toPlace;
+        queryVariables.origin = new PlanLabeledLocationInput();
+        queryVariables.origin.convertFromFromPlace(fromPlace);
+        queryVariables.destination = new PlanLabeledLocationInput();
+        queryVariables.destination.convertFromFromPlace(toPlace);
         queryVariables.dateTime = new PlanDateTimeInput();
         queryVariables.dateTime.earliestDeparture = "2021-09-22T15:54:00-00:00";
         queryVariables.walkSpeed = 1.34F;
@@ -148,7 +151,7 @@ public class PersistenceTestUtils {
      */
     public static TripSummary createTripSummary(String tripRequestId, String batchId, LocalDateTime createDate) throws Exception {
         OtpResponse planResponse = OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse();
-        TripSummary tripSummary = new TripSummary(planResponse.plan, planResponse.plan.routingErrors, tripRequestId, batchId);
+        TripSummary tripSummary = new TripSummary(planResponse.planConnection, planResponse.planConnection.routingErrors, tripRequestId, batchId);
         if (createDate != null) {
             tripSummary.dateCreated = DateTimeUtils.convertToDate(createDate);
         }
@@ -168,7 +171,7 @@ public class PersistenceTestUtils {
      */
     public static TripSummary createTripSummaryWithError(String tripRequestId, String batchId, LocalDateTime createDate) throws Exception {
         OtpResponse planErrorResponse = OtpTestUtils.OTP_DISPATCHER_PLAN_ERROR_RESPONSE.getResponse();
-        TripSummary tripSummary = new TripSummary(null, planErrorResponse.plan.routingErrors, tripRequestId, batchId);
+        TripSummary tripSummary = new TripSummary(null, planErrorResponse.planConnection.routingErrors, tripRequestId, batchId);
         if (createDate != null) {
             tripSummary.dateCreated = DateTimeUtils.convertToDate(createDate);
         }
@@ -187,7 +190,7 @@ public class PersistenceTestUtils {
         boolean usePlan,
         boolean useErrors
     ) throws Exception {
-        TripPlan plan = dispatcherResponse.getResponse().plan;
+        TripPlan plan = dispatcherResponse.getResponse().planConnection;
         TripSummary tripSummary = new TripSummary(
             usePlan ? plan : null,
             useErrors ? plan.routingErrors : null,

@@ -21,6 +21,7 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.otp.OtpRequest;
+import org.opentripplanner.middleware.otp.graphql.PlanLabeledLocationInput;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
@@ -290,7 +291,8 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
 
         // Mess up some fields in the trip. The modified field values should not appear in the persisted trip.
         originalTrip.tripName = DUMMY_STRING;
-        originalTrip.otp2QueryParams.fromPlace = DUMMY_STRING;
+        originalTrip.otp2QueryParams.origin = new PlanLabeledLocationInput();
+        originalTrip.otp2QueryParams.origin.convertFromFromPlace("ABCDxyz::0,0");
         originalTrip.userId = DUMMY_STRING;
 
         int checksSize = MonitoredTripController.getChecksSize();
@@ -308,7 +310,7 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         // Messed up values should not have been modified. Test additional fields as needed.
         assertNotEquals(DUMMY_STRING, updatedTrip.tripName);
         assertNotEquals(DUMMY_STRING, updatedTrip.userId);
-        assertNotEquals(DUMMY_STRING, updatedTrip.otp2QueryParams.fromPlace);
+        assertNotEquals(DUMMY_STRING, updatedTrip.otp2QueryParams.origin.label);
         // The persisted trip should have its existence overwritten with the one simulated above.
         assertNotNull(updatedTrip.itineraryExistence.id);
         assertNotEquals(originalTrip.itineraryExistence.id, updatedTrip.itineraryExistence.id);
@@ -468,8 +470,8 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
      */
     private static OtpResponse fakeOtpResponse(OtpRequest request) {
         OtpResponse response = new OtpResponse();
-        response.plan = new TripPlan();
-        response.plan.itineraries = List.of(makeItinerary(Date.from(request.dateTime.toInstant())));
+        response.planConnection = new TripPlan();
+        response.planConnection.itineraries = List.of(makeItinerary(Date.from(request.dateTime.toInstant())));
         return response;
     }
 

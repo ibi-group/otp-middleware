@@ -17,6 +17,7 @@ import org.opentripplanner.middleware.otp.LegFinder;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.OtpRequest;
+import org.opentripplanner.middleware.otp.graphql.PlanLabeledLocationInput;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.Step;
@@ -111,7 +112,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         assumeTrue(IS_END_TO_END);
 
         var mockOtpResponse = mockOtpReroutedPlanResponse(testData.reroutedResponse);
-        var expectedReroutedItinerary = getShortestDuration(mockOtpResponse.get().plan.itineraries);
+        var expectedReroutedItinerary = getShortestDuration(mockOtpResponse.get().planConnection.itineraries);
         ZonedDateTime reroutedStartTime = DateTimeUtils.makeOtpZonedDateTime(expectedReroutedItinerary.startTime);
 
         MonitoredTrip rerouteMonitoredTrip = context.createMonitoredTrip(testData.originalItinerary);
@@ -288,13 +289,15 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         Coordinates fromCoords = new Coordinates(33.94412, -83.98899);
         OtpGraphQLVariables originalTripVariables = new OtpGraphQLVariables();
         originalTripVariables.mobilityProfile = "mobility-profile";
-        originalTripVariables.fromPlace = "from-place";
-        originalTripVariables.toPlace = "33.9400633, -83.9854488";
+        originalTripVariables.origin = new PlanLabeledLocationInput();
+        originalTripVariables.origin.convertFromFromPlace("from-place::33.9400233, -83.9852488");
+        originalTripVariables.destination = new PlanLabeledLocationInput();
+        originalTripVariables.destination.convertFromFromPlace("to-place::33.9400633, -83.9854488");
         originalTripVariables.time = "08:36";
         OtpGraphQLVariables rerouteVariables = setOtpGraphQLVariables(originalTripVariables, fromCoords);
         assertEquals(originalTripVariables.mobilityProfile, rerouteVariables.mobilityProfile);
-        assertEquals(originalTripVariables.toPlace, rerouteVariables.toPlace);
-        assertEquals(fromCoords.getCoordinates(), rerouteVariables.fromPlace);
+        assertEquals(originalTripVariables.destination, rerouteVariables.destination);
+        assertEquals(fromCoords.getCoordinates(), rerouteVariables.origin.location.coordinate.toString());
         assertNotEquals(originalTripVariables.time, rerouteVariables.time);
     }
 
@@ -320,9 +323,10 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
 
         CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(monitoredTrip);
         OtpGraphQLVariables params = new OtpGraphQLVariables();
-        params.fromPlace = "from-place";
+        params.origin = new PlanLabeledLocationInput();
+        params.origin.convertFromFromPlace("from-place::0,0");
         checkMonitoredTrip.checkForRerouting(params);
-        assertEquals(fromCoords.getCoordinates(), params.fromPlace);
+        assertEquals(fromCoords.getCoordinates(), params.origin.location.coordinate);
     }
 
     /**
@@ -352,12 +356,12 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         }
 
         public OtpResponse getOtpResponse(OtpRequest ignored) {
-            if (variableSupplier.get().fromPlace.endsWith(triggerLocation.getCoordinates())) {
+            if (variableSupplier.get().origin.location.coordinate.toString().equals(triggerLocation.getCoordinates())) {
                 return mockOtpReroutedPlanResponse(reroutedResponse).get();
             }
             OtpResponse response = new OtpResponse();
-            response.plan = new TripPlan();
-            response.plan.itineraries = List.of(originalItinerary);
+            response.planConnection = new TripPlan();
+            response.planConnection.itineraries = List.of(originalItinerary);
             return response;
         }
     }

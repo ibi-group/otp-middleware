@@ -13,13 +13,17 @@ public class PlanLabeledLocationInput {
     public void convertFromFromPlace(String fromPlace) {
         try {
             String[] chunks = fromPlace.split("::");
-            String[] coordinates = chunks[1].split(",");
-            this.label = chunks[0];
+            String[] coordinates = chunks[chunks.length == 1 ? 0 : 1].split(",");
+            if (chunks.length == 2) {
+                this.label = chunks[0];
+            } else {
+                coordinates = chunks[0].split(",");
+            }
+
             this.location = new PlanLocationInput();
             this.location.coordinate.latitude = Long.parseLong(coordinates[0]);
             this.location.coordinate.longitude = Long.parseLong(coordinates[1]);
         } catch (Exception e) {
-            // TODO: FIX THIS
             System.out.println("Error in parsing fromPlace");
         }
     }

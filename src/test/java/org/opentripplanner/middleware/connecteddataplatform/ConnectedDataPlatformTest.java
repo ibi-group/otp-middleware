@@ -17,6 +17,7 @@ import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
+import org.opentripplanner.middleware.otp.graphql.PlanLabeledLocationInput;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
@@ -577,20 +578,22 @@ public class ConnectedDataPlatformTest extends OtpMiddlewareTestEnvironment {
         );
 
         // Remove coordinates from trip request and update.
-        tripRequestOne.fromPlace = "Airport, Stansted, Essex, England :: ";
-        tripRequestOne.toPlace = "Airport, Glasgow Airport, Glasgow, Scotland :: ";
+        tripRequestOne.origin = new PlanLabeledLocationInput();
+        tripRequestOne.origin.convertFromFromPlace("Airport, Stansted, Essex, England :: ");
+        tripRequestOne.destination = new PlanLabeledLocationInput();
+        tripRequestOne.destination.convertFromFromPlace("Airport, Glasgow Airport, Glasgow, Scotland :: ");
         Persistence.tripRequests.replace(tripRequestOne.id, tripRequestOne);
         tripRequests.clear();
         tripRequests.add(tripRequestOne);
 
         OtpResponse planResponse = OtpTestUtils.OTP2_DISPATCHER_PLAN_RESPONSE.getResponse();
-        for (Itinerary itinerary : planResponse.plan.itineraries) {
+        for (Itinerary itinerary : planResponse.planConnection.itineraries) {
             for (Leg leg : itinerary.legs) {
                 // Set all legs to transit so that the coordinates are extracted.
                 leg.transitLeg = true;
             }
         }
-        tripSummary = new TripSummary(planResponse.plan, planResponse.plan.routingErrors, tripRequestOne.id, batchId);
+        tripSummary = new TripSummary(planResponse.planConnection, planResponse.planConnection.routingErrors, tripRequestOne.id, batchId);
         Persistence.tripSummaries.create(tripSummary);
 
         TripHistoryUploadJob job = new TripHistoryUploadJob(ReportingInterval.HOURLY, ANON_TRIP_REQ_ENTITIES);

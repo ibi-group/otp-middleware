@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.testutils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
+import org.opentripplanner.middleware.otp.graphql.PlanLabeledLocationInput;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponseGraphQLWrapper;
@@ -176,8 +177,10 @@ public class OtpTestUtils {
      */
     public static OtpGraphQLVariables getSampleQueryParams() {
         OtpGraphQLVariables params = new OtpGraphQLVariables();
-        params.fromPlace = "28.45119,-81.36818";
-        params.toPlace = "28.54834,-81.37745";
+        params.origin = new PlanLabeledLocationInput();
+        params.origin.convertFromFromPlace("28.45119,-81.36818");
+        params.destination = new PlanLabeledLocationInput();
+        params.destination.convertFromFromPlace("28.54834,-81.37745");
         params.time = "08:35";
         return params;
     }
@@ -194,7 +197,7 @@ public class OtpTestUtils {
     }
 
     public static Itinerary firstItinerary(OtpResponse response) {
-        return response.plan.itineraries.get(0);
+        return response.planConnection.itineraries.get(0);
     }
 
     public static Itinerary createDefaultItinerary() throws Exception {
@@ -206,7 +209,7 @@ public class OtpTestUtils {
     }
 
     public static JourneyState createDefaultJourneyState(Supplier<OtpResponse> otpResponseProvider) {
-        List<Itinerary> itineraries = otpResponseProvider.get().plan.itineraries;
+        List<Itinerary> itineraries = otpResponseProvider.get().planConnection.itineraries;
         return createDefaultJourneyState(itineraries.isEmpty() ? null : itineraries.get(0));
     }
 

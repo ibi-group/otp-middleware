@@ -9,4 +9,8 @@ public class PlanCoordinateInput {
     public double latitude;
     public double longitude;
 
+    @Override
+    public String toString() {
+        return latitude + ", " + longitude;
+    }
 }
