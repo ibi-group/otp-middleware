@@ -112,7 +112,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         assumeTrue(IS_END_TO_END);
 
         var mockOtpResponse = mockOtpReroutedPlanResponse(testData.reroutedResponse);
-        var expectedReroutedItinerary = getShortestDuration(mockOtpResponse.get().planConnection.itineraries);
+        var expectedReroutedItinerary = getShortestDuration(mockOtpResponse.get().planConnection.edges);
         ZonedDateTime reroutedStartTime = DateTimeUtils.makeOtpZonedDateTime(expectedReroutedItinerary.startTime);
 
         MonitoredTrip rerouteMonitoredTrip = context.createMonitoredTrip(testData.originalItinerary);
@@ -361,7 +361,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
             }
             OtpResponse response = new OtpResponse();
             response.planConnection = new TripPlan();
-            response.planConnection.itineraries = List.of(originalItinerary);
+            response.planConnection.edges = List.of(originalItinerary);
             return response;
         }
     }

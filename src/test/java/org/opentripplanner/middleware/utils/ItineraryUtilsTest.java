@@ -235,7 +235,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
             dates,
             monitoredDate -> otpResponse,
             (resp, monitoredDate) -> {
-                for (Itinerary itin : resp.planConnection.itineraries) {
+                for (Itinerary itin : resp.planConnection.edges) {
                     setItineraryDate(itin, monitoredDate);
                 }
             }
@@ -438,7 +438,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
             .clone()
             .getResponse()
             .planConnection
-            .itineraries
+            .edges
             .get(1);
 
         DateTimeUtils.useFixedClockAt(ZonedDateTime.ofInstant(

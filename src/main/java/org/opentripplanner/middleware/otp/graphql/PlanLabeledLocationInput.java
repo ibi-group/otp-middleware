@@ -21,8 +21,9 @@ public class PlanLabeledLocationInput {
             }
 
             this.location = new PlanLocationInput();
-            this.location.coordinate.latitude = Long.parseLong(coordinates[0]);
-            this.location.coordinate.longitude = Long.parseLong(coordinates[1]);
+            this.location.coordinate = new PlanCoordinateInput();
+            this.location.coordinate.latitude = Double.parseDouble(coordinates[0]);
+            this.location.coordinate.longitude = Double.parseDouble(coordinates[1]);
         } catch (Exception e) {
             System.out.println("Error in parsing fromPlace");
         }

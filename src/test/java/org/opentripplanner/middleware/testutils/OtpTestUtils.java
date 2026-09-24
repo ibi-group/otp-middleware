@@ -197,7 +197,7 @@ public class OtpTestUtils {
     }
 
     public static Itinerary firstItinerary(OtpResponse response) {
-        return response.planConnection.itineraries.get(0);
+        return response.planConnection.edges.get(0);
     }
 
     public static Itinerary createDefaultItinerary() throws Exception {
@@ -209,7 +209,7 @@ public class OtpTestUtils {
     }
 
     public static JourneyState createDefaultJourneyState(Supplier<OtpResponse> otpResponseProvider) {
-        List<Itinerary> itineraries = otpResponseProvider.get().planConnection.itineraries;
+        List<Itinerary> itineraries = otpResponseProvider.get().planConnection.edges;
         return createDefaultJourneyState(itineraries.isEmpty() ? null : itineraries.get(0));
     }
 

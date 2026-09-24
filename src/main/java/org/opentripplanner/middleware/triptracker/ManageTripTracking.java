@@ -393,7 +393,7 @@ public class ManageTripTracking {
                 trackedJourney.trip.otp2QueryParams, new Coordinates(trackedJourney.lastLocation())
             );
             TripPlan plan = otpResponseProvider.get().planConnection;
-            return plan == null ? null : getShortestDuration(plan.itineraries);
+            return plan == null ? null : getShortestDuration(plan.edges);
         } catch (Exception e) {
             return null;
         }

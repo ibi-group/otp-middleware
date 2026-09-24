@@ -23,7 +23,7 @@ public class TripPlan {
     public Place to = null;
 
     /** A list of possible itineraries */
-    public List<Itinerary> itineraries = new ArrayList<>();
+    public List<Itinerary> edges = new ArrayList<>();
 
     public List<RoutingError> routingErrors = new ArrayList<>();
 
@@ -33,7 +33,7 @@ public class TripPlan {
                 "date=" + date +
                 ", from=" + from +
                 ", to=" + to +
-                ", itineraries=" + itineraries +
+                ", itineraries=" + edges +
                 '}';
     }
 }

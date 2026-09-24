@@ -471,7 +471,7 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
     private static OtpResponse fakeOtpResponse(OtpRequest request) {
         OtpResponse response = new OtpResponse();
         response.planConnection = new TripPlan();
-        response.planConnection.itineraries = List.of(makeItinerary(Date.from(request.dateTime.toInstant())));
+        response.planConnection.edges = List.of(makeItinerary(Date.from(request.dateTime.toInstant())));
         return response;
     }
 
