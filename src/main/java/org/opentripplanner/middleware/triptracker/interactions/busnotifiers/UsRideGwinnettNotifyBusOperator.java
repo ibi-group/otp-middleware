@@ -101,6 +101,16 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
      */
     public void cancelNotification(TravelerPosition travelerPosition, Leg busLeg) {
         var routeId = getRouteGtfsIdFromLeg(busLeg);
+        if (hasNotSentNotificationForRoute(travelerPosition.trackedJourney, routeId)) {
+            LOG.info(
+                "No notification to cancel for journey {} trip {} routeId={}",
+                travelerPosition.trackedJourney.id,
+                travelerPosition.trackedJourney.tripId,
+                routeId
+            );
+            return;
+        }
+
         try {
             boolean hasNotCanceled = hasNotCanceledNotificationForRoute(travelerPosition.trackedJourney, routeId);
             LOG.info("About to cancel journey {} trip {} canceled={}", travelerPosition.trackedJourney.id, travelerPosition.trackedJourney.tripId, !hasNotCanceled);
