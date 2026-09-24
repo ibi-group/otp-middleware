@@ -12,7 +12,6 @@ import org.opentripplanner.middleware.otp.response.Place;
 import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
 
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -223,12 +222,16 @@ class MonitoredTripTest {
     }
 
     @ParameterizedTest
-    @MethodSource("createTripTargetDateVsMatchingItineraryCases")
-    void testCheckTripDateVsMatchingItinerary(ZonedDateTime targetDate, boolean expected) {
+    @MethodSource("createTargetDateOffsetDaysVsMatchingItineraryCases")
+    void testCheckTripDateVsMatchingItinerary(int targetDateOffsetDays, boolean expected) {
         MonitoredTrip trip = makeMonitoredTripFromNow(0, 300);
         setRecurringTodayAndTomorrow(trip);
         trip.journeyState.matchingItinerary = trip.itinerary;
-        trip.journeyState.targetDate = DateTimeUtils.getStringFromDate(targetDate.toLocalDate(), DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN);
+        var targetDate = DateTimeUtils
+            .makeOtpZonedDateTime(trip.journeyState.matchingItinerary.startTime)
+            .toLocalDate()
+            .plusDays(targetDateOffsetDays);
+        trip.journeyState.targetDate = DateTimeUtils.getStringFromDate(targetDate, DateTimeUtils.DEFAULT_DATE_FORMAT_PATTERN);
 
         assertEquals(
             expected,
@@ -237,11 +240,10 @@ class MonitoredTripTest {
         );
     }
 
-    private static Stream<Arguments> createTripTargetDateVsMatchingItineraryCases() {
-        ZonedDateTime now = DateTimeUtils.nowAsZonedDateTime();
+    private static Stream<Arguments> createTargetDateOffsetDaysVsMatchingItineraryCases() {
         return Stream.of(
-            Arguments.of(now, true),
-            Arguments.of(now.plusDays(1), false)
+            Arguments.of(0, true),
+            Arguments.of(1, false)
         );
     }
 }
