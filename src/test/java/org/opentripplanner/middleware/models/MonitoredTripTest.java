@@ -29,6 +29,7 @@ class MonitoredTripTest {
     void initializeFromItineraryAndQueryParamsShouldNotModifyModes() {
         // The list of modes is provided by the UI/mobile app client,
         // and can (mistakenly?) contain duplicate modes.
+        // TODO: Modify test for PlanConnection modes
         var originalModes = Stream
             .of("BUS", "TRAM", "RAIL", "FERRY", "BUS", "TRAM")
             .map(OtpGraphQLTransportMode::fromModeString)
@@ -50,7 +51,7 @@ class MonitoredTripTest {
         trip.itinerary = itinerary;
 
         trip.initializeFromItineraryAndQueryParams(variables);
-        assertEquals(originalModes, trip.otp2QueryParams.modes);
+        assertEquals(originalModes, trip.otp2QueryParams.modesList);
     }
 
     @ParameterizedTest
