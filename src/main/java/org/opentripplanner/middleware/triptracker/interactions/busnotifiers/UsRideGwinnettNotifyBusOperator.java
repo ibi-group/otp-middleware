@@ -101,22 +101,11 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
      */
     public void cancelNotification(TravelerPosition travelerPosition, Leg busLeg) {
         var routeId = getRouteGtfsIdFromLeg(busLeg);
-        var trackedJourney = travelerPosition.trackedJourney;
-        if (hasNotSentNotificationForRoute(trackedJourney, routeId)) {
-            LOG.info(
-                "No notification to cancel for journey {} trip {} routeId={}",
-                trackedJourney.id,
-                trackedJourney.tripId,
-                routeId
-            );
-            return;
-        }
-
         try {
-            boolean hasNotCanceled = hasNotCanceledNotificationForRoute(trackedJourney, routeId);
-            LOG.info("About to cancel journey {} trip {} canceled={}", trackedJourney.id, trackedJourney.tripId, !hasNotCanceled);
+            boolean hasNotCanceled = hasNotCanceledNotificationForRoute(travelerPosition.trackedJourney, routeId);
+            LOG.info("About to cancel journey {} trip {} canceled={}", travelerPosition.trackedJourney.id, travelerPosition.trackedJourney.tripId, !hasNotCanceled);
             if (isBusLeg(busLeg) && routeId != null && hasNotCanceled) {
-                Map<String, String> busNotificationRequests = trackedJourney.busNotificationMessages;
+                Map<String, String> busNotificationRequests = travelerPosition.trackedJourney.busNotificationMessages;
                 if (busNotificationRequests.containsKey(routeId)) {
                     UsRideGwinnettBusOpNotificationMessage body = JsonUtils.getPOJOFromJSON(
                         busNotificationRequests.get(routeId),
@@ -220,6 +209,15 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
         TrackedJourney trackedJourney,
         String routeId
     ) throws JsonProcessingException {
+        if (hasNotSentNotificationForRoute(trackedJourney, routeId)) {
+            LOG.info(
+                "No notification to cancel for journey {}, trip {}, routeId {}",
+                trackedJourney.id,
+                trackedJourney.tripId,
+                routeId
+            );
+            return false;
+        }
         String messageBody = trackedJourney.busNotificationMessages.get(routeId);
         if (messageBody == null) {
             throw new IllegalStateException(
