@@ -1,6 +1,7 @@
 package org.opentripplanner.middleware.otp.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -23,6 +24,7 @@ public class TripPlan {
     public Place to = null;
 
     /** A list of possible itineraries */
+    @JsonDeserialize(contentUsing = ItineraryRootDeserializer.class)
     public List<Itinerary> edges = new ArrayList<>();
 
     public List<RoutingError> routingErrors = new ArrayList<>();
