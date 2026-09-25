@@ -101,21 +101,22 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
      */
     public void cancelNotification(TravelerPosition travelerPosition, Leg busLeg) {
         var routeId = getRouteGtfsIdFromLeg(busLeg);
-        if (hasNotSentNotificationForRoute(travelerPosition.trackedJourney, routeId)) {
+        var trackedJourney = travelerPosition.trackedJourney;
+        if (hasNotSentNotificationForRoute(trackedJourney, routeId)) {
             LOG.info(
                 "No notification to cancel for journey {} trip {} routeId={}",
-                travelerPosition.trackedJourney.id,
-                travelerPosition.trackedJourney.tripId,
+                trackedJourney.id,
+                trackedJourney.tripId,
                 routeId
             );
             return;
         }
 
         try {
-            boolean hasNotCanceled = hasNotCanceledNotificationForRoute(travelerPosition.trackedJourney, routeId);
-            LOG.info("About to cancel journey {} trip {} canceled={}", travelerPosition.trackedJourney.id, travelerPosition.trackedJourney.tripId, !hasNotCanceled);
+            boolean hasNotCanceled = hasNotCanceledNotificationForRoute(trackedJourney, routeId);
+            LOG.info("About to cancel journey {} trip {} canceled={}", trackedJourney.id, trackedJourney.tripId, !hasNotCanceled);
             if (isBusLeg(busLeg) && routeId != null && hasNotCanceled) {
-                Map<String, String> busNotificationRequests = travelerPosition.trackedJourney.busNotificationMessages;
+                Map<String, String> busNotificationRequests = trackedJourney.busNotificationMessages;
                 if (busNotificationRequests.containsKey(routeId)) {
                     UsRideGwinnettBusOpNotificationMessage body = JsonUtils.getPOJOFromJSON(
                         busNotificationRequests.get(routeId),
@@ -213,7 +214,7 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
     }
 
     /**
-     * Has a previous notification already been cancelled.
+     * Has a previous notification already been canceled.
      */
     public static boolean hasNotCanceledNotificationForRoute(
         TrackedJourney trackedJourney,
