@@ -103,8 +103,8 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
         var routeId = getRouteGtfsIdFromLeg(busLeg);
         try {
             boolean hasNotCanceled = hasNotCanceledNotificationForRoute(travelerPosition.trackedJourney, routeId);
-            LOG.info("About to cancel journey {} trip {} canceled={}", travelerPosition.trackedJourney.id, travelerPosition.trackedJourney.tripId, !hasNotCanceled);
             if (isBusLeg(busLeg) && routeId != null && hasNotCanceled) {
+                LOG.info("About to cancel journey {} trip {}", travelerPosition.trackedJourney.id, travelerPosition.trackedJourney.tripId);
                 Map<String, String> busNotificationRequests = travelerPosition.trackedJourney.busNotificationMessages;
                 if (busNotificationRequests.containsKey(routeId)) {
                     UsRideGwinnettBusOpNotificationMessage body = JsonUtils.getPOJOFromJSON(
@@ -203,12 +203,21 @@ public class UsRideGwinnettNotifyBusOperator implements BusOperatorInteraction {
     }
 
     /**
-     * Has a previous notification already been cancelled.
+     * Has a previous notification already been canceled.
      */
     public static boolean hasNotCanceledNotificationForRoute(
         TrackedJourney trackedJourney,
         String routeId
     ) throws JsonProcessingException {
+        if (hasNotSentNotificationForRoute(trackedJourney, routeId)) {
+            LOG.info(
+                "No notification to cancel for journey {}, trip {}, routeId {}",
+                trackedJourney.id,
+                trackedJourney.tripId,
+                routeId
+            );
+            return false;
+        }
         String messageBody = trackedJourney.busNotificationMessages.get(routeId);
         if (messageBody == null) {
             throw new IllegalStateException(
