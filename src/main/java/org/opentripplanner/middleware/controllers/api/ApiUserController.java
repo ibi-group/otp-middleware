@@ -7,7 +7,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.Auth0Users;
 import org.opentripplanner.middleware.auth.RequestingUser;
-import org.opentripplanner.middleware.models.ApiKey;
+import org.opentripplanner.middleware.models.ApiKeyDetails;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
@@ -135,15 +135,15 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         // user should not be able to create an API key for any usage plan.
         if (!requestingUser.isAdmin()) {
             usagePlanId = DEFAULT_USAGE_PLAN_ID;
-            if (targetUser.apiKeys.size() >= API_KEY_LIMIT_PER_USER) {
+            if (targetUser.apiKeyDetails.size() >= API_KEY_LIMIT_PER_USER) {
                 logMessageAndHalt(req, HttpStatus.BAD_REQUEST_400, "User has reached API key limit.");
             }
         }
         // FIXME Should an Api user be limited to one api key per usage plan (and perhaps stage)?
         try {
-            ApiKey apiKey = ApiGatewayUtils.createApiKey(targetUser, usagePlanId);
+            ApiKeyDetails apiKeyDetails = ApiGatewayUtils.createApiKey(targetUser, usagePlanId);
             // Add new API key to user and persist
-            targetUser.apiKeys.add(apiKey);
+            targetUser.apiKeyDetails.add(apiKeyDetails);
             Persistence.apiUsers.replace(targetUser.id, targetUser);
         } catch (CreateApiKeyException e) {
             logMessageAndHalt(req,
@@ -180,10 +180,10 @@ public class ApiUserController extends AbstractUserController<ApiUser> {
         }
 
         // Delete API key from AWS.
-        boolean success = ApiGatewayUtils.deleteApiKey(new ApiKey(apiKeyId));
+        boolean success = ApiGatewayUtils.deleteApiKey(new ApiKeyDetails(apiKeyId));
         if (success) {
             // Delete api key from user and persist
-            targetUser.apiKeys.removeIf(apiKey -> apiKeyId.equals(apiKey.keyId));
+            targetUser.apiKeyDetails.removeIf(apiKey -> apiKeyId.equals(apiKey.keyId));
             Persistence.apiUsers.replace(targetUser.id, targetUser);
             return Persistence.apiUsers.getById(targetUser.id);
         } else {

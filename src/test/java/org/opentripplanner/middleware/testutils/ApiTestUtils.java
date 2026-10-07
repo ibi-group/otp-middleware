@@ -70,8 +70,8 @@ public class ApiTestUtils {
         if (requestingUser instanceof ApiUser) {
             ApiUser apiUser = (ApiUser) requestingUser;
             scope = ApiUser.AUTH0_SCOPE;
-            if (!apiUser.apiKeys.isEmpty()) {
-                headers.put("x-api-key", apiUser.apiKeys.get(0).value);
+            if (!apiUser.apiKeyDetails.isEmpty()) {
+                headers.put("x-api-key", apiUser.apiKeyDetails.get(0).value);
             }
         }
 

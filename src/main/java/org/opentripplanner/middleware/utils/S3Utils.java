@@ -1,21 +1,23 @@
 package org.opentripplanner.middleware.utils;
 
-import com.amazonaws.HttpMethod;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URL;
+import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsText;
@@ -33,10 +35,12 @@ public class S3Utils {
     /**
      * Create connection to AWS S3.
      */
-    private static AmazonS3 getAmazonS3() {
-        AmazonS3ClientBuilder amazonS3ClientBuilder = AmazonS3ClientBuilder.standard();
+    private static S3Client getAmazonS3() {
+        S3ClientBuilder amazonS3ClientBuilder = S3Client.builder();
         if (hasConfigProperty("AWS_PROFILE")) {
-            amazonS3ClientBuilder.withCredentials(new ProfileCredentialsProvider(getConfigPropertyAsText("AWS_PROFILE")));
+            amazonS3ClientBuilder.credentialsProvider(
+                ProfileCredentialsProvider.create(getConfigPropertyAsText("AWS_PROFILE"))
+            );
         }
         return amazonS3ClientBuilder.build();
     }
@@ -46,20 +50,23 @@ public class S3Utils {
      * list of files at the root of a bucket.
      */
     public static List<CDPFile> getFolderListing(String bucketName, String folderName) {
-        AmazonS3 s3Client = getAmazonS3();
+        String prefix = folderName == null || folderName.isEmpty() || "/".equals(folderName)
+            ? ""
+            : folderName.replaceAll("/+$", "") + "/";
         List<CDPFile> cdpFiles = new ArrayList<>();
-        ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
-                .withBucketName(bucketName);
-        ObjectListing objectListing;
-
-        do {
-            objectListing = s3Client.listObjects(listObjectsRequest);
-            for (S3ObjectSummary objectSummary : objectListing.getObjectSummaries()) {
-                // TODO: a less brittle way of getting the name, will probably be related to folder-based filtering
-                cdpFiles.add(new CDPFile(objectSummary.getKey(), objectSummary.getKey().substring(folderName.length() + 1), objectSummary.getSize()));
-            }
-            listObjectsRequest.setMarker(objectListing.getNextMarker());
-        } while (objectListing.isTruncated());
+        ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
+            .bucket(bucketName)
+            .prefix(prefix)
+            .build();
+        try (S3Client s3Client = getAmazonS3()) {
+            s3Client.listObjectsV2Paginator(listObjectsRequest).contents().forEach(objectSummary ->
+                cdpFiles.add(new CDPFile(
+                    objectSummary.key(),
+                    prefix.isEmpty() ? objectSummary.key() : objectSummary.key().substring(prefix.length()),
+                    objectSummary.size()
+                ))
+            );
+        }
 
         return cdpFiles;
     }
@@ -74,24 +81,32 @@ public class S3Utils {
     }
 
     public static URL getTemporaryDownloadLinkForObject(String bucketName, String fileKey, int expiration) {
-        AmazonS3 s3Client = getAmazonS3();
-        Date formalExpiration = new java.util.Date();
-        formalExpiration.setTime(formalExpiration.getTime() + expiration);
-
-        GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                new GeneratePresignedUrlRequest(bucketName, fileKey)
-                        .withMethod(HttpMethod.GET)
-                        .withExpiration(formalExpiration);
-        return s3Client.generatePresignedUrl(generatePresignedUrlRequest);
+        S3Presigner.Builder presignerBuilder = S3Presigner.builder();
+        if (hasConfigProperty("AWS_PROFILE")) {
+            presignerBuilder.credentialsProvider(
+                ProfileCredentialsProvider.create(getConfigPropertyAsText("AWS_PROFILE"))
+            );
+        }
+        try (S3Presigner presigner = presignerBuilder.build()) {
+            PresignedGetObjectRequest presignedRequest = presigner.presignGetObject(
+                GetObjectPresignRequest.builder()
+                    .signatureDuration(Duration.ofMillis(expiration))
+                    .getObjectRequest(request -> request.bucket(bucketName).key(fileKey))
+                    .build()
+            );
+            return presignedRequest.url();
+        }
     }
 
     /**
      * Upload an object to S3.
      */
     public static void putObject(String bucketName, String folderAndFileName, File file) throws S3Exception {
-        try {
-            AmazonS3 s3Client = getAmazonS3();
-            s3Client.putObject(bucketName, folderAndFileName, file);
+        try (S3Client s3Client = getAmazonS3()) {
+            s3Client.putObject(
+                PutObjectRequest.builder().bucket(bucketName).key(folderAndFileName).build(),
+                RequestBody.fromFile(file)
+            );
             LOG.info("Uploading to AWS: {}/{}", bucketName, folderAndFileName);
         } catch (Exception e) {
             // If some unexpected exception is thrown by AWS, catch it, report to Bugsnag, and throw.
@@ -106,12 +121,12 @@ public class S3Utils {
      * Delete an object on S3.
      */
     public static void deleteObject(String bucketName, String folderAndFileName) throws S3Exception {
-        try {
-            AmazonS3 s3Client = getAmazonS3();
-            if (s3Client.doesObjectExist(bucketName, folderAndFileName)) {
-                LOG.info("Removing {} from s3 bucket {}", folderAndFileName, bucketName);
-                s3Client.deleteObject(bucketName, folderAndFileName);
-            }
+        try (S3Client s3Client = getAmazonS3()) {
+            s3Client.deleteObject(DeleteObjectRequest.builder()
+                .bucket(bucketName)
+                .key(folderAndFileName)
+                .build());
+            LOG.info("Removing {} from s3 bucket {}", folderAndFileName, bucketName);
         } catch (Exception e) {
             // If some unexpected exception is thrown by AWS, catch it, report to Bugsnag, and throw.
             String message = "Unable to delete object";
@@ -121,5 +136,3 @@ public class S3Utils {
         }
     }
 }
-
-

@@ -18,7 +18,7 @@ public class ApiUser extends AbstractUser {
     public static final String AUTH0_SCOPE = "api-user";
     private static final Logger LOG = LoggerFactory.getLogger(ApiUser.class);
     /** Holds the API keys assigned to the user. */
-    public List<ApiKey> apiKeys = new ArrayList<>();
+    public List<ApiKeyDetails> apiKeyDetails = new ArrayList<>();
 
     /** The name of the application built by this user. */
     public String appName;
@@ -51,9 +51,9 @@ public class ApiUser extends AbstractUser {
      * Delete API user's API keys (from AWS), self (from Mongo). Optionally delete user from Auth0.
      */
     public boolean delete(boolean deleteAuth0User) {
-        for (ApiKey apiKey : apiKeys) {
-            if (!ApiGatewayUtils.deleteApiKey(apiKey)) {
-                LOG.error("Could not delete API key for user {}. Aborting delete user.", apiKey.keyId);
+        for (ApiKeyDetails apiKeyDetails : apiKeyDetails) {
+            if (!ApiGatewayUtils.deleteApiKey(apiKeyDetails)) {
+                LOG.error("Could not delete API key for user {}. Aborting delete user.", apiKeyDetails.keyId);
                 return false;
             }
         }
@@ -71,8 +71,7 @@ public class ApiUser extends AbstractUser {
 
     public void createApiKey(String usagePlanId, boolean persist) throws CreateApiKeyException {
         try {
-            ApiKey apiKey = ApiGatewayUtils.createApiKey(this, usagePlanId);
-            apiKeys.add(apiKey);
+            apiKeyDetails.add(ApiGatewayUtils.createApiKey(this, usagePlanId));
             if (persist) Persistence.apiUsers.replace(this.id, this);
         } catch (CreateApiKeyException e) {
             LOG.error("Could not create API key for user {}", email, e);
@@ -81,26 +80,26 @@ public class ApiUser extends AbstractUser {
     }
 
     /**
-     * @return the first {@link ApiUser} found with an {@link ApiKey#keyId} in {@link #apiKeys} that matches the
+     * @return the first {@link ApiUser} found with an {@link ApiKeyDetails#keyId} in {@link #apiKeyDetails} that matches the
      * provided apiKeyId.
      */
     public static ApiUser userForApiKey(String apiKeyId) {
-        return Persistence.apiUsers.getOneFiltered(Filters.elemMatch("apiKeys", Filters.eq("keyId", apiKeyId)));
+        return Persistence.apiUsers.getOneFiltered(Filters.elemMatch("apiKeyDetails", Filters.eq("keyId", apiKeyId)));
     }
 
     /**
-     * @return the first {@link ApiUser} found with an {@link ApiKey#value} in {@link #apiKeys} that matches the
+     * @return the first {@link ApiUser} found with an {@link ApiKeyDetails#value} in {@link #apiKeyDetails} that matches the
      * provided apiKeyValue.
      */
     public static ApiUser userForApiKeyValue(String apiKeyValue) {
-        return Persistence.apiUsers.getOneFiltered(Filters.elemMatch("apiKeys", Filters.eq("value", apiKeyValue)));
+        return Persistence.apiUsers.getOneFiltered(Filters.elemMatch("apiKeyDetails", Filters.eq("value", apiKeyValue)));
     }
 
     /**
      * Shorthand method to determine if an API user has an API key id.
      */
     public boolean hasApiKeyId(String apiKeyId) {
-        return apiKeys
+        return apiKeyDetails
             .stream()
             .anyMatch(apiKey -> apiKeyId.equals(apiKey.keyId));
     }
@@ -109,7 +108,7 @@ public class ApiUser extends AbstractUser {
      * Shorthand method to determine if an API user has an API key value.
      */
     public boolean hasApiKeyValue(String apiKeyValue) {
-        return apiKeys
+        return apiKeyDetails
             .stream()
             .anyMatch(apiKey -> apiKeyValue.equals(apiKey.value));
     }

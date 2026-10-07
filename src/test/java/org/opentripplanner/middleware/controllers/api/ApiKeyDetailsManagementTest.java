@@ -37,8 +37,8 @@ import static org.opentripplanner.middleware.testutils.ApiTestUtils.mockAuthenti
  * - DISABLE_AUTH set to true to bypass auth checks and use users defined here.
  * - DEFAULT_USAGE_PLAN_ID set to a valid usage plan id. AWS requires this to create an api key.
  */
-public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
-    private static final Logger LOG = LoggerFactory.getLogger(ApiKeyManagementTest.class);
+public class ApiKeyDetailsManagementTest extends OtpMiddlewareTestEnvironment {
+    private static final Logger LOG = LoggerFactory.getLogger(ApiKeyDetailsManagementTest.class);
     private static ApiUser apiUser;
     private static AdminUser adminUser;
 
@@ -78,8 +78,8 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.responseBody, ApiUser.class);
         // refresh API key
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
-        LOG.info("API user successfully created API key id {}", userFromResponse.apiKeys.get(0).keyId);
-        assertEquals(userFromDb.apiKeys, userFromResponse.apiKeys);
+        LOG.info("API user successfully created API key id {}", userFromResponse.apiKeyDetails.get(0).keyId);
+        assertEquals(userFromDb.apiKeyDetails, userFromResponse.apiKeyDetails);
     }
 
     /**
@@ -92,8 +92,8 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.responseBody, ApiUser.class);
         // refresh API key
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
-        LOG.info("Admin user successfully created API key id {}", userFromResponse.apiKeys.get(0).keyId);
-        assertEquals(userFromDb.apiKeys, userFromResponse.apiKeys);
+        LOG.info("Admin user successfully created API key id {}", userFromResponse.apiKeyDetails.get(0).keyId);
+        assertEquals(userFromDb.apiKeyDetails, userFromResponse.apiKeyDetails);
     }
 
     /**
@@ -103,15 +103,15 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
     @Test
     public void cannotDeleteApiKeyForSelf() throws Exception {
         ensureApiKeyExists();
-        int initialKeyCount = apiUser.apiKeys.size();
+        int initialKeyCount = apiUser.apiKeyDetails.size();
         // delete key
-        String keyId = apiUser.apiKeys.get(0).keyId;
+        String keyId = apiUser.apiKeyDetails.get(0).keyId;
         HttpResponseValues response = deleteApiKeyRequest(apiUser.id, keyId, apiUser);
         assertEquals(HttpStatus.FORBIDDEN_403, response.status);
         LOG.info("Delete key request status: {}", response.status);
         // Ensure key count is the same after delete request.
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
-        assertEquals(initialKeyCount, userFromDb.apiKeys.size());
+        assertEquals(initialKeyCount, userFromDb.apiKeyDetails.size());
     }
 
     /**
@@ -121,35 +121,32 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
     public void adminCanDeleteApiKeyForApiUser() throws Exception {
         ensureApiKeyExists();
         // delete key
-        String keyId = apiUser.apiKeys.get(0).keyId;
+        String keyId = apiUser.apiKeyDetails.get(0).keyId;
         HttpResponseValues response = deleteApiKeyRequest(apiUser.id, keyId, adminUser);
         assertEquals(HttpStatus.OK_200, response.status);
         ApiUser userFromResponse = JsonUtils.getPOJOFromJSON(response.responseBody, ApiUser.class);
-        assertTrue(userFromResponse.apiKeys.isEmpty());
+        assertTrue(userFromResponse.apiKeyDetails.isEmpty());
         // refresh API key
         ApiUser userFromDb = Persistence.apiUsers.getById(apiUser.id);
         LOG.info("Admin user successfully deleted API key id {}", keyId);
-        assertTrue(userFromDb.apiKeys.isEmpty());
+        assertTrue(userFromDb.apiKeyDetails.isEmpty());
     }
 
     /**
      * Make sure that at least one API key exists.
      */
-    private boolean ensureApiKeyExists() {
+    private void ensureApiKeyExists() {
         // Refresh API keys.
         apiUser = Persistence.apiUsers.getById(apiUser.id);
-        if (apiUser.apiKeys.isEmpty()) {
+        if (apiUser.apiKeyDetails.isEmpty()) {
             // Create key if there are none.
             try {
                 apiUser.createApiKey(DEFAULT_USAGE_PLAN_ID, true);
                 LOG.info("Successfully created API key");
-                return true;
             } catch (CreateApiKeyException e) {
                 LOG.error("Could not create API key", e);
-                return false;
             }
         }
-        return true;
     }
 
     /**

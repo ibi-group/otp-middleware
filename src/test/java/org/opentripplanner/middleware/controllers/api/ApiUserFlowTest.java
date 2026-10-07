@@ -156,7 +156,7 @@ public class ApiUserFlowTest extends OtpMiddlewareTestEnvironment {
 
         // Define the header values to be used in requests from this point forward.
         HashMap<String, String> apiUserHeaders = new HashMap<>();
-        apiUserHeaders.put("x-api-key", apiUser.apiKeys.get(0).value);
+        apiUserHeaders.put("x-api-key", apiUser.apiKeyDetails.get(0).value);
         // obtain Auth0 token for Api user.
         String authenticateEndpoint = String.format("api/secure/application/authenticate?username=%s&password=%s",
             apiUser.email,
