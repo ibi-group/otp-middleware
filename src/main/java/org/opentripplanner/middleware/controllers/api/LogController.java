@@ -1,13 +1,13 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.amazonaws.services.apigateway.model.GetUsageResult;
+import software.amazon.awssdk.services.apigateway.model.GetUsageResponse;
 import io.github.manusant.ss.SparkSwagger;
 import io.github.manusant.ss.descriptor.EndpointDescriptor;
 import io.github.manusant.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
-import org.opentripplanner.middleware.models.ApiKey;
+import org.opentripplanner.middleware.models.ApiKeyDetails;
 import org.opentripplanner.middleware.models.ApiUsageResult;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -77,7 +77,7 @@ public class LogController implements Endpoint {
      */
     private static List<ApiUsageResult> getUsageLogs(Request req, Response res) {
         // Get list of API keys (if present) from request.
-        List<ApiKey> apiKeys = getApiKeyIdsFromRequest(req);
+        List<ApiKeyDetails> apiKeyDetails = getApiKeyIdsFromRequest(req);
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         // If the user is not an admin, the list of API keys is defaulted to their keys.
         if (!requestingUser.isAdmin()) {
@@ -85,9 +85,9 @@ public class LogController implements Endpoint {
                 logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Action is not permitted for user.");
                 return null;
             }
-            apiKeys = requestingUser.apiUser.apiKeys;
+            apiKeyDetails = requestingUser.apiUser.apiKeyDetails;
             // If the requesting API user has no keys, return an empty list (to avoid returning the full set below).
-            if (apiKeys.isEmpty()) {
+            if (apiKeyDetails.isEmpty()) {
                 return new ArrayList<>();
             }
         }
@@ -98,12 +98,12 @@ public class LogController implements Endpoint {
         String startDate = req.queryParamOrDefault("startDate", formatter.format(now.minusDays(30)));
         String endDate = req.queryParamOrDefault("endDate", formatter.format(now));
         try {
-            List<GetUsageResult> usageLogs;
-            if (apiKeys.isEmpty()) {
+            List<GetUsageResponse> usageLogs;
+            if (apiKeyDetails.isEmpty()) {
                 // keyId param is optional (if not provided, all API keys will be included in response).
                 usageLogs = ApiGatewayUtils.getUsageLogsForKey(null, startDate, endDate);
             } else {
-                usageLogs = ApiGatewayUtils.getUsageLogsForKeys(apiKeys, startDate, endDate);
+                usageLogs = ApiGatewayUtils.getUsageLogsForKeys(apiKeyDetails, startDate, endDate);
             }
             return usageLogs.stream()
                 .map(ApiUsageResult::new)
@@ -117,17 +117,17 @@ public class LogController implements Endpoint {
     }
 
     /**
-     * Extract the key ids from request, if present, an create a list of ApiKey objects
+     * Extract the key ids from request, if present, and create a list of ApiKeyDetails objects
      */
-    private static List<ApiKey> getApiKeyIdsFromRequest(Request req) {
-        List<ApiKey> apiKeys = new ArrayList<>();
+    private static List<ApiKeyDetails> getApiKeyIdsFromRequest(Request req) {
+        List<ApiKeyDetails> apiKeyDetails = new ArrayList<>();
         String keyIdParam = req.queryParamOrDefault("keyId", "");
         if (keyIdParam.isEmpty()) {
-            return apiKeys;
+            return apiKeyDetails;
         }
         for (String keyId : keyIdParam.split(",")) {
-            apiKeys.add(new ApiKey(keyId));
+            apiKeyDetails.add(new ApiKeyDetails(keyId));
         }
-        return apiKeys;
+        return apiKeyDetails;
     }
 }

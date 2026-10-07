@@ -2347,7 +2347,7 @@ definitions:
       expiresIn:
         type: "integer"
         format: "int64"
-  ApiKey:
+  ApiKeyDetails:
     type: "object"
     properties:
       keyId:
@@ -2359,10 +2359,10 @@ definitions:
   ApiUser:
     type: "object"
     properties:
-      apiKeys:
+      apiKeyDetails:
         type: "array"
         items:
-          $ref: "#/definitions/ApiKey"
+          $ref: "#/definitions/ApiKeyDetails"
       appName:
         type: "string"
       appPurpose:
@@ -2474,7 +2474,7 @@ definitions:
         type: "string"
       message:
         type: "string"
-  GetUsageResult:
+  GetUsageResponse:
     type: "object"
     properties:
       usagePlanId:
@@ -2491,7 +2491,7 @@ definitions:
     type: "object"
     properties:
       result:
-        $ref: "#/definitions/GetUsageResult"
+        $ref: "#/definitions/GetUsageResponse"
       apiUsers:
         $ref: "#/definitions/Map"
   MonitoredComponent:

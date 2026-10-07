@@ -1,6 +1,6 @@
 package org.opentripplanner.middleware.models;
 
-import com.amazonaws.services.apigateway.model.CreateApiKeyResult;
+import software.amazon.awssdk.services.apigateway.model.CreateApiKeyResponse;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * Represents a subset of an AWS API Gateway API key.
  */
-public class ApiKey implements Serializable {
+public class ApiKeyDetails implements Serializable {
 
     /**
      * The api key id as provided by AWS API Gateway.
@@ -28,33 +28,33 @@ public class ApiKey implements Serializable {
     /**
      * This no-arg constructor exists to make MongoDB happy.
      */
-    public ApiKey() {
+    public ApiKeyDetails() {
     }
 
     /**
-     * Construct ApiKey from a single api key id.
+     * Construct ApiKeyDetails from a single api key id.
      */
-    public ApiKey(String apiKeyId) {
+    public ApiKeyDetails(String apiKeyId) {
         keyId = apiKeyId;
     }
 
     /**
-     * Construct ApiKey from AWS api gateway create api key result.
+     * Construct ApiKeyDetails from AWS api gateway create api key result.
      */
-    public ApiKey(CreateApiKeyResult apiKeyResult) {
-        keyId = apiKeyResult.getId();
-        name = apiKeyResult.getName();
-        value = apiKeyResult.getValue();
+    public ApiKeyDetails(CreateApiKeyResponse apiKeyDetails) {
+        this.keyId = apiKeyDetails.id();
+        this.name = apiKeyDetails.name();
+        this.value = apiKeyDetails.value();
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ApiKey apiKey = (ApiKey) o;
-        return keyId.equals(apiKey.keyId) &&
-            name.equals(apiKey.name) &&
-            value.equals(apiKey.value);
+        ApiKeyDetails apiKeyDetails = (ApiKeyDetails) o;
+        return keyId.equals(apiKeyDetails.keyId) &&
+            name.equals(apiKeyDetails.name) &&
+            value.equals(apiKeyDetails.value);
     }
 
     @Override
