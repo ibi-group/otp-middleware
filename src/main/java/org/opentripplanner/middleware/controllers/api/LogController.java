@@ -77,7 +77,7 @@ public class LogController implements Endpoint {
      */
     private static List<ApiUsageResult> getUsageLogs(Request req, Response res) {
         // Get list of API keys (if present) from request.
-        List<ApiKey> apiKeyDetails = getApiKeyIdsFromRequest(req);
+        List<ApiKey> apiKeys = getApiKeyIdsFromRequest(req);
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         // If the user is not an admin, the list of API keys is defaulted to their keys.
         if (!requestingUser.isAdmin()) {
@@ -85,9 +85,9 @@ public class LogController implements Endpoint {
                 logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Action is not permitted for user.");
                 return null;
             }
-            apiKeyDetails = requestingUser.apiUser.apiKeys;
+            apiKeys = requestingUser.apiUser.apiKeys;
             // If the requesting API user has no keys, return an empty list (to avoid returning the full set below).
-            if (apiKeyDetails.isEmpty()) {
+            if (apiKeys.isEmpty()) {
                 return new ArrayList<>();
             }
         }
@@ -99,11 +99,11 @@ public class LogController implements Endpoint {
         String endDate = req.queryParamOrDefault("endDate", formatter.format(now));
         try {
             List<GetUsageResponse> usageLogs;
-            if (apiKeyDetails.isEmpty()) {
+            if (apiKeys.isEmpty()) {
                 // keyId param is optional (if not provided, all API keys will be included in response).
                 usageLogs = ApiGatewayUtils.getUsageLogsForKey(null, startDate, endDate);
             } else {
-                usageLogs = ApiGatewayUtils.getUsageLogsForKeys(apiKeyDetails, startDate, endDate);
+                usageLogs = ApiGatewayUtils.getUsageLogsForKeys(apiKeys, startDate, endDate);
             }
             return usageLogs.stream()
                 .map(ApiUsageResult::new)
@@ -120,14 +120,14 @@ public class LogController implements Endpoint {
      * Extract the key ids from request, if present, and create a list of ApiKey objects
      */
     private static List<ApiKey> getApiKeyIdsFromRequest(Request req) {
-        List<ApiKey> apiKeyDetails = new ArrayList<>();
+        List<ApiKey> apiKeys = new ArrayList<>();
         String keyIdParam = req.queryParamOrDefault("keyId", "");
         if (keyIdParam.isEmpty()) {
-            return apiKeyDetails;
+            return apiKeys;
         }
         for (String keyId : keyIdParam.split(",")) {
-            apiKeyDetails.add(new ApiKey(keyId));
+            apiKeys.add(new ApiKey(keyId));
         }
-        return apiKeyDetails;
+        return apiKeys;
     }
 }
