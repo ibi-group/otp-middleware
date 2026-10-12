@@ -2347,7 +2347,7 @@ definitions:
       expiresIn:
         type: "integer"
         format: "int64"
-  ApiKeyDetails:
+  ApiKey:
     type: "object"
     properties:
       keyId:
@@ -2359,10 +2359,10 @@ definitions:
   ApiUser:
     type: "object"
     properties:
-      apiKeyDetails:
+      apiKeys:
         type: "array"
         items:
-          $ref: "#/definitions/ApiKeyDetails"
+          $ref: "#/definitions/ApiKey"
       appName:
         type: "string"
       appPurpose:

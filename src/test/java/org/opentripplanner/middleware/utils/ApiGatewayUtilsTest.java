@@ -3,7 +3,7 @@ package org.opentripplanner.middleware.utils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.opentripplanner.middleware.models.ApiKeyDetails;
+import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.opentripplanner.middleware.testutils.OtpMiddlewareTestEnvironment;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
@@ -51,7 +51,7 @@ class ApiGatewayUtilsTest extends OtpMiddlewareTestEnvironment {
     static void removeTestApiKeys() {
         List<String> cleanupFailures = new ArrayList<>();
         for (String keyId : CREATED_KEY_IDS) {
-            if (!ApiGatewayUtils.deleteApiKey(new ApiKeyDetails(keyId))) {
+            if (!ApiGatewayUtils.deleteApiKey(new ApiKey(keyId))) {
                 cleanupFailures.add(keyId);
             }
         }
@@ -60,7 +60,7 @@ class ApiGatewayUtilsTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void createsApiKeyAndAssignsItToConfiguredUsagePlan() throws CreateApiKeyException {
-        ApiKeyDetails key = createTrackedApiKey();
+        ApiKey key = createTrackedApiKey();
 
         assertNotNull(key.keyId);
         assertNotNull(key.name);
@@ -75,7 +75,7 @@ class ApiGatewayUtilsTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void deletesApiKey() throws CreateApiKeyException {
-        ApiKeyDetails key = createTrackedApiKey();
+        ApiKey key = createTrackedApiKey();
 
         assertTrue(ApiGatewayUtils.deleteApiKey(key));
         try (ApiGatewayClient gateway = newApiGatewayClient()) {
@@ -88,7 +88,7 @@ class ApiGatewayUtilsTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void retrievesUsageLogsForApiKey() throws CreateApiKeyException {
-        ApiKeyDetails key = createTrackedApiKey();
+        ApiKey key = createTrackedApiKey();
 
         List<GetUsageResponse> usage = ApiGatewayUtils.getUsageLogsForKey(
             key.keyId,
@@ -102,8 +102,8 @@ class ApiGatewayUtilsTest extends OtpMiddlewareTestEnvironment {
 
     @Test
     void retrievesUsageLogsForMultipleApiKeys() throws CreateApiKeyException {
-        ApiKeyDetails firstKey = createTrackedApiKey();
-        ApiKeyDetails secondKey = createTrackedApiKey();
+        ApiKey firstKey = createTrackedApiKey();
+        ApiKey secondKey = createTrackedApiKey();
 
         List<GetUsageResponse> usage = ApiGatewayUtils.getUsageLogsForKeys(
             List.of(firstKey, secondKey),
@@ -115,12 +115,12 @@ class ApiGatewayUtilsTest extends OtpMiddlewareTestEnvironment {
         assertTrue(usage.stream().anyMatch(result -> usagePlanId.equals(result.usagePlanId())));
     }
 
-    private static ApiKeyDetails createTrackedApiKey() throws CreateApiKeyException {
+    private static ApiKey createTrackedApiKey() throws CreateApiKeyException {
         ApiUser user = new ApiUser();
         user.id = TEST_EMAIL_PREFIX;
         user.email = TEST_EMAIL_PREFIX + "@example.com";
 
-        ApiKeyDetails key = ApiGatewayUtils.createApiKey(user, usagePlanId);
+        ApiKey key = ApiGatewayUtils.createApiKey(user, usagePlanId);
         if (key.keyId != null) {
             CREATED_KEY_IDS.add(key.keyId);
         }

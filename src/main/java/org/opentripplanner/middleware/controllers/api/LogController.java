@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import org.opentripplanner.middleware.models.ApiKey;
 import software.amazon.awssdk.services.apigateway.model.GetUsageResponse;
 import io.github.manusant.ss.SparkSwagger;
 import io.github.manusant.ss.descriptor.EndpointDescriptor;
@@ -7,7 +8,6 @@ import io.github.manusant.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
-import org.opentripplanner.middleware.models.ApiKeyDetails;
 import org.opentripplanner.middleware.models.ApiUsageResult;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -77,7 +77,7 @@ public class LogController implements Endpoint {
      */
     private static List<ApiUsageResult> getUsageLogs(Request req, Response res) {
         // Get list of API keys (if present) from request.
-        List<ApiKeyDetails> apiKeyDetails = getApiKeyIdsFromRequest(req);
+        List<ApiKey> apiKeyDetails = getApiKeyIdsFromRequest(req);
         RequestingUser requestingUser = Auth0Connection.getUserFromRequest(req);
         // If the user is not an admin, the list of API keys is defaulted to their keys.
         if (!requestingUser.isAdmin()) {
@@ -85,7 +85,7 @@ public class LogController implements Endpoint {
                 logMessageAndHalt(req, HttpStatus.FORBIDDEN_403, "Action is not permitted for user.");
                 return null;
             }
-            apiKeyDetails = requestingUser.apiUser.apiKeyDetails;
+            apiKeyDetails = requestingUser.apiUser.apiKeys;
             // If the requesting API user has no keys, return an empty list (to avoid returning the full set below).
             if (apiKeyDetails.isEmpty()) {
                 return new ArrayList<>();
@@ -117,16 +117,16 @@ public class LogController implements Endpoint {
     }
 
     /**
-     * Extract the key ids from request, if present, and create a list of ApiKeyDetails objects
+     * Extract the key ids from request, if present, and create a list of ApiKey objects
      */
-    private static List<ApiKeyDetails> getApiKeyIdsFromRequest(Request req) {
-        List<ApiKeyDetails> apiKeyDetails = new ArrayList<>();
+    private static List<ApiKey> getApiKeyIdsFromRequest(Request req) {
+        List<ApiKey> apiKeyDetails = new ArrayList<>();
         String keyIdParam = req.queryParamOrDefault("keyId", "");
         if (keyIdParam.isEmpty()) {
             return apiKeyDetails;
         }
         for (String keyId : keyIdParam.split(",")) {
-            apiKeyDetails.add(new ApiKeyDetails(keyId));
+            apiKeyDetails.add(new ApiKey(keyId));
         }
         return apiKeyDetails;
     }

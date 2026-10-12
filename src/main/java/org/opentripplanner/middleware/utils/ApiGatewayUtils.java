@@ -1,5 +1,6 @@
 package org.opentripplanner.middleware.utils;
 
+import org.opentripplanner.middleware.models.ApiKey;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.services.apigateway.ApiGatewayClient;
@@ -16,7 +17,6 @@ import software.amazon.awssdk.services.apigateway.model.GetUsageResponse;
 import software.amazon.awssdk.services.apigateway.model.NotFoundException;
 import software.amazon.awssdk.services.apigateway.model.UsagePlan;
 import org.opentripplanner.middleware.bugsnag.BugsnagReporter;
-import org.opentripplanner.middleware.models.ApiKeyDetails;
 import org.opentripplanner.middleware.models.ApiUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +62,7 @@ public class ApiGatewayUtils {
     /**
      * Request an API key from AWS api gateway and assign it to an existing usage plan.
      */
-    public static ApiKeyDetails createApiKey(ApiUser user, String usagePlanId) throws CreateApiKeyException {
+    public static ApiKey createApiKey(ApiUser user, String usagePlanId) throws CreateApiKeyException {
         if (user == null || user.id == null || usagePlanId == null) {
             throw new CreateApiKeyException("All required input parameters must be provided.");
         }
@@ -108,22 +108,22 @@ public class ApiGatewayUtils {
         }
         // Finally return API key if an unknown exception is not encountered.
         LOG.debug("Get api key and assign to usage plan took {} msec", DateTimeUtils.currentTimeMillis() - startTime);
-        return new ApiKeyDetails(apiKeyResult);
+        return new ApiKey(apiKeyResult);
     }
 
     /**
      * Delete an API key from AWS API gateway.
      */
-    public static boolean deleteApiKey(ApiKeyDetails apiKeyDetails) {
+    public static boolean deleteApiKey(ApiKey apiKey) {
         long startTime = DateTimeUtils.currentTimeMillis();
         boolean success = true;
         try (ApiGatewayClient gateway = getAmazonApiGateway()) {
-            gateway.deleteApiKey(DeleteApiKeyRequest.builder().apiKey(apiKeyDetails.keyId).build());
-            LOG.info("Deleting Api key {} took {} msec", apiKeyDetails.keyId, DateTimeUtils.currentTimeMillis() - startTime);
+            gateway.deleteApiKey(DeleteApiKeyRequest.builder().apiKey(apiKey.keyId).build());
+            LOG.info("Deleting Api key {} took {} msec", apiKey.keyId, DateTimeUtils.currentTimeMillis() - startTime);
         } catch (NotFoundException e) {
-            LOG.warn("Api key ({}) not found, unable to delete", apiKeyDetails.keyId, e);
+            LOG.warn("Api key ({}) not found, unable to delete", apiKey.keyId, e);
         } catch (Exception e) {
-            String message = String.format("Unable to delete api key (%s)", apiKeyDetails.keyId);
+            String message = String.format("Unable to delete api key (%s)", apiKey.keyId);
             BugsnagReporter.reportErrorToBugsnag(message, e);
             success = false;
         }
@@ -168,14 +168,14 @@ public class ApiGatewayUtils {
      * Get usage logs from AWS api gateway for a given list of api keys, start and end date
      */
     public static List<GetUsageResponse> getUsageLogsForKeys(
-        List<ApiKeyDetails> apiKeyDetails,
+        List<ApiKey> apiKeyDetails,
         String startDate,
         String endDate
     ) {
         long startTime = DateTimeUtils.currentTimeMillis();
 
         List<GetUsageResponse> usageResults = new ArrayList<>();
-        for (ApiKeyDetails apiKeyDetail : apiKeyDetails) {
+        for (ApiKey apiKeyDetail : apiKeyDetails) {
             usageResults.addAll(getUsageLogsForKey(apiKeyDetail.keyId, startDate, endDate));
         }
 

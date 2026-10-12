@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * Represents a subset of an AWS API Gateway API key.
  */
-public class ApiKeyDetails implements Serializable {
+public class ApiKey implements Serializable {
 
     /**
      * The api key id as provided by AWS API Gateway.
@@ -28,33 +28,33 @@ public class ApiKeyDetails implements Serializable {
     /**
      * This no-arg constructor exists to make MongoDB happy.
      */
-    public ApiKeyDetails() {
+    public ApiKey() {
     }
 
     /**
-     * Construct ApiKeyDetails from a single api key id.
+     * Construct ApiKey from a single api key id.
      */
-    public ApiKeyDetails(String apiKeyId) {
+    public ApiKey(String apiKeyId) {
         keyId = apiKeyId;
     }
 
     /**
-     * Construct ApiKeyDetails from AWS api gateway create api key result.
+     * Construct ApiKey from AWS api gateway create api key result.
      */
-    public ApiKeyDetails(CreateApiKeyResponse apiKeyDetails) {
-        this.keyId = apiKeyDetails.id();
-        this.name = apiKeyDetails.name();
-        this.value = apiKeyDetails.value();
+    public ApiKey(CreateApiKeyResponse apiKey) {
+        this.keyId = apiKey.id();
+        this.name = apiKey.name();
+        this.value = apiKey.value();
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ApiKeyDetails apiKeyDetails = (ApiKeyDetails) o;
-        return keyId.equals(apiKeyDetails.keyId) &&
-            name.equals(apiKeyDetails.name) &&
-            value.equals(apiKeyDetails.value);
+        ApiKey apiKey = (ApiKey) o;
+        return keyId.equals(apiKey.keyId) &&
+            name.equals(apiKey.name) &&
+            value.equals(apiKey.value);
     }
 
     @Override

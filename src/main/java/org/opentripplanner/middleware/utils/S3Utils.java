@@ -50,6 +50,7 @@ public class S3Utils {
      * list of files at the root of a bucket.
      */
     public static List<CDPFile> getFolderListing(String bucketName, String folderName) {
+        // Normalize the folder name to ensure it ends with a single slash, unless it's empty or root.
         String prefix = folderName == null || folderName.isEmpty() || "/".equals(folderName)
             ? ""
             : folderName.replaceAll("/+$", "") + "/";
@@ -107,7 +108,7 @@ public class S3Utils {
                 PutObjectRequest.builder().bucket(bucketName).key(folderAndFileName).build(),
                 RequestBody.fromFile(file)
             );
-            LOG.info("Uploading to AWS: {}/{}", bucketName, folderAndFileName);
+            LOG.info("Uploaded to AWS: {}/{}", bucketName, folderAndFileName);
         } catch (Exception e) {
             // If some unexpected exception is thrown by AWS, catch it, report to Bugsnag, and throw.
             String message = "Unable to create object";
@@ -126,7 +127,7 @@ public class S3Utils {
                 .bucket(bucketName)
                 .key(folderAndFileName)
                 .build());
-            LOG.info("Removing {} from s3 bucket {}", folderAndFileName, bucketName);
+            LOG.info("Removed {} from s3 bucket {}", folderAndFileName, bucketName);
         } catch (Exception e) {
             // If some unexpected exception is thrown by AWS, catch it, report to Bugsnag, and throw.
             String message = "Unable to delete object";
