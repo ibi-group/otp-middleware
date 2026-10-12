@@ -41,10 +41,10 @@ public class ApiKey implements Serializable {
     /**
      * Construct ApiKey from AWS api gateway create api key result.
      */
-    public ApiKey(CreateApiKeyResponse apiKey) {
-        this.keyId = apiKey.id();
-        this.name = apiKey.name();
-        this.value = apiKey.value();
+    public ApiKey(CreateApiKeyResponse apiKeyResult) {
+        this.keyId = apiKeyResult.id();
+        this.name = apiKeyResult.name();
+        this.value = apiKeyResult.value();
     }
 
     @Override

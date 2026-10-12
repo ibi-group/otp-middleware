@@ -46,8 +46,8 @@ public class ApiGatewayUtils {
 
         ApiGatewayClientBuilder gatewayBuilder = ApiGatewayClient.builder()
             .overrideConfiguration(ClientOverrideConfiguration.builder()
-                .apiCallTimeout(Duration.ofMillis(SDK_REQUEST_TIMEOUT))
-                .build());
+            .apiCallTimeout(Duration.ofMillis(SDK_REQUEST_TIMEOUT))
+            .build());
         if (hasConfigProperty("AWS_PROFILE")) {
             gatewayBuilder.credentialsProvider(
                 ProfileCredentialsProvider.create(getConfigPropertyAsText("AWS_PROFILE"))
@@ -168,15 +168,15 @@ public class ApiGatewayUtils {
      * Get usage logs from AWS api gateway for a given list of api keys, start and end date
      */
     public static List<GetUsageResponse> getUsageLogsForKeys(
-        List<ApiKey> apiKeyDetails,
+        List<ApiKey> apiKeys,
         String startDate,
         String endDate
     ) {
         long startTime = DateTimeUtils.currentTimeMillis();
 
         List<GetUsageResponse> usageResults = new ArrayList<>();
-        for (ApiKey apiKeyDetail : apiKeyDetails) {
-            usageResults.addAll(getUsageLogsForKey(apiKeyDetail.keyId, startDate, endDate));
+        for (ApiKey apiKey : apiKeys) {
+            usageResults.addAll(getUsageLogsForKey(apiKey.keyId, startDate, endDate));
         }
 
         LOG.debug("Retrieving usage logs for a list of api keys took {} msec", DateTimeUtils.currentTimeMillis() - startTime);
