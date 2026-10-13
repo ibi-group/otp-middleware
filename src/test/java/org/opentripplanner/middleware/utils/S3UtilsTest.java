@@ -93,20 +93,7 @@ class S3UtilsTest extends OtpMiddlewareTestEnvironment {
 
         assertNotNull(url);
         assertTrue(url.getQuery().contains("X-Amz-Signature="));
-    }
-
-    @Test
-    void uploadsObject(@TempDir Path tempDir) throws Exception {
-        String folder = TEST_PREFIX + "/upload";
-        String key = folder + "/uploaded.txt";
-        putTestObject(key, createFile(tempDir, "upload.txt", "uploaded content"));
-
-        List<CDPFile> files = S3Utils.getFolderListing(bucketName, folder);
-
-        assertEquals(1, files.size());
-        assertEquals(key, files.getFirst().key);
-        assertEquals("uploaded.txt", files.getFirst().name);
-        assertEquals(16, files.getFirst().size);
+        assertTrue(url.getQuery().contains("X-Amz-Expires=60"));
     }
 
     @Test

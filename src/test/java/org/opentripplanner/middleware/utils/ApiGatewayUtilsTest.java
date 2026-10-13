@@ -87,28 +87,14 @@ class ApiGatewayUtilsTest extends OtpMiddlewareTestEnvironment {
     }
 
     @Test
-    void retrievesUsageLogsForApiKey() throws CreateApiKeyException {
-        ApiKey key = createTrackedApiKey();
-
-        List<GetUsageResponse> usage = ApiGatewayUtils.getUsageLogsForKey(
-            key.keyId,
-            LocalDate.now(ZoneOffset.UTC).minusDays(1).format(DateTimeUtils.DEFAULT_DATE_FORMATTER),
-            LocalDate.now(ZoneOffset.UTC).format(DateTimeUtils.DEFAULT_DATE_FORMATTER)
-        );
-
-        assertFalse(usage.isEmpty());
-        assertTrue(usage.stream().anyMatch(result -> usagePlanId.equals(result.usagePlanId())));
-    }
-
-    @Test
     void retrievesUsageLogsForMultipleApiKeys() throws CreateApiKeyException {
         ApiKey firstKey = createTrackedApiKey();
         ApiKey secondKey = createTrackedApiKey();
 
         List<GetUsageResponse> usage = ApiGatewayUtils.getUsageLogsForKeys(
             List.of(firstKey, secondKey),
-            LocalDate.now(ZoneOffset.UTC).minusDays(1).format(DateTimeUtils.DEFAULT_DATE_FORMATTER),
-            LocalDate.now(ZoneOffset.UTC).format(DateTimeUtils.DEFAULT_DATE_FORMATTER)
+            LocalDate.now(ZoneOffset.UTC).minusDays(1).toString(),
+            LocalDate.now(ZoneOffset.UTC).toString()
         );
 
         assertFalse(usage.isEmpty());

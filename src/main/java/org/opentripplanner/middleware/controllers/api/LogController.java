@@ -1,6 +1,5 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import org.opentripplanner.middleware.models.ApiKey;
 import software.amazon.awssdk.services.apigateway.model.GetUsageResponse;
 import io.github.manusant.ss.SparkSwagger;
 import io.github.manusant.ss.descriptor.EndpointDescriptor;
@@ -8,6 +7,7 @@ import io.github.manusant.ss.rest.Endpoint;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
+import org.opentripplanner.middleware.models.ApiKey;
 import org.opentripplanner.middleware.models.ApiUsageResult;
 import org.opentripplanner.middleware.utils.ApiGatewayUtils;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
