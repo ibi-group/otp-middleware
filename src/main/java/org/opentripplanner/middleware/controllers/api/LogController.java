@@ -1,6 +1,6 @@
 package org.opentripplanner.middleware.controllers.api;
 
-import com.amazonaws.services.apigateway.model.GetUsageResult;
+import software.amazon.awssdk.services.apigateway.model.GetUsageResponse;
 import io.github.manusant.ss.SparkSwagger;
 import io.github.manusant.ss.descriptor.EndpointDescriptor;
 import io.github.manusant.ss.rest.Endpoint;
@@ -98,7 +98,7 @@ public class LogController implements Endpoint {
         String startDate = req.queryParamOrDefault("startDate", formatter.format(now.minusDays(30)));
         String endDate = req.queryParamOrDefault("endDate", formatter.format(now));
         try {
-            List<GetUsageResult> usageLogs;
+            List<GetUsageResponse> usageLogs;
             if (apiKeys.isEmpty()) {
                 // keyId param is optional (if not provided, all API keys will be included in response).
                 usageLogs = ApiGatewayUtils.getUsageLogsForKey(null, startDate, endDate);
@@ -117,7 +117,7 @@ public class LogController implements Endpoint {
     }
 
     /**
-     * Extract the key ids from request, if present, an create a list of ApiKey objects
+     * Extract the key ids from request, if present, and create a list of ApiKey objects
      */
     private static List<ApiKey> getApiKeyIdsFromRequest(Request req) {
         List<ApiKey> apiKeys = new ArrayList<>();

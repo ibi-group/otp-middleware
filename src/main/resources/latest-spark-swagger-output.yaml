@@ -2474,7 +2474,7 @@ definitions:
         type: "string"
       message:
         type: "string"
-  GetUsageResult:
+  GetUsageResponse:
     type: "object"
     properties:
       usagePlanId:
@@ -2491,7 +2491,7 @@ definitions:
     type: "object"
     properties:
       result:
-        $ref: "#/definitions/GetUsageResult"
+        $ref: "#/definitions/GetUsageResponse"
       apiUsers:
         $ref: "#/definitions/Map"
   MonitoredComponent:

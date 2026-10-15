@@ -135,7 +135,7 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
     /**
      * Make sure that at least one API key exists.
      */
-    private boolean ensureApiKeyExists() {
+    private void ensureApiKeyExists() {
         // Refresh API keys.
         apiUser = Persistence.apiUsers.getById(apiUser.id);
         if (apiUser.apiKeys.isEmpty()) {
@@ -143,13 +143,10 @@ public class ApiKeyManagementTest extends OtpMiddlewareTestEnvironment {
             try {
                 apiUser.createApiKey(DEFAULT_USAGE_PLAN_ID, true);
                 LOG.info("Successfully created API key");
-                return true;
             } catch (CreateApiKeyException e) {
                 LOG.error("Could not create API key", e);
-                return false;
             }
         }
-        return true;
     }
 
     /**
