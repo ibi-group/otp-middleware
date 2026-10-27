@@ -356,7 +356,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         }
 
         public OtpResponse getOtpResponse(OtpRequest ignored) {
-            if (variableSupplier.get().origin.location.coordinate.toString().equals(triggerLocation.getCoordinates())) {
+            if (variableSupplier.get().origin.location.coordinate.toCompactString().equals(triggerLocation.getCoordinates())) {
                 return mockOtpReroutedPlanResponse(reroutedResponse).get();
             }
             OtpResponse response = new OtpResponse();
