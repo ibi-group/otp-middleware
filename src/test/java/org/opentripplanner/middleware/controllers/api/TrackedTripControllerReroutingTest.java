@@ -297,7 +297,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         OtpGraphQLVariables rerouteVariables = setOtpGraphQLVariables(originalTripVariables, fromCoords);
         assertEquals(originalTripVariables.mobilityProfile, rerouteVariables.mobilityProfile);
         assertEquals(originalTripVariables.destination, rerouteVariables.destination);
-        assertEquals(fromCoords.getCoordinates(), rerouteVariables.origin.location.coordinate.toString());
+        assertEquals(fromCoords.getCoordinates(), rerouteVariables.origin.location.coordinate.toCompactString());
         assertNotEquals(originalTripVariables.time, rerouteVariables.time);
     }
 
@@ -326,7 +326,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
         params.origin = new PlanLabeledLocationInput();
         params.origin.convertFromFromPlace("from-place::0,0");
         checkMonitoredTrip.checkForRerouting(params);
-        assertEquals(fromCoords.getCoordinates(), params.origin.location.coordinate);
+        assertEquals(fromCoords.getCoordinates(), params.origin.location.coordinate.toCompactString());
     }
 
     /**
