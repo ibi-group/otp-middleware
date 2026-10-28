@@ -13,4 +13,8 @@ public class PlanCoordinateInput {
     public String toString() {
         return latitude + ", " + longitude;
     }
+
+    public String toCompactString() {
+        return latitude + "," + longitude;
+    }
 }

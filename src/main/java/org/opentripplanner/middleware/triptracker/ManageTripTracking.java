@@ -405,7 +405,7 @@ public class ManageTripTracking {
     public static OtpGraphQLVariables setOtpGraphQLVariables(OtpGraphQLVariables originalTripVariables, Coordinates from) {
         OtpGraphQLVariables query = originalTripVariables.clone();
         query.origin = new PlanLabeledLocationInput();
-        query.origin.convertFromFromPlace("label".concat(from.getCoordinates()));
+        query.origin.convertFromFromPlace("label::".concat(from.getCoordinates()));
         query.time = getTimeNowAsString();
         return query;
     }
