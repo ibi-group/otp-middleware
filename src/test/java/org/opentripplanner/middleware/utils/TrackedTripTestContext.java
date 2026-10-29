@@ -8,6 +8,7 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
+import org.opentripplanner.middleware.otp.graphql.PlanLabeledLocationInput;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.testutils.ApiTestUtils;
@@ -157,7 +158,8 @@ public class TrackedTripTestContext {
         trip.itinerary = itin;
         // Original itinerary time should be populated.
         OtpGraphQLVariables params = new OtpGraphQLVariables();
-        params.fromPlace = itin.legs.get(0).from.toCoordinates().getCoordinates();
+        params.origin = new PlanLabeledLocationInput();
+        params.origin.convertFromFromPlace("place::" + itin.legs.get(0).from.toCoordinates().getCoordinates());
         params.time = DateTimeUtils.convertToLocalDateTime(itin.startTime).toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"));
         trip.otp2QueryParams = params;
         trip.journeyState = new JourneyState();

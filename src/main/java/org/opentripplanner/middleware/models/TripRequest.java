@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.mongodb.client.FindIterable;
+import org.opentripplanner.middleware.otp.graphql.PlanLabeledLocationInput;
 import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.JsonUtils;
@@ -35,12 +36,12 @@ public class TripRequest extends Model {
     /**
      * From place. Trip starting point.
      */
-    public String fromPlace;
+    public PlanLabeledLocationInput origin;
 
     /**
      * To place. Trip end point.
      */
-    public String toPlace;
+    public PlanLabeledLocationInput destination;
 
     /**
      * The variables passed to the OTP GraphQL `plan` request that triggered this response.
@@ -60,8 +61,8 @@ public class TripRequest extends Model {
     ) {
         this.userId = userId;
         this.batchId = batchId;
-        this.fromPlace = otp2QueryParams.fromPlace;
-        this.toPlace = otp2QueryParams.toPlace;
+        this.origin = otp2QueryParams.origin;
+        this.destination = otp2QueryParams.destination;
         this.otp2QueryParams = otp2QueryParams;
     }
 
@@ -70,8 +71,8 @@ public class TripRequest extends Model {
         return "TripRequest{" +
             "userId='" + userId + '\'' +
             ", batchId='" + batchId + '\'' +
-            ", fromPlace='" + fromPlace + '\'' +
-            ", toPlace='" + toPlace + '\'' +
+            ", fromPlace='" + origin + '\'' +
+            ", toPlace='" + destination + '\'' +
             ", otp2QueryParams=" + JsonUtils.toJson(otp2QueryParams) +
             '}';
     }

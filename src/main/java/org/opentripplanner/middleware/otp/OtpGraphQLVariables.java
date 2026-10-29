@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.opentripplanner.middleware.models.MonitoredTrip;
+import org.opentripplanner.middleware.otp.graphql.PlanDateTimeInput;
+import org.opentripplanner.middleware.otp.graphql.PlanLabeledLocationInput;
+import org.opentripplanner.middleware.otp.graphql.PlanModesInput;
 import spark.Request;
 
 import java.util.List;
@@ -19,13 +22,15 @@ public class OtpGraphQLVariables implements Cloneable {
     public Float bikeReluctance;
     public Float carReluctance;
     public String date;
-    public String fromPlace;
+    public PlanDateTimeInput dateTime;
+    public PlanLabeledLocationInput origin;
     public String mobilityProfile;
-    public List<OtpGraphQLTransportMode> modes;
+    public PlanModesInput modes;
+    public List<OtpGraphQLTransportMode> modesList;
     public int numItineraries;
     public OtpGraphQLRoutesAndTrips preferred;
     public String time;
-    public String toPlace;
+    public PlanLabeledLocationInput destination;
     public OtpGraphQLRoutesAndTrips unpreferred;
     public Float walkReluctance;
     public Float walkSpeed;
@@ -42,18 +47,21 @@ public class OtpGraphQLVariables implements Cloneable {
         clone.banned = banned;
         clone.bikeReluctance = bikeReluctance;
         clone.carReluctance = carReluctance;
-        clone.date = date;
-        clone.fromPlace = fromPlace;
+        clone.dateTime = dateTime;
+        clone.destination = destination;
         clone.mobilityProfile = mobilityProfile;
+        if (modesList != null) {
+            clone.modesList = List.copyOf(modesList);
+        }
         if (modes != null) {
-            clone.modes = List.copyOf(modes);
+            clone.modes = modes.clone();
         }
         clone.numItineraries = numItineraries;
         if (preferred != null) {
             clone.preferred = preferred.clone();
         }
         clone.time = time;
-        clone.toPlace = toPlace;
+        clone.origin = origin;
         if (unpreferred != null) {
             clone.unpreferred = unpreferred.clone();
         }

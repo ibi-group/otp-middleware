@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -42,6 +43,7 @@ public class DateTimeUtils {
     private static final Logger LOG = LoggerFactory.getLogger(DateTimeUtils.class);
 
     public static final String DEFAULT_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
+    public static final String OTP_DATETIME_FORMAT_PATTERN = "yyyy-MM-dd'T'HH:mmXXX";
     public static final DateTimeFormatter DEFAULT_DATE_FORMATTER = DateTimeFormatter.ofPattern(
         DEFAULT_DATE_FORMAT_PATTERN
     );
@@ -84,6 +86,18 @@ public class DateTimeUtils {
         }
     }
 
+    public static LocalDateTime getDateTimeFromString(String value, String expectedDatePattern) throws DateTimeParseException {
+        DateTimeFormatter expectedDateFormat = new DateTimeFormatterBuilder()
+                .appendPattern(expectedDatePattern)
+                .toFormatter();
+        try {
+            return LocalDateTime.parse(value, expectedDateFormat);
+        } catch (DateTimeParseException e) {
+            BugsnagReporter.reportErrorToBugsnag("Unable to parse LocalDate", value, e);
+            throw e;
+        }
+    }
+
     public static String getStringFromDate(LocalDate localDate, String expectedDatePattern) throws DateTimeParseException {
         DateTimeFormatter expectedDateFormat = new DateTimeFormatterBuilder()
             .appendPattern(expectedDatePattern)
@@ -99,6 +113,15 @@ public class DateTimeUtils {
             .parseDefaulting(ChronoField.NANO_OF_DAY, 0)
             .toFormatter()
             .withZone(zoneId);
+        return localDate.format(expectedDateFormat);
+    }
+
+    public static String getStringFromDate(OffsetDateTime localDate, String expectedDatePattern) throws DateTimeParseException {
+        DateTimeFormatter expectedDateFormat = new DateTimeFormatterBuilder()
+                .appendPattern(expectedDatePattern)
+                .parseDefaulting(ChronoField.NANO_OF_DAY, 0)
+                .toFormatter()
+                .withZone(zoneId);
         return localDate.format(expectedDateFormat);
     }
 
@@ -238,6 +261,17 @@ public class DateTimeUtils {
             getDateFromString(dateString, DEFAULT_DATE_FORMAT_PATTERN),
             LocalTime.parse(timeString),
             DateTimeUtils.getOtpZoneId()
+        );
+    }
+
+    /**
+     * Makes a {@link ZonedDateTime} object from a date string and a time string, using OTP's time zone.
+     */
+    public static ZonedDateTime makeOtpPlanConnectionZonedDateTime(String dateString, String timeString) {
+        return ZonedDateTime.of(
+                getDateFromString(dateString, DEFAULT_DATE_FORMAT_PATTERN),
+                LocalTime.parse(timeString),
+                DateTimeUtils.getOtpZoneId()
         );
     }
 

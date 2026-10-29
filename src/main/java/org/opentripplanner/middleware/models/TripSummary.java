@@ -37,7 +37,7 @@ public class TripSummary extends Model {
             this.date = tripPlan.date;
             this.fromPlace = tripPlan.from;
             this.toPlace = tripPlan.to;
-            this.itineraries = tripPlan.itineraries;
+            this.itineraries = tripPlan.edges;
         }
         this.errors = errors;
         this.tripRequestId = tripRequestId;
