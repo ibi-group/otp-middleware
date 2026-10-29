@@ -36,7 +36,11 @@ public class WaitForTransitInstruction extends TransitLegInstruction {
             "Wait%s for your bus, route %s, scheduled at %s (%s)",
             getReadableMinutes(waitInMinutes),
             routeShortName,
-            DateTimeUtils.formatShortTime(Date.from(transitLeg.getScheduledStartTime().toInstant()), locale),
+            DateTimeUtils
+                .formatShortTime(Date.from(transitLeg.getScheduledStartTime().toInstant()), locale)
+                // Bus instruction times must use plain spaces
+                // because the mobile app does not support the special spacing character.
+                .replace('\u202f', ' '),
             status
         );
     }
