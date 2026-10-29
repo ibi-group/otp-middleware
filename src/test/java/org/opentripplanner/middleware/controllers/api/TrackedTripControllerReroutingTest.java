@@ -92,7 +92,6 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
     @AfterAll
     static void tearDown() {
         assumeTrue(IS_END_TO_END);
-        DateTimeUtils.useSystemDefaultClockAndTimezone();
         restoreDefaultAuthDisabled();
         context.tearDown();
         observerUser = Persistence.otpUsers.getById(observerUser.id);
@@ -103,6 +102,7 @@ class TrackedTripControllerReroutingTest extends OtpMiddlewareTestEnvironment {
     void tearDownAfterTest() {
         assumeTrue(IS_END_TO_END);
         context.cleanUpAfterTest();
+        DateTimeUtils.useSystemDefaultClockAndTimezone();
     }
 
     @ParameterizedTest
