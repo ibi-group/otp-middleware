@@ -185,11 +185,13 @@ public class AnonymizedTripRequest {
      */
     public static List<String> getModesForAnonymizedRequests(List<TransportMode> modesList) {
         List<String> modes = new ArrayList<>();
-        if (modesList == null) {
-            return modes;
+        if (modesList != null) {
+            modes.addAll(modesList.stream().map(TransportMode::toString).toList());
         }
 
-        modes.addAll(modesList.stream().map(TransportMode::toString).toList());
+        if (modes.isEmpty()) {
+            modes.add("");
+        }
         return modes;
     }
 
