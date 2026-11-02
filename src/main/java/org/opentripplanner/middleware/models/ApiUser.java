@@ -71,8 +71,7 @@ public class ApiUser extends AbstractUser {
 
     public void createApiKey(String usagePlanId, boolean persist) throws CreateApiKeyException {
         try {
-            ApiKey apiKey = ApiGatewayUtils.createApiKey(this, usagePlanId);
-            apiKeys.add(apiKey);
+            apiKeys.add(ApiGatewayUtils.createApiKey(this, usagePlanId));
             if (persist) Persistence.apiUsers.replace(this.id, this);
         } catch (CreateApiKeyException e) {
             LOG.error("Could not create API key for user {}", email, e);

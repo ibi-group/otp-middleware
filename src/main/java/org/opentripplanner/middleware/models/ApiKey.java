@@ -1,6 +1,6 @@
 package org.opentripplanner.middleware.models;
 
-import com.amazonaws.services.apigateway.model.CreateApiKeyResult;
+import software.amazon.awssdk.services.apigateway.model.CreateApiKeyResponse;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -41,10 +41,10 @@ public class ApiKey implements Serializable {
     /**
      * Construct ApiKey from AWS api gateway create api key result.
      */
-    public ApiKey(CreateApiKeyResult apiKeyResult) {
-        keyId = apiKeyResult.getId();
-        name = apiKeyResult.getName();
-        value = apiKeyResult.getValue();
+    public ApiKey(CreateApiKeyResponse apiKeyResult) {
+        keyId = apiKeyResult.id();
+        name = apiKeyResult.name();
+        value = apiKeyResult.value();
     }
 
     @Override
