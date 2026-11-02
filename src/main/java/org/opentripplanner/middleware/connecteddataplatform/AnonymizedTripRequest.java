@@ -97,7 +97,7 @@ public class AnonymizedTripRequest {
 
             this.date = getStringFromDate(parsedDate, "yyyy-MM-dd");
             this.time = getStringFromDate(parsedDate, "HH:mm");
-            this.mode = getModes(queryVariables.modes);
+            this.mode = getModesForAnonymizedRequests(queryVariables.modesList);
         }
 
         // Extract all trip summary itineraries, convert to anonymized itineraries and group.
@@ -185,6 +185,20 @@ public class AnonymizedTripRequest {
         modes.addAll(tripRequestModes.transit.access);
         modes.addAll(tripRequestModes.transit.transit.stream().map(TransportMode::toString).collect(Collectors.toList()));
 
+        return modes;
+    }
+
+    /**
+     * Extract modes from the trip request and return as an array.
+     * @return A list of strings, and at a minimum, a list with one element which is an empty string.
+     */
+    public static List<String> getModesForAnonymizedRequests(List<TransportMode> modesList) {
+        List<String> modes = new ArrayList<>();
+        if (modesList == null) {
+            return modes;
+        }
+
+        modes.addAll(modesList.stream().map(TransportMode::toString).toList());
         return modes;
     }
 

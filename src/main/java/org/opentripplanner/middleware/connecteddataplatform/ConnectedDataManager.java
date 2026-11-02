@@ -436,9 +436,7 @@ public class ConnectedDataManager implements RecurringJobScheduler {
         }
         if (request != null && request.otp2QueryParams != null) {
             // Replace the mode parameter in the first request with all unique modes from across the batch.
-            request.otp2QueryParams.modesList = allUniqueModes.stream()
-                .map(TransportMode::new)
-                .collect(Collectors.toList());
+            request.otp2QueryParams.modesList.addAll(allUniqueModes.stream().map(TransportMode::new).toList());
         }
         return request;
     }
