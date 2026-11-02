@@ -1,7 +1,7 @@
 {
   "data": {
-    "plan": {
-      "itineraries": [],
+    "planConnection": {
+      "edges": [],
       "routingErrors": [
         {
           "code": "NO_STOPS_IN_RANGE",

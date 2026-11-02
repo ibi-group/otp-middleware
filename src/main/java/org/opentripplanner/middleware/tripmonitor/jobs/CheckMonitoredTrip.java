@@ -11,15 +11,16 @@ import org.opentripplanner.middleware.models.TrackedJourney;
 import org.opentripplanner.middleware.models.TripMonitorAlertNotification;
 import org.opentripplanner.middleware.models.TripMonitorNotification;
 import org.opentripplanner.middleware.otp.LegFinder;
+import org.opentripplanner.middleware.otp.OtpDispatcher;
 import org.opentripplanner.middleware.otp.OtpGraphQLVariables;
 import org.opentripplanner.middleware.otp.OtpRequest;
-import org.opentripplanner.middleware.tripmonitor.TripStatus;
-import org.opentripplanner.middleware.otp.OtpDispatcher;
-import org.opentripplanner.middleware.otp.response.Itinerary;
+import org.opentripplanner.middleware.otp.graphql.PlanLabeledLocationInput;
 import org.opentripplanner.middleware.otp.response.Alert;
+import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.tripmonitor.JourneyState;
+import org.opentripplanner.middleware.tripmonitor.TripStatus;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
 import org.opentripplanner.middleware.triptracker.TripTrackingData;
 import org.opentripplanner.middleware.utils.ConfigUtils;
@@ -35,6 +36,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -42,7 +44,6 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -484,7 +485,8 @@ public class CheckMonitoredTrip implements Runnable {
     public void checkForRerouting(OtpGraphQLVariables params) {
         String reroutingLocation = ongoingJourneyReroutingLocation();
         if (reroutingLocation != null) {
-            params.fromPlace = reroutingLocation;
+            params.origin = new PlanLabeledLocationInput();
+            params.origin.convertFromFromPlace(reroutingLocation);
         }
     }
 

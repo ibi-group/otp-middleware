@@ -2508,6 +2508,15 @@ definitions:
         type: "string"
       name:
         type: "string"
+  PlanCoordinateInput:
+    type: "object"
+    properties:
+      latitude:
+        type: "number"
+        format: "double"
+      longitude:
+        type: "number"
+        format: "double"
   Stop:
     type: "object"
     properties:
@@ -2549,12 +2558,17 @@ definitions:
     properties:
       points:
         type: "string"
+  PlanDateTimeInput:
+    type: "object"
+    properties:
+      earliestDeparture:
+        type: "string"
+      latestArrival:
+        type: "string"
   OtpGraphQLTransportMode:
     type: "object"
     properties:
       mode:
-        type: "string"
-      qualifier:
         type: "string"
   Step:
     type: "object"
@@ -2589,6 +2603,19 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/Itinerary"
+  PlanModesInput:
+    type: "object"
+    properties:
+      direct:
+        type: "array"
+        items:
+          type: "string"
+      transitOnly:
+        type: "boolean"
+      directOnly:
+        type: "boolean"
+      transit:
+        $ref: "#/definitions/PlanTransitModesInput"
   Money:
     type: "object"
     properties:
@@ -2597,6 +2624,11 @@ definitions:
         format: "float"
       currency:
         $ref: "#/definitions/Currency"
+  PlanLocationInput:
+    type: "object"
+    properties:
+      coordinate:
+        $ref: "#/definitions/PlanCoordinateInput"
   Currency:
     type: "object"
     properties:
@@ -2659,11 +2691,15 @@ definitions:
         format: "float"
       date:
         type: "string"
-      fromPlace:
-        type: "string"
+      dateTime:
+        $ref: "#/definitions/PlanDateTimeInput"
+      origin:
+        $ref: "#/definitions/PlanLabeledLocationInput"
       mobilityProfile:
         type: "string"
       modes:
+        $ref: "#/definitions/PlanModesInput"
+      modesList:
         type: "array"
         items:
           $ref: "#/definitions/OtpGraphQLTransportMode"
@@ -2674,8 +2710,8 @@ definitions:
         $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
       time:
         type: "string"
-      toPlace:
-        type: "string"
+      destination:
+        $ref: "#/definitions/PlanLabeledLocationInput"
       unpreferred:
         $ref: "#/definitions/OtpGraphQLRoutesAndTrips"
       walkReluctance:
@@ -2914,6 +2950,25 @@ definitions:
         $ref: "#/definitions/ZonedDateTime"
       requestParameters:
         $ref: "#/definitions/OtpGraphQLVariables"
+  PlanTransitModesInput:
+    type: "object"
+    properties:
+      access:
+        type: "array"
+        items:
+          type: "string"
+      egress:
+        type: "array"
+        items:
+          type: "string"
+      transfer:
+        type: "array"
+        items:
+          type: "string"
+      transit:
+        type: "array"
+        items:
+          $ref: "#/definitions/TransportMode"
   ItineraryExistence:
     type: "object"
     properties:
@@ -3007,6 +3062,11 @@ definitions:
         type: "string"
       productName:
         type: "string"
+  TransportMode:
+    type: "object"
+    properties:
+      mode:
+        type: "string"
   Alert:
     type: "object"
     properties:
@@ -3037,6 +3097,13 @@ definitions:
         format: "double"
       stop:
         $ref: "#/definitions/Stop"
+  PlanLabeledLocationInput:
+    type: "object"
+    properties:
+      label:
+        type: "string"
+      location:
+        $ref: "#/definitions/PlanLocationInput"
   VerificationResult:
     type: "object"
     properties:
@@ -3252,10 +3319,10 @@ definitions:
         type: "string"
       batchId:
         type: "string"
-      fromPlace:
-        type: "string"
-      toPlace:
-        type: "string"
+      origin:
+        $ref: "#/definitions/PlanLabeledLocationInput"
+      destination:
+        $ref: "#/definitions/PlanLabeledLocationInput"
       otp2QueryParams:
         $ref: "#/definitions/QueryVariables"
   QueryVariables:
@@ -3271,13 +3338,15 @@ definitions:
       carReluctance:
         type: "number"
         format: "float"
-      date:
-        type: "string"
-      fromPlace:
-        type: "string"
+      dateTime:
+        $ref: "#/definitions/PlanDateTimeInput"
+      origin:
+        $ref: "#/definitions/PlanLabeledLocationInput"
       mobilityProfile:
         type: "string"
       modes:
+        $ref: "#/definitions/PlanModesInput"
+      modesList:
         type: "array"
         items:
           $ref: "#/definitions/TransportMode"
@@ -3288,8 +3357,8 @@ definitions:
         $ref: "#/definitions/RoutesAndTrips"
       time:
         type: "string"
-      toPlace:
-        type: "string"
+      destination:
+        $ref: "#/definitions/PlanLabeledLocationInput"
       unpreferred:
         $ref: "#/definitions/RoutesAndTrips"
       walkReluctance:
@@ -3306,13 +3375,6 @@ definitions:
       routes:
         type: "string"
       trips:
-        type: "string"
-  TransportMode:
-    type: "object"
-    properties:
-      mode:
-        type: "string"
-      qualifier:
         type: "string"
 externalDocs:
   description: ""
