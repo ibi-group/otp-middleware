@@ -1,11 +1,18 @@
 # syntax=docker/dockerfile:1
-FROM amazoncorretto:11
+FROM maven:3.9.15-eclipse-temurin-25
 WORKDIR /middleware
 
-# Grab latest dev build
-COPY target/otp-middleware.jar ./otp-middleware-1.0-SNAPSHOT.jar
+ARG JAR_VERSION=1.0-SNAPSHOT
+
+# Grab latest dev build/
+# Append a version/commit number that will be used in swagger.
+COPY target/otp-middleware.jar ./otp-middleware-$JAR_VERSION.jar
+
+# Generate launch script
+RUN echo "java -jar otp-middleware-$JAR_VERSION.jar /config/env.yml \$@" >> ./start-middleware.sh
+RUN chmod +x ./start-middleware.sh
 
 # Launch server (relies on env.yml being placed in volume!)
-# Try: docker run --publish 4567:4567 -v ~/env.yml:/config/env.yml otp-middleware-latest
-CMD ["java", "-jar", "otp-middleware-1.0-SNAPSHOT.jar", "/config/env.yml", "--endpoints"]
+ENTRYPOINT ["sh", "./start-middleware.sh"]
+CMD ["--endpoints", "yes"]
 EXPOSE 4567
