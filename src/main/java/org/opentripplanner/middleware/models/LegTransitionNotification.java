@@ -7,6 +7,7 @@ import org.opentripplanner.middleware.tripmonitor.jobs.CheckMonitoredTrip;
 import org.opentripplanner.middleware.tripmonitor.jobs.NotificationType;
 import org.opentripplanner.middleware.triptracker.TravelerPosition;
 import org.opentripplanner.middleware.triptracker.TripStatus;
+import org.opentripplanner.middleware.utils.ConfigUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,7 +121,11 @@ public class LegTransitionNotification {
             NotificationType notificationType = getLegTransitionNotificationType(travelerPosition);
             if (notificationType != null) {
                 try {
-                    new CheckMonitoredTrip(trip).processLegTransition(notificationType, travelerPosition);
+                    CheckMonitoredTrip checkMonitoredTrip = new CheckMonitoredTrip(trip);
+                    if (ConfigUtils.getBooleanEnvVar("RUN_E2E")) {
+                        checkMonitoredTrip.IS_TEST = true;
+                    }
+                    checkMonitoredTrip.processLegTransition(notificationType, travelerPosition);
                 } catch (CloneNotSupportedException e) {
                     LOG.error("Error encountered while checking leg transition.", e);
                 }
