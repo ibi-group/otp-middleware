@@ -3,6 +3,7 @@ package org.opentripplanner.middleware.connecteddataplatform;
 import com.mongodb.client.FindIterable;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.otp.graphql.PlanLocationInput;
 import org.opentripplanner.middleware.otp.graphql.PlanModesInput;
 import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.graphql.TransportMode;
@@ -77,8 +78,8 @@ public class AnonymizedTripRequest {
 
     public AnonymizedTripRequest(TripRequest tripRequest, FindIterable<TripSummary> tripSummaries) {
         this.requestId = tripRequest.batchId;
-        this.fromPlace = Coordinates.fromPlanCoordinateInput(tripRequest.origin.location.coordinate);
-        this.toPlace = Coordinates.fromPlanCoordinateInput(tripRequest.destination.location.coordinate);
+        this.fromPlace = getPlaceCoordinates(tripSummaries, true, tripRequest.origin.location);
+        this.toPlace = getPlaceCoordinates(tripSummaries, false, tripRequest.destination.location);
 
         QueryVariables queryVariables = tripRequest.otp2QueryParams;
         if (queryVariables != null) {
@@ -120,7 +121,7 @@ public class AnonymizedTripRequest {
     private static Coordinates getPlaceCoordinates(
         FindIterable<TripSummary> tripSummaries,
         boolean isFirstLeg,
-        String place
+        PlanLocationInput place
     ) {
         for (TripSummary tripSummary : tripSummaries) {
             if (!areAllFirstOrLastLegsTransit(tripSummary.itineraries, isFirstLeg)) {
@@ -128,18 +129,8 @@ public class AnonymizedTripRequest {
                 return null;
             }
         }
-        // The UI might send just the coordinates (if the geocoder does not return anything, which is unlikely).
-        // If that happens, the format will just be lat,lon and :: will not be present.
-        String coordinate = (place.contains("::")) ? place.split("::")[1].trim() : place;
-        String[] coordinateValues = coordinate.split(",");
-        if (coordinateValues.length != 2) {
-            return new Coordinates(0.0,0.0);
-        }
 
-        return new Coordinates(
-            Double.parseDouble(coordinateValues[0]),
-            Double.parseDouble(coordinateValues[1])
-        );
+        return new Coordinates(place.coordinate.latitude, place.coordinate.longitude);
     }
 
     /**
