@@ -1,6 +1,6 @@
 {
   "data": {
-    "plan": {
+    "planConnection": {
       "date": 1748460935450,
       "from": {
         "name": "(Current Location)",
@@ -12,8 +12,8 @@
         "lon": -84.4391126,
         "lat": 33.6460993
       },
-      "itineraries": [
-        {
+      "edges": [
+        {"node": {
           "duration": 2282,
           "startTime": 1748460957000,
           "endTime": 1748463239000,
@@ -245,7 +245,7 @@
             }
           ],
           "alerts": []
-        }
+        }}
       ]
     }
   }

@@ -1,15 +1,10 @@
 package org.opentripplanner.middleware.controllers.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.manusant.ss.SparkSwagger;
 import io.github.manusant.ss.descriptor.EndpointDescriptor;
 import io.github.manusant.ss.descriptor.ParameterDescriptor;
 import io.github.manusant.ss.rest.Endpoint;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.eclipse.jetty.http.HttpStatus;
 import org.opentripplanner.middleware.auth.Auth0Connection;
 import org.opentripplanner.middleware.auth.RequestingUser;
@@ -17,10 +12,10 @@ import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
 import org.opentripplanner.middleware.otp.OtpDispatcher;
+import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
+import org.opentripplanner.middleware.otp.OtpVersion;
 import org.opentripplanner.middleware.otp.graphql.Query;
 import org.opentripplanner.middleware.otp.graphql.QueryVariables;
-import org.opentripplanner.middleware.otp.OtpVersion;
-import org.opentripplanner.middleware.otp.OtpDispatcherResponse;
 import org.opentripplanner.middleware.otp.response.OtpResponse;
 import org.opentripplanner.middleware.persistence.Persistence;
 import org.opentripplanner.middleware.utils.DateTimeUtils;
@@ -31,7 +26,12 @@ import spark.Request;
 import spark.Response;
 
 import javax.ws.rs.core.MediaType;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.github.manusant.ss.descriptor.MethodDescriptor.path;
 import static org.opentripplanner.middleware.auth.Auth0Connection.checkUser;
@@ -275,7 +275,7 @@ public class OtpRequestProcessor implements Endpoint {
                 // only save trip summary if the trip request was saved
                 boolean tripRequestSaved = Persistence.tripRequests.create(tripRequest);
                 if (tripRequestSaved) {
-                    TripSummary tripSummary = new TripSummary(otpResponse.plan, otpResponse.plan.routingErrors, tripRequest.id, batchId);
+                    TripSummary tripSummary = new TripSummary(otpResponse.planConnection, otpResponse.planConnection.routingErrors, tripRequest.id, batchId);
                     Persistence.tripSummaries.create(tripSummary);
                 } else {
                     LOG.warn("Unable to save trip request, orphaned trip summary not saved");
