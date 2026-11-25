@@ -115,7 +115,7 @@ public class PersistenceTestUtils {
         queryVariables.destination = new PlanLabeledLocationInput();
         queryVariables.destination.convertFromFromPlace(toPlace);
         queryVariables.dateTime = new PlanDateTimeInput();
-        queryVariables.dateTime.earliestDeparture = "2021-09-22T15:54:00-00:00";
+        queryVariables.dateTime.earliestDeparture = "2021-09-22T15:54-00:00";
         queryVariables.walkSpeed = 1.34F;
         if (provideMode) {
             String[] modes = (mode != null ? mode : "WALK,BUS,RAIL").split(",");

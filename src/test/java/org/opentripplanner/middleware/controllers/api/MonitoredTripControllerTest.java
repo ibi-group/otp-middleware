@@ -21,6 +21,7 @@ import org.opentripplanner.middleware.models.MonitoredTrip;
 import org.opentripplanner.middleware.models.OtpUser;
 import org.opentripplanner.middleware.models.RelatedUser;
 import org.opentripplanner.middleware.otp.OtpRequest;
+import org.opentripplanner.middleware.otp.graphql.PlanDateTimeInput;
 import org.opentripplanner.middleware.otp.graphql.PlanLabeledLocationInput;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
@@ -528,6 +529,7 @@ public class MonitoredTripControllerTest extends OtpMiddlewareTestEnvironment {
         monitoredTrip.userId = otpUser.id;
         monitoredTrip.otp2QueryParams = OtpTestUtils.getSampleQueryParams();
         monitoredTrip.otp2QueryParams.date = WED_2026_04_22;
+        monitoredTrip.otp2QueryParams.dateTime = new PlanDateTimeInput();
         monitoredTrip.itinerary = makeItinerary(new Date());
         monitoredTrip.itineraryExistence = new ItineraryExistence();
         monitoredTrip.itineraryExistence.id = "itinerary-existence-id";
