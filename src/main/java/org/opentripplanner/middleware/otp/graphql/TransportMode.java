@@ -7,9 +7,6 @@ public class TransportMode {
     /** A mode such as WALK, BUS, BIKE */
     public String mode;
 
-    /** Optional qualifier such as RENT for bike or other vehicle rentals. */
-    public String qualifier;
-
     public TransportMode() {
         // Needed for serialization
     }
@@ -20,8 +17,6 @@ public class TransportMode {
     }
 
     public String toString() {
-        return StringUtils.isBlank(qualifier)
-            ? mode
-            : String.format("%s_%s", mode, qualifier);
+        return mode;
     }
 }

@@ -1,8 +1,8 @@
 {
   "data": {
-    "plan": {
-      "itineraries": [
-        {
+    "planConnection": {
+      "edges": [
+        {"node": {
           "accessibilityScore": null,
           "duration": 923,
           "endTime": 1706296943000,
@@ -168,7 +168,7 @@
           "transfers": 0,
           "waitingTime": 0,
           "walkTime": 923
-        }
+        }}
       ],
       "routingErrors": [
         {

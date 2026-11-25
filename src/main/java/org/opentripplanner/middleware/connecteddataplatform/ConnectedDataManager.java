@@ -13,6 +13,7 @@ import org.opentripplanner.middleware.models.IntervalUpload;
 import org.opentripplanner.middleware.models.TripHistoryUpload;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.otp.graphql.PlanModesInput;
 import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.graphql.TransportMode;
 import org.opentripplanner.middleware.persistence.Persistence;
@@ -30,13 +31,13 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static org.opentripplanner.middleware.utils.ConfigUtils.getConfigPropertyAsInt;
@@ -428,16 +429,21 @@ public class ConnectedDataManager implements RecurringJobScheduler {
                 request = tripRequest;
             }
             QueryVariables queryVariables = tripRequest.otp2QueryParams;
-            List<TransportMode> modes = queryVariables != null ? queryVariables.modes : null;
-            if (modes != null && !modes.isEmpty()) {
+            PlanModesInput modes = queryVariables != null ? queryVariables.modes : null;
+            if (modes != null) {
                 allUniqueModes.addAll(AnonymizedTripRequest.getModes(modes));
             }
         }
-        if (request != null && request.otp2QueryParams != null) {
-            // Replace the mode parameter in the first request with all unique modes from across the batch.
-            request.otp2QueryParams.modes = allUniqueModes.stream()
-                .map(TransportMode::new)
-                .collect(Collectors.toList());
+        if (request != null) {
+            QueryVariables requestParams = request.otp2QueryParams;
+            if (requestParams != null) {
+                // Replace the mode parameter in the first request with all unique modes from across the batch.
+                if (requestParams.modesList == null) {
+                    requestParams.modesList = new ArrayList<>();
+
+                }
+                requestParams.modesList.addAll(allUniqueModes.stream().map(TransportMode::new).toList());
+            }
         }
         return request;
     }

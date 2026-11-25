@@ -23,6 +23,7 @@ import spark.Request;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -33,6 +34,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.OTP_DATETIME_FORMAT_PATTERN;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.getStringFromDate;
 import static org.opentripplanner.middleware.utils.DateTimeUtils.makeOtpZonedDateTime;
 
 /**
@@ -293,6 +296,21 @@ public class MonitoredTrip extends Model {
         int lastLegIndex = itinerary.legs.size() - 1;
         from = itinerary.legs.get(0).from;
         to = itinerary.legs.get(lastLegIndex).to;
+        LocalDateTime parsedDate = null;
+
+        if (graphQLVariables.dateTime == null) {
+            parsedDate = DateTimeUtils.nowAsLocalDateTime();
+        } else if (graphQLVariables.dateTime.earliestDeparture != null) {
+            parsedDate = DateTimeUtils.getDateTimeFromString(graphQLVariables.dateTime.earliestDeparture, OTP_DATETIME_FORMAT_PATTERN);
+        } else if (graphQLVariables.dateTime.latestArrival != null) {
+            parsedDate = DateTimeUtils.getDateTimeFromString(graphQLVariables.dateTime.latestArrival, OTP_DATETIME_FORMAT_PATTERN);
+        }
+
+        if (parsedDate != null) {
+            graphQLVariables.date = getStringFromDate(parsedDate, "yyyy-MM-dd");
+            graphQLVariables.time = getStringFromDate(parsedDate, "HH:mm");
+        }
+
         this.otp2QueryParams = graphQLVariables;
 
         // Ensure the itinerary we store does not contain any realtime info.

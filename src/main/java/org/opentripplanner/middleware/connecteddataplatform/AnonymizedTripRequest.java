@@ -3,19 +3,26 @@ package org.opentripplanner.middleware.connecteddataplatform;
 import com.mongodb.client.FindIterable;
 import org.opentripplanner.middleware.models.TripRequest;
 import org.opentripplanner.middleware.models.TripSummary;
+import org.opentripplanner.middleware.otp.graphql.PlanLocationInput;
+import org.opentripplanner.middleware.otp.graphql.PlanModesInput;
 import org.opentripplanner.middleware.otp.graphql.QueryVariables;
 import org.opentripplanner.middleware.otp.graphql.TransportMode;
 import org.opentripplanner.middleware.otp.response.Itinerary;
 import org.opentripplanner.middleware.otp.response.Leg;
 import org.opentripplanner.middleware.otp.response.RoutingError;
 import org.opentripplanner.middleware.utils.Coordinates;
+import org.opentripplanner.middleware.utils.DateTimeUtils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.opentripplanner.middleware.utils.DateTimeUtils.OTP_DATETIME_FORMAT_PATTERN;
+import static org.opentripplanner.middleware.utils.DateTimeUtils.getStringFromDate;
+
 /**
- * Anonymous version of {@link org.opentripplanner.middleware.models.TripRequest} containing only parameters
+ * Anonymous version of {@link TripRequest} containing only parameters
  * that don't contain precise user or location data.
  */
 public class AnonymizedTripRequest {
@@ -71,17 +78,27 @@ public class AnonymizedTripRequest {
 
     public AnonymizedTripRequest(TripRequest tripRequest, FindIterable<TripSummary> tripSummaries) {
         this.requestId = tripRequest.batchId;
-        this.fromPlace = getPlaceCoordinates(tripSummaries, true, tripRequest.fromPlace);
-        this.toPlace = getPlaceCoordinates(tripSummaries, false, tripRequest.toPlace);
+        this.fromPlace = getPlaceCoordinates(tripSummaries, true, tripRequest.origin.location);
+        this.toPlace = getPlaceCoordinates(tripSummaries, false, tripRequest.destination.location);
 
         QueryVariables queryVariables = tripRequest.otp2QueryParams;
         if (queryVariables != null) {
-            this.date = queryVariables.date;
-            this.time = queryVariables.time;
-            this.timeSelection = queryVariables.arriveBy
+            this.timeSelection = queryVariables.dateTime.latestArrival != null
                 ? AnonymousTripType.ARRIVE_BY
                 : AnonymousTripType.DEPART_AT;
-            this.mode = getModes(queryVariables.modes);
+
+            // Default to current time
+            LocalDateTime parsedDate = DateTimeUtils.nowAsLocalDateTime();
+            if (this.timeSelection == AnonymousTripType.DEPART_AT) {
+                parsedDate = DateTimeUtils.getDateTimeFromString(queryVariables.dateTime.earliestDeparture, OTP_DATETIME_FORMAT_PATTERN);
+            }
+            if (this.timeSelection == AnonymousTripType.ARRIVE_BY) {
+                parsedDate = DateTimeUtils.getDateTimeFromString(queryVariables.dateTime.latestArrival, OTP_DATETIME_FORMAT_PATTERN);
+            }
+
+            this.date = getStringFromDate(parsedDate, "yyyy-MM-dd");
+            this.time = getStringFromDate(parsedDate, "HH:mm");
+            this.mode = getModesForAnonymizedRequests(queryVariables.modesList);
         }
 
         // Extract all trip summary itineraries, convert to anonymized itineraries and group.
@@ -104,7 +121,7 @@ public class AnonymizedTripRequest {
     private static Coordinates getPlaceCoordinates(
         FindIterable<TripSummary> tripSummaries,
         boolean isFirstLeg,
-        String place
+        PlanLocationInput place
     ) {
         for (TripSummary tripSummary : tripSummaries) {
             if (!areAllFirstOrLastLegsTransit(tripSummary.itineraries, isFirstLeg)) {
@@ -112,18 +129,8 @@ public class AnonymizedTripRequest {
                 return null;
             }
         }
-        // The UI might send just the coordinates (if the geocoder does not return anything, which is unlikely).
-        // If that happens, the format will just be lat,lon and :: will not be present.
-        String coordinate = (place.contains("::")) ? place.split("::")[1].trim() : place;
-        String[] coordinateValues = coordinate.split(",");
-        if (coordinateValues.length != 2) {
-            return new Coordinates(0.0,0.0);
-        }
 
-        return new Coordinates(
-            Double.parseDouble(coordinateValues[0]),
-            Double.parseDouble(coordinateValues[1])
-        );
+        return new Coordinates(place.coordinate.latitude, place.coordinate.longitude);
     }
 
     /**
@@ -156,10 +163,36 @@ public class AnonymizedTripRequest {
      * Extract modes from the trip request and return as an array.
      * @return A list of strings, and at a minimum, a list with one element which is an empty string.
      */
-    public static List<String> getModes(List<TransportMode> tripRequestModes) {
-        return tripRequestModes != null && !tripRequestModes.isEmpty()
-            ? tripRequestModes.stream().map(TransportMode::toString).collect(Collectors.toList())
-            : List.of("");
+    public static List<String> getModes(PlanModesInput tripRequestModes) {
+        List<String> modes = new ArrayList<>(List.of(""));
+
+        if (tripRequestModes == null) {
+            return modes;
+        }
+
+        modes.addAll(tripRequestModes.direct);
+        modes.addAll(tripRequestModes.transit.access);
+        modes.addAll(tripRequestModes.transit.egress);
+        modes.addAll(tripRequestModes.transit.access);
+        modes.addAll(tripRequestModes.transit.transit.stream().map(TransportMode::toString).collect(Collectors.toList()));
+
+        return modes;
+    }
+
+    /**
+     * Extract modes from the trip request and return as an array.
+     * @return A list of strings, and at a minimum, a list with one element which is an empty string.
+     */
+    public static List<String> getModesForAnonymizedRequests(List<TransportMode> modesList) {
+        List<String> modes = new ArrayList<>();
+        if (modesList != null) {
+            modes.addAll(modesList.stream().map(TransportMode::toString).toList());
+        }
+
+        if (modes.isEmpty()) {
+            modes.add("");
+        }
+        return modes;
     }
 
     /**

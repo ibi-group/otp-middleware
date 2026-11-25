@@ -235,7 +235,7 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
             dates,
             monitoredDate -> otpResponse,
             (resp, monitoredDate) -> {
-                for (Itinerary itin : resp.plan.itineraries) {
+                for (Itinerary itin : resp.planConnection.edges) {
                     setItineraryDate(itin, monitoredDate);
                 }
             }
@@ -437,8 +437,8 @@ public class ItineraryUtilsTest extends OtpMiddlewareTestEnvironment {
         Itinerary itineraryWithTwoTransitLegs = OTP2_DISPATCHER_PLAN_RESPONSE_LEGID
             .clone()
             .getResponse()
-            .plan
-            .itineraries
+            .planConnection
+            .edges
             .get(1);
 
         DateTimeUtils.useFixedClockAt(ZonedDateTime.ofInstant(

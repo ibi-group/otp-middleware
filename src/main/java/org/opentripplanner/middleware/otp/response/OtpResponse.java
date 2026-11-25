@@ -15,7 +15,7 @@ public class OtpResponse {
 
     /** A dictionary of the parameters provided in the request that triggered this response. */
     public HashMap<String, String> requestParameters;
-    public TripPlan plan;
+    public TripPlan planConnection;
     /** A timestamp representing when the response was received */
     public long timestamp = DateTimeUtils.currentTimeMillis();
 
@@ -23,7 +23,7 @@ public class OtpResponse {
     public String toString() {
         return "OtpResponse{" +
             "requestParameters=" + requestParameters +
-            ", plan=" + plan +
+            ", planConnection=" + planConnection +
             ", timestamp=" + timestamp +
             '}';
     }
